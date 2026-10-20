@@ -13,11 +13,13 @@ enum class MealType {
             in 17..21 -> DINNER
             else -> SNACK
         }
+
+        fun fromRouteArg(name: String?): MealType? = name?.let { n -> entries.find { it.name == n } }
     }
 }
 
-/** Herkunft eines Eintrags; weitere Quellen (Barcode, KI, Rezept) kommen in späteren Phasen. */
-enum class EntrySource { MANUAL }
+/** Herkunft eines Eintrags (wird als Text gespeichert – neue Werte brauchen keine Migration). */
+enum class EntrySource { MANUAL, BARCODE, AI_PHOTO, AI_TEXT }
 
 enum class AmountUnit { GRAM, MILLILITER }
 

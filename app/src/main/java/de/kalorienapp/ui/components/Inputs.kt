@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.MaterialTheme
+import de.kalorienapp.domain.model.MealType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedTextField
@@ -73,5 +76,19 @@ fun <T> ChoiceChips(
                 label = { Text(label(option)) },
             )
         }
+    }
+}
+
+/** Auswahl der Mahlzeit mit Überschrift. */
+@Composable
+fun MealTypePicker(selected: MealType, onSelect: (MealType) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.entry_meal), style = MaterialTheme.typography.labelLarge)
+        ChoiceChips(
+            options = MealType.entries,
+            selected = selected,
+            onSelect = onSelect,
+            label = { stringResource(it.labelRes) },
+        )
     }
 }

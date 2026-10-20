@@ -1,7 +1,10 @@
 package de.kalorienapp
 
 import android.content.Context
+import de.kalorienapp.capture.FoodAnalyzer
 import de.kalorienapp.data.db.AppDatabase
+import de.kalorienapp.data.remote.gemini.GeminiClient
+import de.kalorienapp.data.remote.openfoodfacts.OpenFoodFactsClient
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.ProfileRepository
 
@@ -11,4 +14,10 @@ class AppContainer(context: Context) {
 
     val profileRepository = ProfileRepository(database.profileDao())
     val foodEntryRepository = FoodEntryRepository(database.foodEntryDao())
+
+    val foodAnalyzer = FoodAnalyzer(
+        context = context,
+        openFoodFacts = OpenFoodFactsClient(),
+        gemini = GeminiClient(BuildConfig.GEMINI_API_KEY),
+    )
 }

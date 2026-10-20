@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import de.kalorienapp.KalorienApplication
+import de.kalorienapp.ui.capture.CaptureViewModel
 import de.kalorienapp.ui.entry.EntryEditViewModel
 import de.kalorienapp.ui.profile.ProfileViewModel
 import de.kalorienapp.ui.today.TodayViewModel
@@ -21,6 +22,9 @@ object AppViewModelProvider {
         }
         initializer {
             EntryEditViewModel(createSavedStateHandle(), container().foodEntryRepository)
+        }
+        initializer {
+            CaptureViewModel(createSavedStateHandle(), container().foodAnalyzer, container().foodEntryRepository)
         }
     }
 

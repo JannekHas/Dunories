@@ -111,7 +111,7 @@
     <string name="summary_target">Ziel</string>
     <string name="summary_eaten">Gegessen</string>
     <string name="summary_active">Aktiv</string>
-    <string name="add_entry">Eintrag hinzufügen</string>
+    <string name="add_entry">Essen erfassen</string>
     <string name="add_short">+ Hinzufügen</string>
     <string name="meal_empty">Noch nichts eingetragen</string>
     <string name="entry_macros">P %1$s g · KH %2$s g · F %3$s g</string>
@@ -133,4 +133,51 @@
     <string name="nutrient_sugar">davon Zucker</string>
     <string name="nutrient_fiber">Ballaststoffe</string>
     <string name="nutrient_salt">Salz</string>
+    <!-- Erfassung (Foto / Barcode / KI) -->
+    <string name="capture_title">Essen erfassen</string>
+    <string name="capture_hint">Fotografiere dein Essen oder den Barcode einer Verpackung</string>
+    <string name="capture_manual">Manuell</string>
+    <string name="capture_gallery">Aus Galerie wählen</string>
+    <string name="capture_take_photo">Foto aufnehmen</string>
+    <string name="capture_describe">Beschreiben</string>
+    <string name="capture_describe_intro">Beschreibe, was du gegessen hast – die KI schätzt Mengen und Nährwerte.</string>
+    <string name="capture_describe_label">Was hast du gegessen?</string>
+    <string name="capture_describe_placeholder">z. B. 2 Scheiben Vollkornbrot mit Käse</string>
+    <string name="capture_estimate">Schätzen lassen</string>
+    <string name="capture_no_camera_permission">Ohne Kamerazugriff kannst du ein Foto aus der Galerie wählen oder dein Essen beschreiben.</string>
+    <string name="capture_grant_permission">Kamerazugriff erlauben</string>
+    <string name="capture_analyzing_title">Analysiere …</string>
+    <string name="capture_stage_barcode">Suche nach Barcode …</string>
+    <string name="capture_stage_product">Barcode gefunden – lade Produktdaten …</string>
+    <string name="capture_stage_ai">KI analysiert dein Essen …</string>
+    <string name="capture_unknown_barcode_title">Produkt nicht gefunden</string>
+    <string name="capture_unknown_barcode_text">Der Barcode %1$s ist in Open Food Facts nicht bekannt.</string>
+    <string name="capture_analyze_with_ai">Foto mit KI analysieren</string>
+    <string name="capture_failed_title">Das hat nicht geklappt</string>
+    <string name="capture_retry">Erneut versuchen</string>
+    <string name="capture_enter_manually">Manuell eingeben</string>
+    <string name="capture_back_to_camera">Neues Foto / zurück</string>
+    <string name="error_ai_no_key">Es ist kein Gemini-API-Key hinterlegt. Trage ihn in local.properties ein und baue die App neu.</string>
+    <string name="error_ai_rejected">Gemini hat die Anfrage abgelehnt. Bitte prüfe den API-Key.</string>
+    <string name="error_ai_quota">Das kostenlose Gemini-Kontingent ist gerade aufgebraucht. Versuch es später noch einmal.</string>
+    <string name="error_ai_invalid">Die KI-Antwort war unbrauchbar.</string>
+    <string name="error_ai_no_food">Auf dem Foto wurde kein Essen erkannt.</string>
+    <string name="error_network">Keine Verbindung zum Server. Bitte prüfe deine Internetverbindung.</string>
+    <string name="error_image">Das Foto konnte nicht verarbeitet werden.</string>
+    <string name="error_unknown">Ein unerwarteter Fehler ist aufgetreten.</string>
+
+    <!-- Vorschlag -->
+    <string name="proposal_title">Vorschlag prüfen</string>
+    <string name="proposal_ai_hint">KI-Schätzung – bitte Mengen und Werte prüfen und bei Bedarf anpassen.</string>
+    <string name="proposal_add_item">Komponente hinzufügen</string>
+    <string name="proposal_remove_item">Komponente entfernen</string>
+    <string name="proposal_unnamed">Ohne Namen</string>
+    <string name="proposal_item_summary">%1$s %2$s · %3$s kcal</string>
+    <string name="proposal_amount_missing">Menge fehlt</string>
+    <string name="proposal_total">Gesamt: %1$s kcal</string>
+    <string name="proposal_save">Eintragen (%1$d)</string>
+    <string name="source_barcode">Barcode · Open Food Facts</string>
+    <string name="source_ai_photo">KI-Schätzung aus Foto</string>
+    <string name="source_ai_text">KI-Schätzung aus Beschreibung</string>
+    <string name="source_manual">Manuell</string>
 </resources>

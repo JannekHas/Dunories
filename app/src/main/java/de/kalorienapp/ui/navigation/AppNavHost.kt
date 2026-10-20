@@ -22,7 +22,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import de.kalorienapp.R
+import de.kalorienapp.ui.capture.CaptureScreen
 import de.kalorienapp.ui.entry.EntryEditScreen
 import de.kalorienapp.ui.onboarding.OnboardingScreen
 import de.kalorienapp.ui.profile.ProfileScreen
@@ -79,7 +81,7 @@ fun AppNavHost(startDestination: Any) {
             composable<TodayRoute> {
                 TodayScreen(
                     onAddEntry = { date, meal ->
-                        navController.navigate(EntryEditRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
+                        navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
                     },
                     onEditEntry = { entry ->
                         navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
@@ -88,6 +90,18 @@ fun AppNavHost(startDestination: Any) {
             }
             composable<ProfileRoute> {
                 ProfileScreen()
+            }
+            composable<CaptureRoute> { entry ->
+                val route = entry.toRoute<CaptureRoute>()
+                CaptureScreen(
+                    onClose = { navController.popBackStack() },
+                    onManualEntry = { meal ->
+                        // Erfassung durch den manuellen Editor ersetzen, damit „Zurück“ zur Übersicht führt.
+                        navController.navigate(EntryEditRoute(epochDay = route.epochDay, mealType = meal.name)) {
+                            popUpTo<CaptureRoute> { inclusive = true }
+                        }
+                    },
+                )
             }
             composable<EntryEditRoute> {
                 EntryEditScreen(onDone = { navController.popBackStack() })

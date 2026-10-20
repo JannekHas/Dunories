@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
@@ -45,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -109,7 +109,7 @@ fun TodayScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { onAddEntry(state.date, null) }) {
-                Icon(Icons.Filled.Add, stringResource(R.string.add_entry))
+                Icon(painterResource(R.drawable.ic_camera), stringResource(R.string.add_entry))
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
