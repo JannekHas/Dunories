@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -253,7 +255,14 @@ private fun CameraContent(viewModel: CaptureViewModel, onManualEntry: () -> Unit
 /** Kleiner Knopf mit Beschriftung in der Kameraleiste. */
 @Composable
 private fun CameraAction(label: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    // Ganze Spalte antippbar, damit auch die Beschriftung reagiert.
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(4.dp),
+    ) {
         FilledTonalIconButton(onClick = onClick, modifier = Modifier.size(52.dp)) { icon() }
         Text(
             label,

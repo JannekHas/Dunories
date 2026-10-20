@@ -74,7 +74,7 @@
     <string name="profile_goal">Was möchtest du erreichen?</string>
     <string name="profile_pace">Tempo</string>
     <string name="profile_health_connect_question">Samsung Health / Health Connect verbinden?</string>
-    <string name="profile_health_connect_info">Dein Grundbedarf wird mit „sitzend“ berechnet. Deine aktiven Kalorien aus Health Connect kommen täglich dazu, damit Bewegung nicht doppelt zählt. (Die Verbindung wird in einem späteren Update aktiviert.)</string>
+    <string name="profile_health_connect_info">Dein Grundbedarf wird mit „sitzend“ berechnet. Deine aktiven Kalorien aus Health Connect (z. B. von Samsung Health) kommen täglich dazu, damit Bewegung nicht doppelt zählt. Die Berechtigung erteilst du anschließend in der Tagesübersicht.</string>
     <string name="profile_activity_level">Wie aktiv bist du im Alltag?</string>
     <string name="error_age">Alter zwischen 14 und 100</string>
     <string name="error_height">Größe zwischen 100 und 250 cm</string>
@@ -193,4 +193,14 @@
     <string name="favorite_remove">Aus Favoriten entfernen</string>
     <string name="favorite_added">„%1$s“ als Favorit gespeichert</string>
     <string name="favorite_removed">„%1$s“ aus Favoriten entfernt</string>
+    <!-- Health Connect -->
+    <string name="health_hint_no_permission">Health Connect ist noch nicht verbunden – deine aktiven Kalorien werden noch nicht berücksichtigt.</string>
+    <string name="health_hint_needs_install">Für die aktiven Kalorien wird die App „Health Connect“ benötigt (oder ein Update davon).</string>
+    <string name="health_hint_not_supported">Health Connect wird auf diesem Gerät nicht unterstützt. Stell im Profil ein Aktivitätslevel ein.</string>
+    <string name="health_hint_error">Die aktiven Kalorien konnten gerade nicht gelesen werden.</string>
+    <string name="health_connect_button">Mit Health Connect verbinden</string>
+    <string name="health_install_button">Health Connect installieren</string>
+    <string name="health_privacy_title">Health Connect &amp; Datenschutz</string>
+    <string name="health_privacy_text">KalorienApp liest aus Health Connect ausschließlich deine verbrannten Kalorien (aktiv und gesamt), um sie deinem Tagesziel gutzuschreiben. Die Werte bleiben lokal auf deinem Handy, werden nicht hochgeladen und nicht an Dritte weitergegeben. Die App schreibt keine Daten in Health Connect.</string>
+    <string name="close">Schließen</string>
 </resources>

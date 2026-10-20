@@ -2,8 +2,10 @@ package de.kalorienapp.ui.today
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.kalorienapp.data.repository.ActivityRepository
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.FoodLibraryRepository
+import de.kalorienapp.data.repository.HealthSyncStatus
 import de.kalorienapp.data.repository.ProfileRepository
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.model.DaySummary
@@ -34,6 +36,9 @@ data class TodayUiState(
     val meals: List<MealGroup> = emptyList(),
     /** Namen der Favoriten (klein geschrieben) – für „Als Favorit speichern / entfernen“. */
     val favoriteNames: Set<String> = emptySet(),
+    val usesHealthConnect: Boolean = false,
+    /** Hinweis, falls Health Connect aktiviert ist, aber nicht gelesen werden kann. */
+    val healthProblem: HealthSyncStatus? = null,
 ) {
     fun isFavorite(entry: FoodEntry) = entry.name.lowercase() in favoriteNames
 
@@ -42,12 +47,17 @@ data class TodayUiState(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodayViewModel(
-    profileRepository: ProfileRepository,
+    private val profileRepository: ProfileRepository,
     private val entryRepository: FoodEntryRepository,
     private val library: FoodLibraryRepository,
+    private val activityRepository: ActivityRepository,
 ) : ViewModel() {
 
     private val date = MutableStateFlow(LocalDate.now())
+    private val syncStatus = MutableStateFlow<HealthSyncStatus?>(null)
+
+    val healthPermissions: Set<String> get() = activityRepository.permissions
+    fun healthPermissionContract() = activityRepository.permissionContract()
 
     val uiState: StateFlow<TodayUiState> = date
         .flatMapLatest { day ->
@@ -55,13 +65,16 @@ class TodayViewModel(
                 profileRepository.profile,
                 entryRepository.entriesFor(day),
                 library.favorites,
-            ) { profile, entries, favorites ->
+                activityRepository.activeKcal(day),
+                syncStatus,
+            ) { profile, entries, favorites, activeKcal, status ->
+                val usesHealthConnect = profile?.useHealthConnect == true
                 val summary = profile?.let {
                     GoalCalculator.daySummary(
                         targets = GoalCalculator.targets(it, day.year),
                         eaten = entries.map(FoodEntry::nutrients).sum(),
-                        // Aktive Kalorien kommen in Phase 3 aus Health Connect.
-                        activeKcal = 0,
+                        // Ohne Health Connect ist die Bewegung bereits im Aktivitätsfaktor enthalten.
+                        activeKcal = if (usesHealthConnect) activeKcal ?: 0 else 0,
                         creditPercent = it.activeCalorieCreditPercent,
                     )
                 }
@@ -74,17 +87,38 @@ class TodayViewModel(
                         MealGroup(meal, list, list.map(FoodEntry::nutrients).sum())
                     },
                     favoriteNames = favorites.map { it.name.lowercase() }.toSet(),
+                    usesHealthConnect = usesHealthConnect,
+                    healthProblem = status?.takeIf { usesHealthConnect && it != HealthSyncStatus.OK },
                 )
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodayUiState())
 
-    fun previousDay() = date.update { it.minusDays(1) }
+    fun previousDay() {
+        date.update { it.minusDays(1) }
+        refreshActivity()
+    }
 
-    fun nextDay() = date.update { it.plusDays(1) }
+    fun nextDay() {
+        date.update { it.plusDays(1) }
+        refreshActivity()
+    }
 
     fun goToToday() {
         date.value = LocalDate.now()
+        refreshActivity()
+    }
+
+    /** Aktive Kalorien des angezeigten Tages neu aus Health Connect lesen (beim Öffnen, Tageswechsel, nach Berechtigung). */
+    fun refreshActivity() {
+        viewModelScope.launch {
+            val profile = profileRepository.get()
+            syncStatus.value = if (profile?.useHealthConnect == true) {
+                activityRepository.refresh(date.value, profile)
+            } else {
+                null
+            }
+        }
     }
 
     fun delete(entry: FoodEntry) {
