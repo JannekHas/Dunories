@@ -19,13 +19,19 @@ enum class MealType {
 /** Herkunft eines Eintrags; weitere Quellen (Barcode, KI, Rezept) kommen in späteren Phasen. */
 enum class EntrySource { MANUAL }
 
-/** Ein gegessener Eintrag. Nährwerte sind Absolutwerte für die angegebene Menge. */
+enum class AmountUnit { GRAM, MILLILITER }
+
+/**
+ * Ein gegessener Eintrag. Nährwerte sind Absolutwerte für die angegebene Menge
+ * (der Editor rechnet von/zu „pro 100 g/ml“ um). Alt-Einträge können ohne Menge sein.
+ */
 data class FoodEntry(
     val id: Long = 0,
     val date: LocalDate,
     val mealType: MealType,
     val name: String,
-    val amountG: Double?,
+    val amount: Double?,
+    val unit: AmountUnit = AmountUnit.GRAM,
     val nutrients: Nutrients,
     val source: EntrySource = EntrySource.MANUAL,
     val createdAt: Long = System.currentTimeMillis(),

@@ -236,7 +236,8 @@ private fun EntryRow(entry: FoodEntry, onClick: () -> Unit, onDelete: () -> Unit
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         headlineContent = { Text(entry.name) },
         supportingContent = {
-            Text(entry.amountG?.let { stringResource(R.string.entry_amount_prefix, it.format(), macros) } ?: macros)
+            val unit = stringResource(entry.unit.labelRes)
+            Text(entry.amount?.let { stringResource(R.string.entry_amount_prefix, it.format(), unit, macros) } ?: macros)
         },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {

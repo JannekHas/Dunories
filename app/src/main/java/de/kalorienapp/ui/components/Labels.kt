@@ -3,6 +3,7 @@ package de.kalorienapp.ui.components
 import androidx.annotation.StringRes
 import de.kalorienapp.R
 import de.kalorienapp.domain.model.ActivityLevel
+import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.domain.model.Pace
@@ -47,6 +48,13 @@ val ActivityLevel.descriptionRes: Int
         ActivityLevel.MODERATE -> R.string.activity_moderate_desc
         ActivityLevel.ACTIVE -> R.string.activity_active_desc
         ActivityLevel.VERY_ACTIVE -> R.string.activity_very_active_desc
+    }
+
+@get:StringRes
+val AmountUnit.labelRes: Int
+    get() = when (this) {
+        AmountUnit.GRAM -> R.string.unit_g
+        AmountUnit.MILLILITER -> R.string.unit_ml
     }
 
 @get:StringRes

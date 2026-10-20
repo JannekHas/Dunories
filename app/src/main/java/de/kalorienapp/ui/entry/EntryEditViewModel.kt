@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import de.kalorienapp.data.repository.FoodEntryRepository
+import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.EntrySource
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
@@ -20,46 +21,54 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 
-enum class NutrientField { KCAL, PROTEIN, CARBS, FAT }
+/** Nährwertfelder im Editor; [extra] = nur im ausklappbaren Bereich „Weitere Nährwerte“. */
+enum class NutrientField(val extra: Boolean = false) {
+    KCAL, PROTEIN, CARBS, FAT,
+    SATURATED_FAT(extra = true), SUGAR(extra = true), FIBER(extra = true), SALT(extra = true),
+}
 
-/** Bezugswerte für das proportionale Skalieren der Nährwerte bei Mengenänderung. */
-data class ScaleBase(val amountG: Double, val nutrients: Nutrients)
-
+/** Eingabezustand. Alle Nährwertfelder gelten pro 100 g bzw. 100 ml. */
 data class EntryFormState(
     val isLoading: Boolean = true,
     val isNew: Boolean = true,
     val name: String = "",
     val mealType: MealType = MealType.SNACK,
     val amount: String = "",
-    val kcal: String = "",
-    val protein: String = "",
-    val carbs: String = "",
-    val fat: String = "",
-    val scaleBase: ScaleBase? = null,
+    val unit: AmountUnit = AmountUnit.GRAM,
+    val per100: Map<NutrientField, String> = emptyMap(),
+    val showExtras: Boolean = false,
 ) {
-    val amountValue: Double? get() = amount.parseDecimal()
-    val amountError get() = amount.isNotBlank() && (amountValue == null || amountValue!! <= 0)
-    val kcalError get() = kcal.isNotBlank() && kcal.parseDecimal() == null
-    val proteinError get() = macroError(protein)
-    val carbsError get() = macroError(carbs)
-    val fatError get() = macroError(fat)
+    val amountValue: Double? get() = amount.parseDecimal()?.takeIf { it > 0 }
+    val amountError get() = amount.isNotBlank() && amountValue == null
+
+    fun value(field: NutrientField): String = per100[field].orEmpty()
+
+    fun isError(field: NutrientField): Boolean {
+        val text = value(field)
+        return text.isNotBlank() && text.parseDecimal() == null
+    }
 
     val isValid: Boolean
-        get() = name.isNotBlank() && kcal.parseDecimal() != null &&
-            !amountError && !kcalError && !proteinError && !carbsError && !fatError
+        get() = name.isNotBlank() && amountValue != null &&
+            value(NutrientField.KCAL).parseDecimal() != null &&
+            NutrientField.entries.none(::isError)
 
-    /** Leere Makrofelder zählen als 0. */
-    fun nutrients() = Nutrients(
-        kcal = kcal.parseDecimal() ?: 0.0,
-        proteinG = protein.parseDecimal() ?: 0.0,
-        carbsG = carbs.parseDecimal() ?: 0.0,
-        fatG = fat.parseDecimal() ?: 0.0,
+    /** Werte pro 100 g/ml; leere Hauptfelder zählen als 0, leere Zusatzfelder als „nicht angegeben“. */
+    fun per100Nutrients() = Nutrients(
+        kcal = number(NutrientField.KCAL) ?: 0.0,
+        proteinG = number(NutrientField.PROTEIN) ?: 0.0,
+        carbsG = number(NutrientField.CARBS) ?: 0.0,
+        fatG = number(NutrientField.FAT) ?: 0.0,
+        saturatedFatG = number(NutrientField.SATURATED_FAT),
+        sugarG = number(NutrientField.SUGAR),
+        fiberG = number(NutrientField.FIBER),
+        saltG = number(NutrientField.SALT),
     )
 
-    fun currentScaleBase(): ScaleBase? =
-        amountValue?.takeIf { it > 0 && !amountError }?.let { ScaleBase(it, nutrients()) }
+    /** Werte für die eingegebene Menge, oder null solange die Menge fehlt. */
+    fun totalNutrients(): Nutrients? = amountValue?.let { per100Nutrients().per100ToAmount(it) }
 
-    private fun macroError(text: String) = text.isNotBlank() && text.parseDecimal() == null
+    private fun number(field: NutrientField) = value(field).parseDecimal()
 }
 
 class EntryEditViewModel(
@@ -77,73 +86,66 @@ class EntryEditViewModel(
         viewModelScope.launch {
             val entry = route.entryId.takeIf { it != 0L }?.let { repository.get(it) }
             existing = entry
-            _state.value = if (entry != null) {
-                val n = entry.nutrients
-                EntryFormState(
-                    isLoading = false,
-                    isNew = false,
-                    name = entry.name,
-                    mealType = entry.mealType,
-                    amount = entry.amountG?.toInputString() ?: "",
-                    kcal = n.kcal.toInputString(0),
-                    protein = n.proteinG.toInputString(),
-                    carbs = n.carbsG.toInputString(),
-                    fat = n.fatG.toInputString(),
-                    scaleBase = entry.amountG?.takeIf { it > 0 }?.let { ScaleBase(it, n) },
-                )
-            } else {
-                EntryFormState(
-                    isLoading = false,
-                    mealType = route.mealType?.let { name -> MealType.entries.find { it.name == name } }
-                        ?: MealType.forHour(LocalTime.now().hour),
-                )
-            }
+            _state.value = if (entry != null) formFor(entry) else EntryFormState(
+                isLoading = false,
+                mealType = route.mealType?.let { name -> MealType.entries.find { it.name == name } }
+                    ?: MealType.forHour(LocalTime.now().hour),
+            )
         }
+    }
+
+    /** Gespeichert sind Absolutwerte → für den Editor auf 100 g/ml umrechnen. */
+    private fun formFor(entry: FoodEntry): EntryFormState {
+        // Alt-Einträge ohne Menge: als 100 g behandeln, damit die Summe gleich bleibt.
+        val amount = entry.amount?.takeIf { it > 0 } ?: 100.0
+        val p = entry.nutrients.amountToPer100(amount)
+        val per100 = buildMap {
+            put(NutrientField.KCAL, p.kcal.toInputString())
+            put(NutrientField.PROTEIN, p.proteinG.toInputString())
+            put(NutrientField.CARBS, p.carbsG.toInputString())
+            put(NutrientField.FAT, p.fatG.toInputString())
+            p.saturatedFatG?.let { put(NutrientField.SATURATED_FAT, it.toInputString()) }
+            p.sugarG?.let { put(NutrientField.SUGAR, it.toInputString()) }
+            p.fiberG?.let { put(NutrientField.FIBER, it.toInputString()) }
+            p.saltG?.let { put(NutrientField.SALT, it.toInputString(2)) }
+        }
+        return EntryFormState(
+            isLoading = false,
+            isNew = false,
+            name = entry.name,
+            mealType = entry.mealType,
+            amount = amount.toInputString(),
+            unit = entry.unit,
+            per100 = per100,
+            showExtras = per100.keys.any { it.extra },
+        )
     }
 
     fun onNameChange(value: String) = _state.update { it.copy(name = value) }
 
     fun onMealTypeChange(value: MealType) = _state.update { it.copy(mealType = value) }
 
-    /** Bei bekannten Bezugswerten werden die Nährwerte proportional zur neuen Menge skaliert. */
-    fun onAmountChange(value: String) = _state.update { current ->
-        val updated = current.copy(amount = value)
-        val base = current.scaleBase
-        val newAmount = updated.amountValue
-        if (base != null && newAmount != null && newAmount > 0) {
-            val scaled = base.nutrients * (newAmount / base.amountG)
-            updated.copy(
-                kcal = scaled.kcal.toInputString(0),
-                protein = scaled.proteinG.toInputString(),
-                carbs = scaled.carbsG.toInputString(),
-                fat = scaled.fatG.toInputString(),
-            )
-        } else {
-            updated
-        }
-    }
+    fun onAmountChange(value: String) = _state.update { it.copy(amount = value) }
 
-    /** Manuelle Änderung eines Nährwerts setzt neue Bezugswerte für das Skalieren. */
-    fun onNutrientChange(field: NutrientField, value: String) = _state.update { current ->
-        val updated = when (field) {
-            NutrientField.KCAL -> current.copy(kcal = value)
-            NutrientField.PROTEIN -> current.copy(protein = value)
-            NutrientField.CARBS -> current.copy(carbs = value)
-            NutrientField.FAT -> current.copy(fat = value)
-        }
-        updated.copy(scaleBase = updated.currentScaleBase())
-    }
+    fun onUnitChange(value: AmountUnit) = _state.update { it.copy(unit = value) }
+
+    fun onNutrientChange(field: NutrientField, value: String) =
+        _state.update { it.copy(per100 = it.per100 + (field to value)) }
+
+    fun toggleExtras() = _state.update { it.copy(showExtras = !it.showExtras) }
 
     fun save(onDone: () -> Unit) {
         val form = _state.value
-        if (!form.isValid) return
+        val total = form.totalNutrients()
+        if (!form.isValid || total == null) return
         val entry = FoodEntry(
             id = existing?.id ?: 0,
             date = existing?.date ?: LocalDate.ofEpochDay(route.epochDay),
             mealType = form.mealType,
             name = form.name.trim(),
-            amountG = form.amountValue,
-            nutrients = form.nutrients(),
+            amount = form.amountValue,
+            unit = form.unit,
+            nutrients = total,
             source = existing?.source ?: EntrySource.MANUAL,
             createdAt = existing?.createdAt ?: System.currentTimeMillis(),
         )
