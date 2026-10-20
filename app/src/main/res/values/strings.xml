@@ -137,7 +137,7 @@
     <string name="capture_title">Essen erfassen</string>
     <string name="capture_hint">Fotografiere dein Essen oder den Barcode einer Verpackung</string>
     <string name="capture_manual">Manuell</string>
-    <string name="capture_gallery">Aus Galerie wählen</string>
+    <string name="capture_gallery_short">Galerie</string>
     <string name="capture_take_photo">Foto aufnehmen</string>
     <string name="capture_describe">Beschreiben</string>
     <string name="capture_describe_intro">Beschreibe, was du gegessen hast – die KI schätzt Mengen und Nährwerte.</string>
@@ -180,4 +180,17 @@
     <string name="source_ai_photo">KI-Schätzung aus Foto</string>
     <string name="source_ai_text">KI-Schätzung aus Beschreibung</string>
     <string name="source_manual">Manuell</string>
+    <!-- Favoriten & häufig gegessen -->
+    <string name="quick_title">Favoriten &amp; Häufiges</string>
+    <string name="quick_short">Favoriten</string>
+    <string name="quick_favorites">Favoriten</string>
+    <string name="quick_frequent">Häufig gegessen</string>
+    <string name="quick_times_eaten">%1$d× gegessen</string>
+    <string name="quick_remove_favorite">Favorit entfernen</string>
+    <string name="quick_confirm">Übernehmen (%1$d)</string>
+    <string name="quick_empty">Noch keine Favoriten oder häufigen Einträge. Speichere Einträge in der Tagesübersicht über das ⋮-Menü als Favorit – oft Gegessenes erscheint hier automatisch.</string>
+    <string name="favorite_add">Als Favorit speichern</string>
+    <string name="favorite_remove">Aus Favoriten entfernen</string>
+    <string name="favorite_added">„%1$s“ als Favorit gespeichert</string>
+    <string name="favorite_removed">„%1$s“ aus Favoriten entfernt</string>
 </resources>

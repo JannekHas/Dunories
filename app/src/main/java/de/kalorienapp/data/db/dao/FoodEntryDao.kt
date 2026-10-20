@@ -1,6 +1,7 @@
 package de.kalorienapp.data.db.dao
 
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Query
 import androidx.room.Upsert
 import de.kalorienapp.data.db.entity.FoodEntryEntity
@@ -19,4 +20,24 @@ interface FoodEntryDao {
 
     @Query("DELETE FROM food_entry WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    /** Je Lebensmittel (Name + Einheit) der jüngste Eintrag, sortiert nach Häufigkeit. */
+    @Query(
+        """
+        SELECT e.*, g.cnt AS useCount FROM food_entry e
+        JOIN (
+            SELECT MAX(id) AS maxId, COUNT(*) AS cnt FROM food_entry
+            WHERE amountG > 0
+            GROUP BY name COLLATE NOCASE, unit
+        ) g ON e.id = g.maxId
+        ORDER BY g.cnt DESC, e.createdAt DESC
+        LIMIT :limit
+        """,
+    )
+    fun observeFrequent(limit: Int): Flow<List<FrequentEntryRow>>
 }
+
+data class FrequentEntryRow(
+    @Embedded val entry: FoodEntryEntity,
+    val useCount: Int,
+)

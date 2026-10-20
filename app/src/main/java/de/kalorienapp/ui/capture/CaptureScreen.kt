@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,7 +84,7 @@ fun CaptureScreen(
                     }
                 },
                 actions = {
-                    if (step !is CaptureStep.Proposal) {
+                    if (step !is CaptureStep.Proposal && !atCamera) {
                         TextButton(onClick = { onManualEntry(state.mealType) }) {
                             Text(stringResource(R.string.capture_manual))
                         }
@@ -95,13 +97,26 @@ fun CaptureScreen(
             .fillMaxSize()
             .padding(padding)
         when (step) {
-            CaptureStep.Camera -> CameraContent(viewModel, contentModifier)
+            CaptureStep.Camera -> CameraContent(viewModel, { onManualEntry(state.mealType) }, contentModifier)
             CaptureStep.TextInput -> TextInputContent(
                 description = state.description,
                 onChange = viewModel::onDescriptionChange,
                 onSubmit = viewModel::submitDescription,
                 modifier = contentModifier,
             )
+            is CaptureStep.QuickPick -> {
+                val favorites by viewModel.favorites.collectAsStateWithLifecycle()
+                val frequent by viewModel.frequent.collectAsStateWithLifecycle()
+                QuickPickContent(
+                    favorites = favorites,
+                    frequent = frequent,
+                    selected = step.selected,
+                    onToggle = viewModel::toggleQuickPick,
+                    onRemoveFavorite = viewModel::removeFavorite,
+                    onConfirm = viewModel::confirmQuickPick,
+                    modifier = contentModifier,
+                )
+            }
             is CaptureStep.Analyzing -> AnalyzingContent(step.stage, contentModifier)
             is CaptureStep.UnknownBarcode -> MessageContent(
                 title = stringResource(R.string.capture_unknown_barcode_title),
@@ -133,7 +148,7 @@ fun CaptureScreen(
 }
 
 @Composable
-private fun CameraContent(viewModel: CaptureViewModel, modifier: Modifier) {
+private fun CameraContent(viewModel: CaptureViewModel, onManualEntry: () -> Unit, modifier: Modifier) {
     val context = LocalContext.current
     val controller = remember { CameraController() }
     var hasPermission by remember {
@@ -195,13 +210,14 @@ private fun CameraContent(viewModel: CaptureViewModel, modifier: Modifier) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            FilledTonalIconButton(
+            CameraAction(
+                label = stringResource(R.string.capture_gallery_short),
                 onClick = {
                     galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 },
-                modifier = Modifier.size(56.dp),
-            ) {
-                Icon(painterResource(R.drawable.ic_photo_library), stringResource(R.string.capture_gallery))
+            ) { Icon(painterResource(R.drawable.ic_photo_library), contentDescription = null) }
+            CameraAction(label = stringResource(R.string.quick_short), onClick = viewModel::showQuickPick) {
+                Icon(Icons.Filled.Star, contentDescription = null)
             }
             LargeFloatingActionButton(
                 onClick = {
@@ -224,10 +240,27 @@ private fun CameraContent(viewModel: CaptureViewModel, modifier: Modifier) {
                     )
                 }
             }
-            FilledTonalIconButton(onClick = viewModel::showTextInput, modifier = Modifier.size(56.dp)) {
-                Icon(Icons.Filled.Edit, stringResource(R.string.capture_describe))
+            CameraAction(label = stringResource(R.string.capture_describe), onClick = viewModel::showTextInput) {
+                Icon(Icons.Filled.Edit, contentDescription = null)
+            }
+            CameraAction(label = stringResource(R.string.capture_manual), onClick = onManualEntry) {
+                Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
             }
         }
+    }
+}
+
+/** Kleiner Knopf mit Beschriftung in der Kameraleiste. */
+@Composable
+private fun CameraAction(label: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        FilledTonalIconButton(onClick = onClick, modifier = Modifier.size(52.dp)) { icon() }
+        Text(
+            label,
+            color = Color.White,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 }
 
@@ -319,6 +352,7 @@ private val CaptureStep.titleRes: Int
     get() = when (this) {
         CaptureStep.Camera -> R.string.capture_title
         CaptureStep.TextInput -> R.string.capture_describe
+        is CaptureStep.QuickPick -> R.string.quick_title
         is CaptureStep.Analyzing -> R.string.capture_analyzing_title
         is CaptureStep.UnknownBarcode, is CaptureStep.Failed -> R.string.capture_title
         is CaptureStep.Proposal -> R.string.proposal_title

@@ -17,6 +17,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -77,6 +79,16 @@ fun TodayScreen(
     val scope = rememberCoroutineScope()
     val deletedMessage = stringResource(R.string.entry_deleted)
     val undoLabel = stringResource(R.string.undo)
+    val favoriteAdded = stringResource(R.string.favorite_added)
+    val favoriteRemoved = stringResource(R.string.favorite_removed)
+
+    fun toggleFavorite(entry: FoodEntry) {
+        val nowFavorite = viewModel.toggleFavorite(entry)
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar((if (nowFavorite) favoriteAdded else favoriteRemoved).format(entry.name))
+        }
+    }
 
     fun deleteWithUndo(entry: FoodEntry) {
         viewModel.delete(entry)
@@ -125,9 +137,11 @@ fun TodayScreen(
             items(state.meals, key = { it.mealType.name }) { group ->
                 MealCard(
                     group = group,
+                    isFavorite = state::isFavorite,
                     onAdd = { onAddEntry(state.date, group.mealType) },
                     onEdit = onEditEntry,
                     onDelete = ::deleteWithUndo,
+                    onToggleFavorite = ::toggleFavorite,
                 )
             }
         }
@@ -189,9 +203,11 @@ private fun SummaryValue(label: String, value: String) {
 @Composable
 private fun MealCard(
     group: MealGroup,
+    isFavorite: (FoodEntry) -> Boolean,
     onAdd: () -> Unit,
     onEdit: (FoodEntry) -> Unit,
     onDelete: (FoodEntry) -> Unit,
+    onToggleFavorite: (FoodEntry) -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -212,7 +228,13 @@ private fun MealCard(
             TextButton(onClick = onAdd) { Text(stringResource(R.string.add_short)) }
         }
         group.entries.forEach { entry ->
-            EntryRow(entry, onClick = { onEdit(entry) }, onDelete = { onDelete(entry) })
+            EntryRow(
+                entry = entry,
+                isFavorite = isFavorite(entry),
+                onClick = { onEdit(entry) },
+                onDelete = { onDelete(entry) },
+                onToggleFavorite = { onToggleFavorite(entry) },
+            )
         }
         if (group.entries.isEmpty()) {
             Box(Modifier.padding(start = 16.dp, bottom = 12.dp)) {
@@ -227,7 +249,13 @@ private fun MealCard(
 }
 
 @Composable
-private fun EntryRow(entry: FoodEntry, onClick: () -> Unit, onDelete: () -> Unit) {
+private fun EntryRow(
+    entry: FoodEntry,
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    onToggleFavorite: () -> Unit,
+) {
     var menuOpen by remember { mutableStateOf(false) }
     val n = entry.nutrients
     val macros = stringResource(R.string.entry_macros, n.proteinG.format(), n.carbsG.format(), n.fatG.format())
@@ -251,6 +279,15 @@ private fun EntryRow(entry: FoodEntry, onClick: () -> Unit, onDelete: () -> Unit
                             text = { Text(stringResource(R.string.edit)) },
                             leadingIcon = { Icon(Icons.Filled.Edit, null) },
                             onClick = { menuOpen = false; onClick() },
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(stringResource(if (isFavorite) R.string.favorite_remove else R.string.favorite_add))
+                            },
+                            leadingIcon = {
+                                Icon(if (isFavorite) Icons.Outlined.Star else Icons.Filled.Star, null)
+                            },
+                            onClick = { menuOpen = false; onToggleFavorite() },
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.delete)) },

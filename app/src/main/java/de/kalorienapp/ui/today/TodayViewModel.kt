@@ -3,6 +3,7 @@ package de.kalorienapp.ui.today
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.repository.FoodEntryRepository
+import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.data.repository.ProfileRepository
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.model.DaySummary
@@ -31,7 +32,11 @@ data class TodayUiState(
     val date: LocalDate = LocalDate.now(),
     val summary: DaySummary? = null,
     val meals: List<MealGroup> = emptyList(),
+    /** Namen der Favoriten (klein geschrieben) – für „Als Favorit speichern / entfernen“. */
+    val favoriteNames: Set<String> = emptySet(),
 ) {
+    fun isFavorite(entry: FoodEntry) = entry.name.lowercase() in favoriteNames
+
     val isToday: Boolean get() = date == LocalDate.now()
 }
 
@@ -39,13 +44,18 @@ data class TodayUiState(
 class TodayViewModel(
     profileRepository: ProfileRepository,
     private val entryRepository: FoodEntryRepository,
+    private val library: FoodLibraryRepository,
 ) : ViewModel() {
 
     private val date = MutableStateFlow(LocalDate.now())
 
     val uiState: StateFlow<TodayUiState> = date
         .flatMapLatest { day ->
-            combine(profileRepository.profile, entryRepository.entriesFor(day)) { profile, entries ->
+            combine(
+                profileRepository.profile,
+                entryRepository.entriesFor(day),
+                library.favorites,
+            ) { profile, entries, favorites ->
                 val summary = profile?.let {
                     GoalCalculator.daySummary(
                         targets = GoalCalculator.targets(it, day.year),
@@ -63,6 +73,7 @@ class TodayViewModel(
                         val list = byMeal[meal].orEmpty()
                         MealGroup(meal, list, list.map(FoodEntry::nutrients).sum())
                     },
+                    favoriteNames = favorites.map { it.name.lowercase() }.toSet(),
                 )
             }
         }
@@ -78,6 +89,15 @@ class TodayViewModel(
 
     fun delete(entry: FoodEntry) {
         viewModelScope.launch { entryRepository.delete(entry.id) }
+    }
+
+    /** @return true wenn der Eintrag jetzt Favorit ist. */
+    fun toggleFavorite(entry: FoodEntry): Boolean {
+        val nowFavorite = !uiState.value.isFavorite(entry)
+        viewModelScope.launch {
+            if (nowFavorite) library.addFavorite(entry) else library.removeFavoriteByName(entry.name)
+        }
+        return nowFavorite
     }
 
     fun restore(entry: FoodEntry) {

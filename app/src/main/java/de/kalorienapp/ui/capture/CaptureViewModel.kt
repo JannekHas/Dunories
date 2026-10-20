@@ -12,7 +12,10 @@ import de.kalorienapp.capture.FoodAnalyzer
 import de.kalorienapp.data.remote.gemini.GeminiError
 import de.kalorienapp.data.remote.gemini.GeminiException
 import de.kalorienapp.data.repository.FoodEntryRepository
+import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.domain.model.EntrySource
+import de.kalorienapp.domain.model.FavoriteFood
+import de.kalorienapp.domain.model.FrequentFood
 import de.kalorienapp.domain.model.FoodDraft
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
@@ -21,6 +24,9 @@ import de.kalorienapp.ui.navigation.CaptureRoute
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -39,6 +45,7 @@ sealed interface CaptureStep {
     data object TextInput : CaptureStep
     data class Analyzing(val stage: AnalysisStage) : CaptureStep
     data class UnknownBarcode(val barcode: String) : CaptureStep
+    data class QuickPick(val selected: Set<String> = emptySet()) : CaptureStep
     data class Failed(val error: CaptureError) : CaptureStep
     data class Proposal(val items: List<ProposalItem>, val expandedId: Long?) : CaptureStep {
         val canSave: Boolean get() = items.isNotEmpty() && items.all { it.form.isValid }
@@ -55,6 +62,7 @@ class CaptureViewModel(
     savedStateHandle: SavedStateHandle,
     private val analyzer: FoodAnalyzer,
     private val repository: FoodEntryRepository,
+    private val library: FoodLibraryRepository,
 ) : ViewModel() {
 
     private val route = savedStateHandle.toRoute<CaptureRoute>()
@@ -63,6 +71,16 @@ class CaptureViewModel(
         CaptureUiState(mealType = MealType.fromRouteArg(route.mealType) ?: MealType.forHour(LocalTime.now().hour)),
     )
     val state: StateFlow<CaptureUiState> = _state.asStateFlow()
+
+    val favorites: StateFlow<List<FavoriteFood>> =
+        library.favorites.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Häufig gegessen – ohne Lebensmittel, die schon Favorit sind. */
+    val frequent: StateFlow<List<FrequentFood>> =
+        combine(library.frequent(), library.favorites) { frequent, favorites ->
+            val favoriteNames = favorites.map { it.name.lowercase() }.toSet()
+            frequent.filterNot { it.name.lowercase() in favoriteNames }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Letzte Eingabe – für „Erneut versuchen“. */
     private sealed interface Input {
@@ -85,6 +103,30 @@ class CaptureViewModel(
     }
 
     fun showTextInput() = setStep(CaptureStep.TextInput)
+
+    // --- Schnellauswahl (Favoriten / häufig gegessen) ---
+
+    fun showQuickPick() = setStep(CaptureStep.QuickPick())
+
+    fun toggleQuickPick(key: String) = _state.update { s ->
+        val step = s.step as? CaptureStep.QuickPick ?: return@update s
+        val selected = if (key in step.selected) step.selected - key else step.selected + key
+        s.copy(step = step.copy(selected = selected))
+    }
+
+    fun removeFavorite(id: Long) {
+        viewModelScope.launch { library.removeFavorite(id) }
+    }
+
+    fun confirmQuickPick() {
+        val step = _state.value.step as? CaptureStep.QuickPick ?: return
+        val drafts = favorites.value.filter { favoriteKey(it) in step.selected }.map {
+            FoodDraft(it.name, it.amount, it.unit, it.per100, EntrySource.MANUAL)
+        } + frequent.value.filter { frequentKey(it) in step.selected }.map {
+            FoodDraft(it.name, it.amount, it.unit, it.per100, EntrySource.MANUAL)
+        }
+        if (drafts.isNotEmpty()) setStep(proposalOf(drafts))
+    }
 
     fun onDescriptionChange(text: String) = _state.update { it.copy(description = text) }
 
@@ -179,6 +221,11 @@ class CaptureViewModel(
         }
         // Einzelne Komponente (z. B. Barcode) direkt aufgeklappt, damit die Menge sofort eingetragen werden kann.
         return CaptureStep.Proposal(items, expandedId = items.singleOrNull()?.id)
+    }
+
+    companion object {
+        fun favoriteKey(f: FavoriteFood) = "fav:${f.id}"
+        fun frequentKey(f: FrequentFood) = "freq:${f.name.lowercase()}|${f.unit}"
     }
 
     private fun setStep(step: CaptureStep) = _state.update { it.copy(step = step) }

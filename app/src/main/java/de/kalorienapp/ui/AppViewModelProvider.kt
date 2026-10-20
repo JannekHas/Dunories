@@ -15,7 +15,11 @@ import de.kalorienapp.ui.today.TodayViewModel
 object AppViewModelProvider {
     val Factory = viewModelFactory {
         initializer {
-            TodayViewModel(container().profileRepository, container().foodEntryRepository)
+            TodayViewModel(
+                container().profileRepository,
+                container().foodEntryRepository,
+                container().foodLibraryRepository,
+            )
         }
         initializer {
             ProfileViewModel(container().profileRepository)
@@ -24,7 +28,12 @@ object AppViewModelProvider {
             EntryEditViewModel(createSavedStateHandle(), container().foodEntryRepository)
         }
         initializer {
-            CaptureViewModel(createSavedStateHandle(), container().foodAnalyzer, container().foodEntryRepository)
+            CaptureViewModel(
+                createSavedStateHandle(),
+                container().foodAnalyzer,
+                container().foodEntryRepository,
+                container().foodLibraryRepository,
+            )
         }
     }
 

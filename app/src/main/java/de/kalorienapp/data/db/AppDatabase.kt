@@ -6,20 +6,26 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import de.kalorienapp.data.db.dao.DailyActivityDao
+import de.kalorienapp.data.db.dao.FavoriteFoodDao
 import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.db.dao.ProfileDao
+import de.kalorienapp.data.db.entity.DailyActivityEntity
+import de.kalorienapp.data.db.entity.FavoriteFoodEntity
 import de.kalorienapp.data.db.entity.FoodEntryEntity
 import de.kalorienapp.data.db.entity.ProfileEntity
 
 /** Schemaänderungen nur mit Versionserhöhung und Migration (Schemas liegen in app/schemas). */
 @Database(
-    entities = [ProfileEntity::class, FoodEntryEntity::class],
-    version = 2,
+    entities = [ProfileEntity::class, FoodEntryEntity::class, FavoriteFoodEntity::class, DailyActivityEntity::class],
+    version = 3,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun foodEntryDao(): FoodEntryDao
+    abstract fun favoriteFoodDao(): FavoriteFoodDao
+    abstract fun dailyActivityDao(): DailyActivityDao
 
     companion object {
         /** v2: Mengeneinheit (g/ml) und optionale Zusatznährwerte. */
@@ -33,9 +39,43 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v3: Favoriten und Tageswerte der aktiven Kalorien (Health Connect). */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS favorite_food (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL,
+                        amount REAL NOT NULL,
+                        unit TEXT NOT NULL,
+                        kcal REAL NOT NULL,
+                        proteinG REAL NOT NULL,
+                        carbsG REAL NOT NULL,
+                        fatG REAL NOT NULL,
+                        saturatedFatG REAL,
+                        sugarG REAL,
+                        fiberG REAL,
+                        saltG REAL,
+                        createdAt INTEGER NOT NULL
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS daily_activity (
+                        dateEpochDay INTEGER PRIMARY KEY NOT NULL,
+                        activeKcal INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                    """.trimIndent(),
+                )
+            }
+        }
+
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "kalorien.db")
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
     }
 }
