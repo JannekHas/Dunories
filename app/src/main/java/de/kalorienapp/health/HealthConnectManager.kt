@@ -7,8 +7,11 @@ import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.aggregate.AggregateMetric
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
+import androidx.health.connect.client.records.ExerciseSessionRecord
+import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.request.AggregateRequest
+import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Energy
 import java.time.Duration
@@ -27,8 +30,16 @@ class HealthConnectManager(private val context: Context) {
     private val activePermission = HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class)
     private val totalPermission = HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class)
 
-    /** Angefragte Berechtigungen; „aktive Kalorien“ reicht, „gesamt“ ist der Fallback (z. B. Samsung Health). */
-    val permissions: Set<String> = setOf(activePermission, totalPermission)
+    private val calorieReadPermissions = setOf(activePermission, totalPermission)
+
+    /**
+     * Angefragte Berechtigungen: „aktive Kalorien“ reicht, „gesamt“ ist der Fallback (z. B. Samsung Health).
+     * Training und Schritte nur für die Diagnose (welche Daten liefert die Quell-App überhaupt?).
+     */
+    val permissions: Set<String> = calorieReadPermissions + setOf(
+        HealthPermission.getReadPermission(ExerciseSessionRecord::class),
+        HealthPermission.getReadPermission(StepsRecord::class),
+    )
 
     fun availability(): HealthConnectAvailability = when (HealthConnectClient.getSdkStatus(context)) {
         HealthConnectClient.SDK_AVAILABLE -> HealthConnectAvailability.AVAILABLE
@@ -39,12 +50,12 @@ class HealthConnectManager(private val context: Context) {
     fun permissionContract(): ActivityResultContract<Set<String>, Set<String>> =
         PermissionController.createRequestPermissionResultContract()
 
-    private val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
+    internal val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
 
-    private suspend fun grantedPermissions(): Set<String> = client.permissionController.getGrantedPermissions()
+    internal suspend fun grantedPermissions(): Set<String> = client.permissionController.getGrantedPermissions()
 
     /** true, wenn mindestens eine der beiden Kalorien-Berechtigungen erteilt ist. */
-    suspend fun hasPermission(): Boolean = grantedPermissions().any { it in permissions }
+    suspend fun hasPermission(): Boolean = grantedPermissions().any { it in calorieReadPermissions }
 
     /** Liest aktive und gesamte verbrannte Kalorien für [date] (bis jetzt, falls heute). */
     suspend fun readCalories(date: LocalDate, now: Instant = Instant.now()): CaloriesReading {
@@ -60,10 +71,15 @@ class HealthConnectManager(private val context: Context) {
         }
         if (metrics.isEmpty()) return CaloriesReading(null, null)
 
-        val result = client.aggregate(AggregateRequest(metrics, TimeRangeFilter.between(start, end)))
+        val range = TimeRangeFilter.between(start, end)
+        val result = client.aggregate(AggregateRequest(metrics, range))
+        // Health Connect liefert für „gesamt“ auch ohne einen einzigen Datensatz einen geschätzten
+        // Grundumsatz (im Emulator z. B. 1564 kcal/Tag). Nur echte Datensätze einer App zählen.
+        val hasTotalRecords = totalPermission in granted &&
+            client.readRecords(ReadRecordsRequest(TotalCaloriesBurnedRecord::class, range, pageSize = 1)).records.isNotEmpty()
         return CaloriesReading(
             activeKcal = result[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories,
-            totalKcal = result[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories,
+            totalKcal = result[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories?.takeIf { hasTotalRecords },
         )
     }
 

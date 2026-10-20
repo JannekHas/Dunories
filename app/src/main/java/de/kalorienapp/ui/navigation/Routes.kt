@@ -11,6 +11,9 @@ data object TodayRoute
 @Serializable
 data object ProfileRoute
 
+@Serializable
+data object HealthDiagnosticsRoute
+
 /** Ein-Foto-Erfassung (Kamera/Galerie/Text) für [epochDay]; mealType = optionale Vorauswahl. */
 @Serializable
 data class CaptureRoute(

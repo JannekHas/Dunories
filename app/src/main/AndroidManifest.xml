@@ -6,9 +6,12 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
-    <!-- Health Connect: nur lesen, nur verbrannte Kalorien. -->
+    <!-- Health Connect: nur lesen. Gezählt werden nur verbrannte Kalorien. -->
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+    <!-- Nur für die Diagnose-Seite: zeigt, welche Daten die Quell-App liefert. -->
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
 
     <!-- Health-Connect-App auf Android 13 und älter finden. -->
     <queries>

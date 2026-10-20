@@ -201,6 +201,12 @@
     <string name="health_connect_button">Mit Health Connect verbinden</string>
     <string name="health_install_button">Health Connect installieren</string>
     <string name="health_privacy_title">Health Connect &amp; Datenschutz</string>
-    <string name="health_privacy_text">KalorienApp liest aus Health Connect ausschließlich deine verbrannten Kalorien (aktiv und gesamt), um sie deinem Tagesziel gutzuschreiben. Die Werte bleiben lokal auf deinem Handy, werden nicht hochgeladen und nicht an Dritte weitergegeben. Die App schreibt keine Daten in Health Connect.</string>
+    <string name="health_privacy_text">KalorienApp liest aus Health Connect deine verbrannten Kalorien (aktiv und gesamt), um sie deinem Tagesziel gutzuschreiben. Trainings und Schritte werden nur auf der Diagnose-Seite gezählt, um Verbindungsprobleme zu finden. Die Werte bleiben lokal auf deinem Handy, werden nicht hochgeladen und nicht an Dritte weitergegeben. Die App schreibt keine Daten in Health Connect.</string>
     <string name="close">Schließen</string>
+    <string name="health_diag_open">Health Connect prüfen</string>
+    <string name="health_diag_title">Health-Connect-Diagnose</string>
+    <string name="health_diag_intro">Zeigt, welche Daten Health Connect für die letzten 30 Tage liefert und von welcher App sie stammen. Über „Kopieren“ kannst du das Ergebnis weitergeben.</string>
+    <string name="health_diag_copy">Kopieren</string>
+    <string name="health_diag_reload">Neu laden</string>
+    <string name="health_diag_grant_all">Alle Berechtigungen erteilen</string>
 </resources>
