@@ -13,8 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -133,29 +130,15 @@ fun EntryEditScreen(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 8.dp),
             )
-            NutrientInput(state, NutrientField.KCAL, viewModel, Modifier.fillMaxWidth())
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                NutrientInput(state, NutrientField.PROTEIN, viewModel, Modifier.weight(1f))
-                NutrientInput(state, NutrientField.CARBS, viewModel, Modifier.weight(1f))
-                NutrientInput(state, NutrientField.FAT, viewModel, Modifier.weight(1f))
-            }
-
-            TextButton(onClick = viewModel::toggleExtras) {
-                Icon(
-                    if (state.showExtras) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                    contentDescription = null,
+            NutrientField.entries.forEach { field ->
+                NutrientInput(
+                    state = state,
+                    field = field,
+                    viewModel = viewModel,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = if (field.subItem) 24.dp else 0.dp),
                 )
-                Text(stringResource(R.string.entry_more_nutrients), modifier = Modifier.padding(start = 8.dp))
-            }
-            if (state.showExtras) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    NutrientInput(state, NutrientField.SATURATED_FAT, viewModel, Modifier.weight(1f))
-                    NutrientInput(state, NutrientField.SUGAR, viewModel, Modifier.weight(1f))
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    NutrientInput(state, NutrientField.FIBER, viewModel, Modifier.weight(1f))
-                    NutrientInput(state, NutrientField.SALT, viewModel, Modifier.weight(1f))
-                }
             }
 
             TotalCard(state.amountValue, unitLabel, state.totalNutrients())
@@ -184,7 +167,8 @@ private fun NutrientInput(
         label = stringResource(field.labelRes),
         suffix = stringResource(if (field == NutrientField.KCAL) R.string.unit_kcal else R.string.unit_g),
         isError = state.isError(field),
-        errorText = if (field == NutrientField.KCAL) stringResource(R.string.error_number) else null,
+        errorText = stringResource(R.string.error_number),
+        imeAction = if (field == NutrientField.entries.last()) ImeAction.Done else ImeAction.Next,
         modifier = modifier,
     )
 }
@@ -223,9 +207,9 @@ private fun String.trimDecimalZero() = removeSuffix(",0")
 
 private val NutrientField.labelRes: Int
     get() = when (this) {
-        NutrientField.KCAL -> R.string.entry_kcal
-        NutrientField.PROTEIN -> R.string.protein
-        NutrientField.CARBS -> R.string.carbs_short
+        NutrientField.KCAL -> R.string.nutrient_energy
+        NutrientField.PROTEIN -> R.string.nutrient_protein
+        NutrientField.CARBS -> R.string.carbs
         NutrientField.FAT -> R.string.fat
         NutrientField.SATURATED_FAT -> R.string.nutrient_saturated_fat
         NutrientField.SUGAR -> R.string.nutrient_sugar

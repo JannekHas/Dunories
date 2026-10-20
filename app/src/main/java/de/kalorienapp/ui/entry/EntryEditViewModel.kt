@@ -21,10 +21,12 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 
-/** Nährwertfelder im Editor; [extra] = nur im ausklappbaren Bereich „Weitere Nährwerte“. */
-enum class NutrientField(val extra: Boolean = false) {
-    KCAL, PROTEIN, CARBS, FAT,
-    SATURATED_FAT(extra = true), SUGAR(extra = true), FIBER(extra = true), SALT(extra = true),
+/**
+ * Nährwertfelder in der Reihenfolge der Nährwerttabelle auf Verpackungen,
+ * damit man sie direkt abtippen kann. [subItem] = „davon …“-Zeile (eingerückt).
+ */
+enum class NutrientField(val subItem: Boolean = false) {
+    KCAL, FAT, SATURATED_FAT(subItem = true), CARBS, SUGAR(subItem = true), FIBER, PROTEIN, SALT,
 }
 
 /** Eingabezustand. Alle Nährwertfelder gelten pro 100 g bzw. 100 ml. */
@@ -36,7 +38,6 @@ data class EntryFormState(
     val amount: String = "",
     val unit: AmountUnit = AmountUnit.GRAM,
     val per100: Map<NutrientField, String> = emptyMap(),
-    val showExtras: Boolean = false,
 ) {
     val amountValue: Double? get() = amount.parseDecimal()?.takeIf { it > 0 }
     val amountError get() = amount.isNotBlank() && amountValue == null
@@ -117,7 +118,6 @@ class EntryEditViewModel(
             amount = amount.toInputString(),
             unit = entry.unit,
             per100 = per100,
-            showExtras = per100.keys.any { it.extra },
         )
     }
 
@@ -131,8 +131,6 @@ class EntryEditViewModel(
 
     fun onNutrientChange(field: NutrientField, value: String) =
         _state.update { it.copy(per100 = it.per100 + (field to value)) }
-
-    fun toggleExtras() = _state.update { it.copy(showExtras = !it.showExtras) }
 
     fun save(onDone: () -> Unit) {
         val form = _state.value

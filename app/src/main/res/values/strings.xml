@@ -124,12 +124,12 @@
     <string name="entry_name">Bezeichnung</string>
     <string name="entry_meal">Mahlzeit</string>
     <string name="entry_amount">Menge</string>
-    <string name="entry_kcal">Kalorien</string>
+    <string name="nutrient_energy">Energie</string>
     <string name="entry_per_100">Nährwerte pro 100 %1$s</string>
-    <string name="entry_more_nutrients">Weitere Nährwerte</string>
     <string name="entry_total_for">Gezählt für %1$s %2$s</string>
     <string name="entry_total_missing_amount">Gib eine Menge ein, um die Nährwerte für deine Portion zu sehen.</string>
-    <string name="nutrient_saturated_fat">davon gesättigt</string>
+    <string name="nutrient_saturated_fat">davon gesättigte Fettsäuren</string>
+    <string name="nutrient_protein">Eiweiß</string>
     <string name="nutrient_sugar">davon Zucker</string>
     <string name="nutrient_fiber">Ballaststoffe</string>
     <string name="nutrient_salt">Salz</string>

@@ -29,6 +29,7 @@ fun NumberField(
     isError: Boolean = false,
     errorText: String? = null,
     decimal: Boolean = true,
+    imeAction: ImeAction = ImeAction.Next,
 ) {
     OutlinedTextField(
         value = value,
@@ -46,7 +47,7 @@ fun NumberField(
         },
         keyboardOptions = KeyboardOptions(
             keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number,
-            imeAction = ImeAction.Next,
+            imeAction = imeAction,
         ),
     )
 }
