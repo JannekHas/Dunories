@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KalorienApp</string>
+
+    <!-- Allgemein -->
+    <string name="save">Speichern</string>
+    <string name="back">Zurück</string>
+    <string name="next">Weiter</string>
+    <string name="finish">Fertig</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="delete">Löschen</string>
+    <string name="undo">Rückgängig</string>
+    <string name="no">Nein</string>
+    <string name="yes_connect">Ja, verbinden</string>
+    <string name="more_options">Weitere Optionen</string>
+    <string name="auto_value">Auto: %1$s</string>
+    <string name="error_number">Bitte eine gültige Zahl eingeben</string>
+
+    <!-- Einheiten & Nährwerte -->
+    <string name="unit_years">Jahre</string>
+    <string name="unit_cm">cm</string>
+    <string name="unit_kg">kg</string>
+    <string name="unit_g">g</string>
+    <string name="unit_kcal">kcal</string>
+    <string name="unit_g_per_kg">g/kg</string>
+    <string name="kcal_value">%1$s kcal</string>
+    <string name="protein">Protein</string>
+    <string name="carbs">Kohlenhydrate</string>
+    <string name="carbs_short">KH</string>
+    <string name="fat">Fett</string>
+    <string name="macro_progress_value">%1$s / %2$s g</string>
+
+    <!-- Navigation -->
+    <string name="nav_today">Heute</string>
+    <string name="nav_profile">Profil</string>
+
+    <!-- Auswahlwerte -->
+    <string name="sex_male">Männlich</string>
+    <string name="sex_female">Weiblich</string>
+    <string name="goal_lose">Abnehmen</string>
+    <string name="goal_maintain">Halten</string>
+    <string name="goal_gain">Zunehmen</string>
+    <string name="pace_lose_slow">Langsam (−300 kcal)</string>
+    <string name="pace_lose_normal">Normal (−500 kcal)</string>
+    <string name="pace_gain_slow">Langsam (+250 kcal)</string>
+    <string name="pace_gain_normal">Normal (+400 kcal)</string>
+    <string name="activity_sedentary">Sitzend</string>
+    <string name="activity_sedentary_desc">Bürojob, kaum Bewegung</string>
+    <string name="activity_light">Leicht aktiv</string>
+    <string name="activity_light_desc">1–3× Sport pro Woche oder viel zu Fuß</string>
+    <string name="activity_moderate">Mäßig aktiv</string>
+    <string name="activity_moderate_desc">3–5× Sport pro Woche</string>
+    <string name="activity_active">Sehr aktiv</string>
+    <string name="activity_active_desc">6–7× Sport pro Woche</string>
+    <string name="activity_very_active">Extrem aktiv</string>
+    <string name="activity_very_active_desc">Körperliche Arbeit plus tägliches Training</string>
+    <string name="meal_breakfast">Frühstück</string>
+    <string name="meal_lunch">Mittagessen</string>
+    <string name="meal_dinner">Abendessen</string>
+    <string name="meal_snack">Snacks</string>
+
+    <!-- Profil -->
+    <string name="profile_title">Profil &amp; Ziele</string>
+    <string name="profile_saved">Profil gespeichert</string>
+    <string name="section_body">Körperdaten</string>
+    <string name="section_goal">Ziel</string>
+    <string name="section_activity">Aktivität</string>
+    <string name="section_targets">Ziele anpassen</string>
+    <string name="profile_sex">Geschlecht</string>
+    <string name="profile_age">Alter</string>
+    <string name="profile_height">Größe</string>
+    <string name="profile_weight">Gewicht</string>
+    <string name="profile_goal">Was möchtest du erreichen?</string>
+    <string name="profile_pace">Tempo</string>
+    <string name="profile_health_connect_question">Samsung Health / Health Connect verbinden?</string>
+    <string name="profile_health_connect_info">Dein Grundbedarf wird mit „sitzend“ berechnet. Deine aktiven Kalorien aus Health Connect kommen täglich dazu, damit Bewegung nicht doppelt zählt. (Die Verbindung wird in einem späteren Update aktiviert.)</string>
+    <string name="profile_activity_level">Wie aktiv bist du im Alltag?</string>
+    <string name="error_age">Alter zwischen 14 und 100</string>
+    <string name="error_height">Größe zwischen 100 und 250 cm</string>
+    <string name="error_weight">Gewicht zwischen 30 und 300 kg</string>
+    <string name="error_protein_per_kg">Wert zwischen 0,5 und 4</string>
+    <string name="error_kcal_override">Wert zwischen 800 und 6000</string>
+
+    <!-- Ziele -->
+    <string name="targets_title">Dein Tagesziel</string>
+    <string name="targets_incomplete">Bitte Körperdaten vollständig ausfüllen.</string>
+    <string name="targets_macros">Protein %1$d g · KH %2$d g · Fett %3$d g</string>
+    <string name="targets_override_hint">Leere Felder werden automatisch berechnet. Trage einen Wert ein, um ihn festzulegen.</string>
+    <string name="targets_protein_per_kg">Protein pro kg Körpergewicht</string>
+    <string name="targets_kcal">Kalorienziel</string>
+    <string name="targets_credit_percent">Gutschrift aktiver Kalorien: %1$d %%</string>
+    <string name="targets_credit_hint">Anteil der verbrannten Kalorien (Health Connect), der deinem Tagesziel gutgeschrieben wird.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Willkommen</string>
+    <string name="onboarding_step">Schritt %1$d von %2$d</string>
+    <string name="onboarding_body_intro">Für die Berechnung deines Kalorienbedarfs brauchen wir ein paar Angaben.</string>
+    <string name="onboarding_goal_intro">Was ist dein Ziel?</string>
+    <string name="onboarding_activity_intro">Wie soll deine Bewegung berücksichtigt werden?</string>
+    <string name="onboarding_targets_intro">Das sind deine berechneten Ziele. Du kannst sie jederzeit im Profil anpassen.</string>
+
+    <!-- Tagesübersicht -->
+    <string name="today">Heute</string>
+    <string name="yesterday">Gestern</string>
+    <string name="tomorrow">Morgen</string>
+    <string name="previous_day">Vorheriger Tag</string>
+    <string name="next_day">Nächster Tag</string>
+    <string name="kcal_remaining">Verbleibend</string>
+    <string name="kcal_over">Über dem Ziel</string>
+    <string name="summary_target">Ziel</string>
+    <string name="summary_eaten">Gegessen</string>
+    <string name="summary_active">Aktiv</string>
+    <string name="add_entry">Eintrag hinzufügen</string>
+    <string name="add_short">+ Hinzufügen</string>
+    <string name="meal_empty">Noch nichts eingetragen</string>
+    <string name="entry_macros">P %1$s g · KH %2$s g · F %3$s g</string>
+    <string name="entry_amount_prefix">%1$s g · %2$s</string>
+    <string name="entry_deleted">„%1$s“ gelöscht</string>
+
+    <!-- Eintrag bearbeiten -->
+    <string name="entry_new_title">Neuer Eintrag</string>
+    <string name="entry_edit_title">Eintrag bearbeiten</string>
+    <string name="entry_name">Bezeichnung</string>
+    <string name="entry_meal">Mahlzeit</string>
+    <string name="entry_amount">Menge (optional)</string>
+    <string name="entry_kcal">Kalorien</string>
+    <string name="entry_scale_hint">Wenn Menge und Nährwerte eingetragen sind, werden die Nährwerte beim Ändern der Menge automatisch mitskaliert.</string>
+</resources>

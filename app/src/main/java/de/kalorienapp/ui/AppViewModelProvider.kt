@@ -1,0 +1,28 @@
+package de.kalorienapp.ui
+
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import de.kalorienapp.KalorienApplication
+import de.kalorienapp.ui.entry.EntryEditViewModel
+import de.kalorienapp.ui.profile.ProfileViewModel
+import de.kalorienapp.ui.today.TodayViewModel
+
+/** Factory für alle ViewModels – holt Abhängigkeiten aus dem [de.kalorienapp.AppContainer]. */
+object AppViewModelProvider {
+    val Factory = viewModelFactory {
+        initializer {
+            TodayViewModel(container().profileRepository, container().foodEntryRepository)
+        }
+        initializer {
+            ProfileViewModel(container().profileRepository)
+        }
+        initializer {
+            EntryEditViewModel(createSavedStateHandle(), container().foodEntryRepository)
+        }
+    }
+
+    private fun CreationExtras.container() = (this[APPLICATION_KEY] as KalorienApplication).container
+}
