@@ -1,0 +1,21 @@
+# Gradle / Build
+.gradle/
+build/
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Lokale Konfiguration (enthält SDK-Pfad und Gemini-API-Key!)
+local.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Artefakte / Signierung
+*.apk
+*.aab
+*.keystore
+*.jks
