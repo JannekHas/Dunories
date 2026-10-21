@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.repository.ProfileRepository
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.model.DailyTargets
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,9 +34,17 @@ class ProfileViewModel(
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
+    /**
+     * Automatisch speichern, sobald ein Profil existiert (Profil-Screen). Im Onboarding gibt es noch keins –
+     * dort wird erst mit „Fertig“ gespeichert, damit kein halbes Profil entsteht.
+     */
+    private var autoSave = false
+    private var saveJob: Job? = null
+
     init {
         viewModelScope.launch {
             val existing = repository.get()
+            autoSave = existing != null
             val form = existing?.let { ProfileFormState.from(it, currentYear) } ?: ProfileFormState()
             _uiState.value = withTargets(ProfileUiState(form = form, isLoading = false))
         }
@@ -43,6 +52,12 @@ class ProfileViewModel(
 
     fun update(transform: (ProfileFormState) -> ProfileFormState) {
         _uiState.update { withTargets(it.copy(form = transform(it.form))) }
+        if (autoSave) {
+            // Ungültige Zwischenstände (z. B. beim Tippen) werden nicht gespeichert.
+            val profile = _uiState.value.form.toProfile(currentYear) ?: return
+            saveJob?.cancel()
+            saveJob = viewModelScope.launch { repository.save(profile) }
+        }
     }
 
     fun save(onSaved: () -> Unit) {

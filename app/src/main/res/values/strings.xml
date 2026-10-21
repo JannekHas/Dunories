@@ -60,7 +60,7 @@
 
     <!-- Profil -->
     <string name="profile_title">Profil &amp; Ziele</string>
-    <string name="profile_saved">Profil gespeichert</string>
+    <string name="profile_autosave_hint">Änderungen werden automatisch gespeichert.</string>
     <string name="section_body">Körperdaten</string>
     <string name="section_goal">Ziel</string>
     <string name="section_activity">Aktivität</string>
