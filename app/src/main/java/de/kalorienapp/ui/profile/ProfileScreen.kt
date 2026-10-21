@@ -14,7 +14,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,7 +31,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    onOpenHealthDiagnostics: () -> Unit,
     viewModel: ProfileViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -62,11 +60,6 @@ fun ProfileScreen(
             HorizontalDivider()
             SectionTitle(stringResource(R.string.section_activity))
             ActivitySection(state.form, viewModel::update)
-            if (state.form.useHealthConnect == true) {
-                TextButton(onClick = onOpenHealthDiagnostics) {
-                    Text(stringResource(R.string.health_diag_open))
-                }
-            }
             HorizontalDivider()
             SectionTitle(stringResource(R.string.section_targets))
             TargetAdjustmentsSection(state, viewModel::update)

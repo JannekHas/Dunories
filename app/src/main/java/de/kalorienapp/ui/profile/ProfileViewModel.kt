@@ -55,9 +55,7 @@ class ProfileViewModel(
 
     private fun withTargets(state: ProfileUiState): ProfileUiState {
         val form = state.form
-        // Für die Vorschau reichen Körperdaten; HC-Frage noch offen → wie „sitzend“ rechnen.
-        val previewForm = if (form.useHealthConnect == null) form.copy(useHealthConnect = true) else form
-        val profile = previewForm.toProfile(currentYear)
+        val profile = form.toProfile(currentYear)
         return state.copy(
             targets = profile?.let { GoalCalculator.targets(it, currentYear) },
             autoTargets = profile?.let {

@@ -10,7 +10,6 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,7 +29,6 @@ import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
 import de.kalorienapp.ui.components.descriptionRes
 import de.kalorienapp.ui.components.toInputString
-import kotlin.math.roundToInt
 
 typealias FormUpdate = ((ProfileFormState) -> ProfileFormState) -> Unit
 
@@ -104,24 +102,7 @@ fun GoalSection(form: ProfileFormState, onUpdate: FormUpdate) {
 
 @Composable
 fun ActivitySection(form: ProfileFormState, onUpdate: FormUpdate) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.profile_health_connect_question), style = MaterialTheme.typography.labelLarge)
-        ChoiceChips(
-            options = listOf(true, false),
-            selected = form.useHealthConnect,
-            onSelect = { use -> onUpdate { it.copy(useHealthConnect = use) } },
-            label = { stringResource(if (it) R.string.yes_connect else R.string.no) },
-        )
-        when (form.useHealthConnect) {
-            true -> Text(
-                stringResource(R.string.profile_health_connect_info),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            false -> ActivityLevelPicker(form.activityLevel) { level -> onUpdate { it.copy(activityLevel = level) } }
-            null -> Unit
-        }
-    }
+    ActivityLevelPicker(form.activityLevel) { level -> onUpdate { it.copy(activityLevel = level) } }
 }
 
 @Composable
@@ -172,7 +153,7 @@ fun TargetsCard(targets: DailyTargets?, modifier: Modifier = Modifier) {
     }
 }
 
-/** Feineinstellungen: Protein/kg, manuelle Overrides, Gutschrift aktiver Kalorien. */
+/** Feineinstellungen: Protein/kg und manuelle Overrides. */
 @Composable
 fun TargetAdjustmentsSection(state: ProfileUiState, onUpdate: FormUpdate) {
     val form = state.form
@@ -234,24 +215,6 @@ fun TargetAdjustmentsSection(state: ProfileUiState, onUpdate: FormUpdate) {
                 isError = form.fatOverrideError,
                 decimal = false,
                 modifier = Modifier.weight(1f),
-            )
-        }
-        // Gutschrift ist nur mit Health Connect relevant.
-        if (form.useHealthConnect == true) {
-            Text(
-                stringResource(R.string.targets_credit_percent, form.creditPercent),
-                style = MaterialTheme.typography.labelLarge,
-            )
-            Slider(
-                value = form.creditPercent.toFloat(),
-                onValueChange = { v -> onUpdate { it.copy(creditPercent = (v / 5).roundToInt() * 5) } },
-                valueRange = 0f..100f,
-                steps = 19,
-            )
-            Text(
-                stringResource(R.string.targets_credit_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

@@ -63,7 +63,5 @@ data class DailyTargets(
 data class DaySummary(
     val targets: DailyTargets,
     val eaten: Nutrients,
-    val activeKcal: Int,
-    val creditedActiveKcal: Int,
     val remainingKcal: Int,
 )

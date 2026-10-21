@@ -1,6 +1,5 @@
 package de.kalorienapp.domain
 
-import de.kalorienapp.domain.model.ActivityLevel
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.Goal
@@ -27,13 +26,6 @@ object GoalCalculator {
         }
     }
 
-    /**
-     * Mit Health Connect wird immer „sitzend“ gerechnet – die Bewegung kommt
-     * über die aktiven Kalorien dazu und soll nicht doppelt zählen.
-     */
-    fun activityFactor(profile: Profile): Double =
-        if (profile.useHealthConnect) ActivityLevel.SEDENTARY.factor else profile.activityLevel.factor
-
     fun goalAdjustment(goal: Goal, pace: Pace): Int = when (goal) {
         Goal.LOSE -> if (pace == Pace.SLOW) -300 else -500
         Goal.MAINTAIN -> 0
@@ -48,7 +40,7 @@ object GoalCalculator {
     /** Gesamtumsatz (ohne Ziel-Anpassung). */
     fun maintenanceKcal(profile: Profile, currentYear: Int): Double =
         bmr(profile.sex, profile.weightKg, profile.heightCm, profile.ageIn(currentYear)) *
-            activityFactor(profile)
+            profile.activityLevel.factor
 
     fun calculatedKcalTarget(profile: Profile, currentYear: Int): Int =
         (maintenanceKcal(profile, currentYear) + goalAdjustment(profile.goal, profile.pace))
@@ -68,23 +60,10 @@ object GoalCalculator {
         return DailyTargets(kcal = kcal, proteinG = protein, carbsG = carbs, fatG = fat)
     }
 
-    fun creditedActiveKcal(activeKcal: Int, creditPercent: Int): Int =
-        (activeKcal * creditPercent.coerceIn(0, 100) / 100.0).roundToInt()
-
-    /** Verbleibend = Ziel + gutgeschriebene aktive Kalorien − Gegessenes. */
-    fun daySummary(
-        targets: DailyTargets,
-        eaten: Nutrients,
-        activeKcal: Int,
-        creditPercent: Int,
-    ): DaySummary {
-        val credited = creditedActiveKcal(activeKcal, creditPercent)
-        return DaySummary(
-            targets = targets,
-            eaten = eaten,
-            activeKcal = activeKcal,
-            creditedActiveKcal = credited,
-            remainingKcal = (targets.kcal + credited - eaten.kcal).roundToInt(),
-        )
-    }
+    /** Verbleibend = Ziel − Gegessenes (Bewegung steckt im Aktivitätslevel). */
+    fun daySummary(targets: DailyTargets, eaten: Nutrients): DaySummary = DaySummary(
+        targets = targets,
+        eaten = eaten,
+        remainingKcal = (targets.kcal - eaten.kcal).roundToInt(),
+    )
 }

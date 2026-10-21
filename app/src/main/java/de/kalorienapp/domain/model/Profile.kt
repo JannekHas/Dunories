@@ -24,9 +24,7 @@ data class Profile(
     val weightKg: Double,
     val goal: Goal,
     val pace: Pace,
-    val useHealthConnect: Boolean,
     val activityLevel: ActivityLevel,
-    val activeCalorieCreditPercent: Int = DEFAULT_CREDIT_PERCENT,
     val proteinPerKg: Double? = null,
     val kcalTargetOverride: Int? = null,
     val proteinOverrideG: Int? = null,
@@ -34,8 +32,4 @@ data class Profile(
     val carbsOverrideG: Int? = null,
 ) {
     fun ageIn(year: Int): Int = year - birthYear
-
-    companion object {
-        const val DEFAULT_CREDIT_PERCENT = 60
-    }
 }

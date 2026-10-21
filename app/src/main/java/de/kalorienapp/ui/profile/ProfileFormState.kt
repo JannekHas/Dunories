@@ -16,9 +16,7 @@ data class ProfileFormState(
     val weightKg: String = "",
     val goal: Goal = Goal.LOSE,
     val pace: Pace = Pace.SLOW,
-    val useHealthConnect: Boolean? = null,
     val activityLevel: ActivityLevel = ActivityLevel.LIGHT,
-    val creditPercent: Int = Profile.DEFAULT_CREDIT_PERCENT,
     val proteinPerKg: String = "",
     val kcalOverride: String = "",
     val proteinOverride: String = "",
@@ -46,7 +44,7 @@ data class ProfileFormState(
         get() = !proteinPerKgError && !kcalOverrideError && !proteinOverrideError &&
             !fatOverrideError && !carbsOverrideError
 
-    val isValid: Boolean get() = bodyDataValid && useHealthConnect != null && targetsValid
+    val isValid: Boolean get() = bodyDataValid && targetsValid
 
     fun toProfile(currentYear: Int): Profile? {
         if (!isValid) return null
@@ -57,9 +55,7 @@ data class ProfileFormState(
             weightKg = weightValue!!,
             goal = goal,
             pace = pace,
-            useHealthConnect = useHealthConnect!!,
             activityLevel = activityLevel,
-            activeCalorieCreditPercent = creditPercent,
             proteinPerKg = proteinPerKg.parseDecimal(),
             kcalTargetOverride = kcalOverride.toIntOrNull(),
             proteinOverrideG = proteinOverride.toIntOrNull(),
@@ -76,9 +72,7 @@ data class ProfileFormState(
             weightKg = profile.weightKg.toInputString(),
             goal = profile.goal,
             pace = profile.pace,
-            useHealthConnect = profile.useHealthConnect,
             activityLevel = profile.activityLevel,
-            creditPercent = profile.activeCalorieCreditPercent,
             proteinPerKg = profile.proteinPerKg?.toInputString() ?: "",
             kcalOverride = profile.kcalTargetOverride?.toString() ?: "",
             proteinOverride = profile.proteinOverrideG?.toString() ?: "",

@@ -10,8 +10,6 @@
     <string name="edit">Bearbeiten</string>
     <string name="delete">Löschen</string>
     <string name="undo">Rückgängig</string>
-    <string name="no">Nein</string>
-    <string name="yes_connect">Ja, verbinden</string>
     <string name="more_options">Weitere Optionen</string>
     <string name="auto_value">Auto: %1$s</string>
     <string name="error_number">Bitte eine gültige Zahl eingeben</string>
@@ -73,8 +71,6 @@
     <string name="profile_weight">Gewicht</string>
     <string name="profile_goal">Was möchtest du erreichen?</string>
     <string name="profile_pace">Tempo</string>
-    <string name="profile_health_connect_question">Samsung Health / Health Connect verbinden?</string>
-    <string name="profile_health_connect_info">Dein Grundbedarf wird mit „sitzend“ berechnet. Deine aktiven Kalorien aus Health Connect (z. B. von Samsung Health) kommen täglich dazu, damit Bewegung nicht doppelt zählt. Die Berechtigung erteilst du anschließend in der Tagesübersicht.</string>
     <string name="profile_activity_level">Wie aktiv bist du im Alltag?</string>
     <string name="error_age">Alter zwischen 14 und 100</string>
     <string name="error_height">Größe zwischen 100 und 250 cm</string>
@@ -89,15 +85,13 @@
     <string name="targets_override_hint">Leere Felder werden automatisch berechnet. Trage einen Wert ein, um ihn festzulegen.</string>
     <string name="targets_protein_per_kg">Protein pro kg Körpergewicht</string>
     <string name="targets_kcal">Kalorienziel</string>
-    <string name="targets_credit_percent">Gutschrift aktiver Kalorien: %1$d %%</string>
-    <string name="targets_credit_hint">Anteil der verbrannten Kalorien (Health Connect), der deinem Tagesziel gutgeschrieben wird.</string>
 
     <!-- Onboarding -->
     <string name="onboarding_title">Willkommen</string>
     <string name="onboarding_step">Schritt %1$d von %2$d</string>
     <string name="onboarding_body_intro">Für die Berechnung deines Kalorienbedarfs brauchen wir ein paar Angaben.</string>
     <string name="onboarding_goal_intro">Was ist dein Ziel?</string>
-    <string name="onboarding_activity_intro">Wie soll deine Bewegung berücksichtigt werden?</string>
+    <string name="onboarding_activity_intro">Wähle, wie aktiv du im Alltag inklusive Sport bist – daraus ergibt sich dein Kalorienbedarf.</string>
     <string name="onboarding_targets_intro">Das sind deine berechneten Ziele. Du kannst sie jederzeit im Profil anpassen.</string>
 
     <!-- Tagesübersicht -->
@@ -110,7 +104,6 @@
     <string name="kcal_over">Über dem Ziel</string>
     <string name="summary_target">Ziel</string>
     <string name="summary_eaten">Gegessen</string>
-    <string name="summary_active">Aktiv</string>
     <string name="add_entry">Essen erfassen</string>
     <string name="add_short">+ Hinzufügen</string>
     <string name="meal_empty">Noch nichts eingetragen</string>
@@ -193,20 +186,4 @@
     <string name="favorite_remove">Aus Favoriten entfernen</string>
     <string name="favorite_added">„%1$s“ als Favorit gespeichert</string>
     <string name="favorite_removed">„%1$s“ aus Favoriten entfernt</string>
-    <!-- Health Connect -->
-    <string name="health_hint_no_permission">Health Connect ist noch nicht verbunden – deine aktiven Kalorien werden noch nicht berücksichtigt.</string>
-    <string name="health_hint_needs_install">Für die aktiven Kalorien wird die App „Health Connect“ benötigt (oder ein Update davon).</string>
-    <string name="health_hint_not_supported">Health Connect wird auf diesem Gerät nicht unterstützt. Stell im Profil ein Aktivitätslevel ein.</string>
-    <string name="health_hint_error">Die aktiven Kalorien konnten gerade nicht gelesen werden.</string>
-    <string name="health_connect_button">Mit Health Connect verbinden</string>
-    <string name="health_install_button">Health Connect installieren</string>
-    <string name="health_privacy_title">Health Connect &amp; Datenschutz</string>
-    <string name="health_privacy_text">KalorienApp liest aus Health Connect deine verbrannten Kalorien (aktiv und gesamt), um sie deinem Tagesziel gutzuschreiben. Trainings und Schritte werden nur auf der Diagnose-Seite gezählt, um Verbindungsprobleme zu finden. Die Werte bleiben lokal auf deinem Handy, werden nicht hochgeladen und nicht an Dritte weitergegeben. Die App schreibt keine Daten in Health Connect.</string>
-    <string name="close">Schließen</string>
-    <string name="health_diag_open">Health Connect prüfen</string>
-    <string name="health_diag_title">Health-Connect-Diagnose</string>
-    <string name="health_diag_intro">Zeigt, welche Daten Health Connect für die letzten 30 Tage liefert und von welcher App sie stammen. Über „Kopieren“ kannst du das Ergebnis weitergeben.</string>
-    <string name="health_diag_copy">Kopieren</string>
-    <string name="health_diag_reload">Neu laden</string>
-    <string name="health_diag_grant_all">Alle Berechtigungen erteilen</string>
 </resources>

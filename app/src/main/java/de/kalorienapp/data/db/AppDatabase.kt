@@ -6,26 +6,23 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import de.kalorienapp.data.db.dao.DailyActivityDao
 import de.kalorienapp.data.db.dao.FavoriteFoodDao
 import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.db.dao.ProfileDao
-import de.kalorienapp.data.db.entity.DailyActivityEntity
 import de.kalorienapp.data.db.entity.FavoriteFoodEntity
 import de.kalorienapp.data.db.entity.FoodEntryEntity
 import de.kalorienapp.data.db.entity.ProfileEntity
 
 /** Schemaänderungen nur mit Versionserhöhung und Migration (Schemas liegen in app/schemas). */
 @Database(
-    entities = [ProfileEntity::class, FoodEntryEntity::class, FavoriteFoodEntity::class, DailyActivityEntity::class],
-    version = 4,
+    entities = [ProfileEntity::class, FoodEntryEntity::class, FavoriteFoodEntity::class],
+    version = 5,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun foodEntryDao(): FoodEntryDao
     abstract fun favoriteFoodDao(): FavoriteFoodDao
-    abstract fun dailyActivityDao(): DailyActivityDao
 
     companion object {
         /** v2: Mengeneinheit (g/ml) und optionale Zusatznährwerte. */
@@ -73,11 +70,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        /**
-         * v4: Spalten steps, source, manual in daily_activity. Sie stammen aus einer verworfenen
-         * Schritte-/Manuell-Funktion und sind ungenutzt; die Version bleibt, damit bereits
-         * installierte Apps mit v4-Datenbank nicht abstürzen.
-         */
+        /** v4: Zusatzspalten in daily_activity (Tabelle entfällt mit v5 wieder). */
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE daily_activity ADD COLUMN steps INTEGER")
@@ -86,9 +79,51 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v5: Health Connect entfernt (Samsung Health liefert dort keine Kalorien).
+         * Tabelle daily_activity weg; Profil ohne useHealthConnect/activeCalorieCreditPercent.
+         * SQLite auf API 28 kennt kein DROP COLUMN → Profil-Tabelle neu anlegen und umkopieren.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS daily_activity")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS profile_new (
+                        id INTEGER NOT NULL,
+                        sex TEXT NOT NULL,
+                        birthYear INTEGER NOT NULL,
+                        heightCm REAL NOT NULL,
+                        weightKg REAL NOT NULL,
+                        goal TEXT NOT NULL,
+                        pace TEXT NOT NULL,
+                        activityLevel TEXT NOT NULL,
+                        proteinPerKg REAL,
+                        kcalTargetOverride INTEGER,
+                        proteinOverrideG INTEGER,
+                        fatOverrideG INTEGER,
+                        carbsOverrideG INTEGER,
+                        PRIMARY KEY(id)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO profile_new (id, sex, birthYear, heightCm, weightKg, goal, pace, activityLevel,
+                        proteinPerKg, kcalTargetOverride, proteinOverrideG, fatOverrideG, carbsOverrideG)
+                    SELECT id, sex, birthYear, heightCm, weightKg, goal, pace, activityLevel,
+                        proteinPerKg, kcalTargetOverride, proteinOverrideG, fatOverrideG, carbsOverrideG
+                    FROM profile
+                    """.trimIndent(),
+                )
+                db.execSQL("DROP TABLE profile")
+                db.execSQL("ALTER TABLE profile_new RENAME TO profile")
+            }
+        }
+
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "kalorien.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
     }
 }

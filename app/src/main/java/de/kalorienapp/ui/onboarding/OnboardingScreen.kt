@@ -56,7 +56,7 @@ fun OnboardingScreen(
     val stepValid = when (step) {
         0 -> state.form.bodyDataValid
         1 -> true
-        2 -> state.form.useHealthConnect != null
+        2 -> true
         else -> state.form.isValid
     }
 

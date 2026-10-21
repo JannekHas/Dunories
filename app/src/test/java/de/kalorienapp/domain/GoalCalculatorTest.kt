@@ -21,7 +21,6 @@ class GoalCalculatorTest {
         weightKg: Double = 80.0,
         goal: Goal = Goal.MAINTAIN,
         pace: Pace = Pace.NORMAL,
-        useHealthConnect: Boolean = false,
         activityLevel: ActivityLevel = ActivityLevel.SEDENTARY,
     ) = Profile(
         sex = sex,
@@ -30,7 +29,6 @@ class GoalCalculatorTest {
         weightKg = weightKg,
         goal = goal,
         pace = pace,
-        useHealthConnect = useHealthConnect,
         activityLevel = activityLevel,
     )
 
@@ -47,15 +45,11 @@ class GoalCalculatorTest {
     }
 
     @Test
-    fun `manuelles Aktivitaetslevel wird verwendet`() {
+    fun `aktivitaetslevel bestimmt den gesamtumsatz`() {
+        // 1780 * 1,55 = 2759 kcal
         val p = profile(activityLevel = ActivityLevel.MODERATE)
-        assertEquals(1.55, GoalCalculator.activityFactor(p), 0.0001)
-    }
-
-    @Test
-    fun `mit Health Connect wird immer sitzend gerechnet`() {
-        val p = profile(useHealthConnect = true, activityLevel = ActivityLevel.VERY_ACTIVE)
-        assertEquals(1.2, GoalCalculator.activityFactor(p), 0.0001)
+        assertEquals(2759.0, GoalCalculator.maintenanceKcal(p, year), 0.001)
+        assertEquals(2759, GoalCalculator.targets(p, year).kcal)
     }
 
     @Test
@@ -109,22 +103,9 @@ class GoalCalculatorTest {
     }
 
     @Test
-    fun `gutschrift aktiver kalorien`() {
-        assertEquals(300, GoalCalculator.creditedActiveKcal(500, 60))
-        assertEquals(0, GoalCalculator.creditedActiveKcal(500, 0))
-        assertEquals(500, GoalCalculator.creditedActiveKcal(500, 150))
-    }
-
-    @Test
-    fun `verbleibend gleich ziel plus gutschrift minus gegessen`() {
+    fun `verbleibend gleich ziel minus gegessen`() {
         val targets = DailyTargets(kcal = 2000, proteinG = 150, carbsG = 200, fatG = 60)
-        val summary = GoalCalculator.daySummary(
-            targets = targets,
-            eaten = Nutrients(kcal = 1200.0),
-            activeKcal = 400,
-            creditPercent = 60,
-        )
-        assertEquals(240, summary.creditedActiveKcal)
-        assertEquals(2000 + 240 - 1200, summary.remainingKcal)
+        val summary = GoalCalculator.daySummary(targets = targets, eaten = Nutrients(kcal = 1200.0))
+        assertEquals(800, summary.remainingKcal)
     }
 }
