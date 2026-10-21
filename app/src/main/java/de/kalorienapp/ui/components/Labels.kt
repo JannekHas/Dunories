@@ -57,6 +57,17 @@ val AmountUnit.labelRes: Int
         AmountUnit.MILLILITER -> R.string.unit_ml
     }
 
+/** Beschreibung nur des Alltags – wenn Trainings separat aus Health Connect kommen. */
+@get:StringRes
+val ActivityLevel.everydayDescriptionRes: Int
+    get() = when (this) {
+        ActivityLevel.SEDENTARY -> R.string.activity_sedentary_everyday
+        ActivityLevel.LIGHT -> R.string.activity_light_everyday
+        ActivityLevel.MODERATE -> R.string.activity_moderate_everyday
+        ActivityLevel.ACTIVE -> R.string.activity_active_everyday
+        ActivityLevel.VERY_ACTIVE -> R.string.activity_very_active_everyday
+    }
+
 @get:StringRes
 val MealType.labelRes: Int
     get() = when (this) {

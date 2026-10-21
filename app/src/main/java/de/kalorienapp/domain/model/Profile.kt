@@ -25,6 +25,8 @@ data class Profile(
     val goal: Goal,
     val pace: Pace,
     val activityLevel: ActivityLevel,
+    /** Trainings aus Health Connect (z. B. Samsung Health) übernehmen; Aktivitätslevel dann ohne Sport. */
+    val importWorkouts: Boolean = false,
     val proteinPerKg: Double? = null,
     val kcalTargetOverride: Int? = null,
     val proteinOverrideG: Int? = null,

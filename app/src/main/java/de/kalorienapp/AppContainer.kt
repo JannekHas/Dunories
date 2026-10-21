@@ -8,6 +8,8 @@ import de.kalorienapp.data.remote.openfoodfacts.OpenFoodFactsClient
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.data.repository.ProfileRepository
+import de.kalorienapp.data.repository.TrainingRepository
+import de.kalorienapp.health.HealthConnectManager
 
 /** Manuelle Dependency Injection: alle app-weiten Abhängigkeiten an einer Stelle. */
 class AppContainer(context: Context) {
@@ -16,6 +18,7 @@ class AppContainer(context: Context) {
     val profileRepository = ProfileRepository(database.profileDao())
     val foodEntryRepository = FoodEntryRepository(database.foodEntryDao())
     val foodLibraryRepository = FoodLibraryRepository(database.favoriteFoodDao(), database.foodEntryDao())
+    val trainingRepository = TrainingRepository(HealthConnectManager(context), database.dailyTrainingDao())
 
     val foodAnalyzer = FoodAnalyzer(
         context = context,

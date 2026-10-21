@@ -63,5 +63,7 @@ data class DailyTargets(
 data class DaySummary(
     val targets: DailyTargets,
     val eaten: Nutrients,
+    /** Trainingskalorien aus Health Connect (0 ohne Import). */
+    val trainingKcal: Int,
     val remainingKcal: Int,
 )

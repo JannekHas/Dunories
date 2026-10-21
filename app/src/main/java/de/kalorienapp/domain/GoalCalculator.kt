@@ -60,10 +60,11 @@ object GoalCalculator {
         return DailyTargets(kcal = kcal, proteinG = protein, carbsG = carbs, fatG = fat)
     }
 
-    /** Verbleibend = Ziel − Gegessenes (Bewegung steckt im Aktivitätslevel). */
-    fun daySummary(targets: DailyTargets, eaten: Nutrients): DaySummary = DaySummary(
+    /** Verbleibend = Ziel + Trainingskalorien − Gegessenes (Alltagsbewegung steckt im Aktivitätslevel). */
+    fun daySummary(targets: DailyTargets, eaten: Nutrients, trainingKcal: Int = 0): DaySummary = DaySummary(
         targets = targets,
         eaten = eaten,
-        remainingKcal = (targets.kcal - eaten.kcal).roundToInt(),
+        trainingKcal = trainingKcal,
+        remainingKcal = (targets.kcal + trainingKcal - eaten.kcal).roundToInt(),
     )
 }
