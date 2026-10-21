@@ -18,7 +18,7 @@ import de.kalorienapp.data.db.entity.ProfileEntity
 /** Schemaänderungen nur mit Versionserhöhung und Migration (Schemas liegen in app/schemas). */
 @Database(
     entities = [ProfileEntity::class, FoodEntryEntity::class, FavoriteFoodEntity::class, DailyActivityEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -73,9 +73,18 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v4: Schritte, Herkunft und „manuell“-Kennzeichen für die aktiven Kalorien. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE daily_activity ADD COLUMN steps INTEGER")
+                db.execSQL("ALTER TABLE daily_activity ADD COLUMN source TEXT")
+                db.execSQL("ALTER TABLE daily_activity ADD COLUMN manual INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "kalorien.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
     }
 }

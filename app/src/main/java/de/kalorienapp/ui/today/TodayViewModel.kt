@@ -8,6 +8,7 @@ import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.data.repository.HealthSyncStatus
 import de.kalorienapp.data.repository.ProfileRepository
 import de.kalorienapp.domain.GoalCalculator
+import de.kalorienapp.domain.model.DailyActivity
 import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
@@ -37,6 +38,8 @@ data class TodayUiState(
     /** Namen der Favoriten (klein geschrieben) – für „Als Favorit speichern / entfernen“. */
     val favoriteNames: Set<String> = emptySet(),
     val usesHealthConnect: Boolean = false,
+    /** Aktive Kalorien des Tages (Health Connect oder manuell), null wenn noch nichts bekannt. */
+    val activity: DailyActivity? = null,
     /** Hinweis, falls Health Connect aktiviert ist, aber nicht gelesen werden kann. */
     val healthProblem: HealthSyncStatus? = null,
 ) {
@@ -65,16 +68,16 @@ class TodayViewModel(
                 profileRepository.profile,
                 entryRepository.entriesFor(day),
                 library.favorites,
-                activityRepository.activeKcal(day),
+                activityRepository.activity(day),
                 syncStatus,
-            ) { profile, entries, favorites, activeKcal, status ->
+            ) { profile, entries, favorites, activity, status ->
                 val usesHealthConnect = profile?.useHealthConnect == true
                 val summary = profile?.let {
                     GoalCalculator.daySummary(
                         targets = GoalCalculator.targets(it, day.year),
                         eaten = entries.map(FoodEntry::nutrients).sum(),
                         // Ohne Health Connect ist die Bewegung bereits im Aktivitätsfaktor enthalten.
-                        activeKcal = if (usesHealthConnect) activeKcal ?: 0 else 0,
+                        activeKcal = if (usesHealthConnect) activity?.activeKcal ?: 0 else 0,
                         creditPercent = it.activeCalorieCreditPercent,
                     )
                 }
@@ -88,6 +91,7 @@ class TodayViewModel(
                     },
                     favoriteNames = favorites.map { it.name.lowercase() }.toSet(),
                     usesHealthConnect = usesHealthConnect,
+                    activity = activity,
                     healthProblem = status?.takeIf { usesHealthConnect && it != HealthSyncStatus.OK },
                 )
             }
@@ -118,6 +122,18 @@ class TodayViewModel(
             } else {
                 null
             }
+        }
+    }
+
+    /** Aktive Kalorien für den angezeigten Tag von Hand festlegen (hat Vorrang vor Health Connect). */
+    fun setManualActive(kcal: Int) {
+        viewModelScope.launch { activityRepository.setManual(date.value, kcal) }
+    }
+
+    /** Manuellen Wert verwerfen → wieder automatisch aus Health Connect. */
+    fun clearManualActive() {
+        viewModelScope.launch {
+            activityRepository.clearManual(date.value, profileRepository.get())
         }
     }
 
