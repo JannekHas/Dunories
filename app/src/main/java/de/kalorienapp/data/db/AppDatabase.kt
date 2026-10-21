@@ -73,7 +73,11 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        /** v4: Schritte, Herkunft und „manuell“-Kennzeichen für die aktiven Kalorien. */
+        /**
+         * v4: Spalten steps, source, manual in daily_activity. Sie stammen aus einer verworfenen
+         * Schritte-/Manuell-Funktion und sind ungenutzt; die Version bleibt, damit bereits
+         * installierte Apps mit v4-Datenbank nicht abstürzen.
+         */
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE daily_activity ADD COLUMN steps INTEGER")

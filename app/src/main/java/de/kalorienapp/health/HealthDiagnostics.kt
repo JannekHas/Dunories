@@ -25,7 +25,7 @@ data class RecordSummary(
     val error: String? = null,
 )
 
-data class DayDiagnosis(val date: LocalDate, val activeKcal: Double?, val totalKcal: Double?, val steps: Long?)
+data class DayDiagnosis(val date: LocalDate, val activeKcal: Double?, val totalKcal: Double?)
 
 data class HealthDiagnosis(
     val availability: HealthConnectAvailability,
@@ -50,9 +50,9 @@ data class HealthDiagnosis(
             }
         }
         appendLine()
-        appendLine("Tag: aktiv / gesamt (kcal) / Schritte – Health-Connect-Summen")
+        appendLine("Tag: aktiv / gesamt (kcal, Health-Connect-Summen)")
         days.forEach { d ->
-            appendLine("${d.date}: ${d.activeKcal?.toInt() ?: "-"} / ${d.totalKcal?.toInt() ?: "-"} / ${d.steps ?: "-"}")
+            appendLine("${d.date}: ${d.activeKcal?.toInt() ?: "-"} / ${d.totalKcal?.toInt() ?: "-"}")
         }
     }
 }
@@ -113,8 +113,8 @@ suspend fun HealthConnectManager.diagnose(days: Int = 30): HealthDiagnosis {
 
     val dayList = (0 until days).map { offset ->
         val date = today.minusDays(offset.toLong())
-        val reading = runCatching { readActivity(date) }.getOrNull()
-        DayDiagnosis(date, reading?.activeKcal, reading?.totalKcal, reading?.steps)
+        val reading = runCatching { readCalories(date) }.getOrNull()
+        DayDiagnosis(date, reading?.activeKcal, reading?.totalKcal)
     }
     return HealthDiagnosis(availability, granted, records, dayList)
 }

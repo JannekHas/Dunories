@@ -11,12 +11,6 @@ interface DailyActivityDao {
     @Query("SELECT * FROM daily_activity WHERE dateEpochDay = :epochDay")
     fun observe(epochDay: Long): Flow<DailyActivityEntity?>
 
-    @Query("SELECT * FROM daily_activity WHERE dateEpochDay = :epochDay")
-    suspend fun get(epochDay: Long): DailyActivityEntity?
-
     @Upsert
     suspend fun upsert(activity: DailyActivityEntity)
-
-    @Query("DELETE FROM daily_activity WHERE dateEpochDay = :epochDay")
-    suspend fun delete(epochDay: Long)
 }

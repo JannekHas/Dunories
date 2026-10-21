@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,12 +51,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -65,14 +62,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.data.repository.HealthSyncStatus
-import de.kalorienapp.domain.ActivitySource
-import de.kalorienapp.domain.model.DailyActivity
 import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.MacroProgress
-import de.kalorienapp.ui.components.NumberField
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
 import kotlinx.coroutines.launch
@@ -105,16 +99,6 @@ fun TodayScreen(
     LifecycleResumeEffect(Unit) {
         viewModel.refreshActivity()
         onPauseOrDispose { }
-    }
-
-    var showActiveDialog by remember { mutableStateOf(false) }
-    if (showActiveDialog) {
-        ActiveCaloriesDialog(
-            activity = state.activity,
-            onSave = { viewModel.setManualActive(it); showActiveDialog = false },
-            onReset = { viewModel.clearManualActive(); showActiveDialog = false },
-            onDismiss = { showActiveDialog = false },
-        )
     }
 
     fun toggleFavorite(entry: FoodEntry) {
@@ -177,14 +161,7 @@ fun TodayScreen(
                 }
             }
             state.summary?.let { summary ->
-                item(key = "summary") {
-                    SummaryCard(
-                        summary = summary,
-                        showActive = state.usesHealthConnect,
-                        activity = state.activity,
-                        onActiveClick = { showActiveDialog = true },
-                    )
-                }
+                item(key = "summary") { SummaryCard(summary, showActive = state.usesHealthConnect) }
             }
             items(state.meals, key = { it.mealType.name }) { group ->
                 MealCard(
@@ -217,12 +194,7 @@ private fun DateTitle(date: LocalDate, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SummaryCard(
-    summary: DaySummary,
-    showActive: Boolean,
-    activity: DailyActivity?,
-    onActiveClick: () -> Unit,
-) {
+private fun SummaryCard(summary: DaySummary, showActive: Boolean) {
     val over = summary.remainingKcal < 0
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -241,22 +213,7 @@ private fun SummaryCard(
                 SummaryValue(stringResource(R.string.summary_target), summary.targets.kcal.format())
                 SummaryValue(stringResource(R.string.summary_eaten), summary.eaten.kcal.format())
                 if (showActive) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.small)
-                            .clickable(onClick = onActiveClick)
-                            .padding(horizontal = 8.dp),
-                    ) {
-                        SummaryValue(stringResource(R.string.summary_active), "+" + summary.creditedActiveKcal.format())
-                        activity?.let {
-                            Text(
-                                activitySourceLabel(it),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                    SummaryValue(stringResource(R.string.summary_active), "+" + summary.creditedActiveKcal.format())
                 }
             }
             MacroProgress(stringResource(R.string.protein), summary.eaten.proteinG, summary.targets.proteinG)
@@ -264,62 +221,6 @@ private fun SummaryCard(
             MacroProgress(stringResource(R.string.fat), summary.eaten.fatG, summary.targets.fatG)
         }
     }
-}
-
-/** Kurzbeschreibung der Herkunft, z. B. "8.432 Schritte" oder "manuell". */
-@Composable
-private fun activitySourceLabel(activity: DailyActivity): String = when (activity.source) {
-    ActivitySource.MANUAL -> stringResource(R.string.active_source_manual)
-    ActivitySource.STEPS -> stringResource(R.string.active_source_steps, (activity.steps ?: 0L).toInt().format())
-    ActivitySource.ACTIVE_CALORIES, ActivitySource.TOTAL_CALORIES, null ->
-        stringResource(R.string.active_source_health_connect)
-}
-
-/** Aktive Kalorien von Hand eintragen (z. B. aus Samsung Health abgelesen) oder zurück auf automatisch. */
-@Composable
-private fun ActiveCaloriesDialog(
-    activity: DailyActivity?,
-    onSave: (Int) -> Unit,
-    onReset: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var text by remember { mutableStateOf(activity?.activeKcal?.toString().orEmpty()) }
-    val value = text.toIntOrNull()?.takeIf { it in 0..10_000 }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.active_dialog_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.active_dialog_text), style = MaterialTheme.typography.bodyMedium)
-                activity?.takeIf { it.source != ActivitySource.MANUAL }?.let {
-                    Text(
-                        stringResource(R.string.active_dialog_automatic, it.activeKcal, activitySourceLabel(it)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                NumberField(
-                    value = text,
-                    onValueChange = { text = it },
-                    label = stringResource(R.string.active_dialog_label),
-                    suffix = stringResource(R.string.unit_kcal),
-                    decimal = false,
-                    imeAction = ImeAction.Done,
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { value?.let(onSave) }, enabled = value != null) { Text(stringResource(R.string.save)) }
-        },
-        dismissButton = {
-            Row {
-                if (activity?.source == ActivitySource.MANUAL) {
-                    TextButton(onClick = onReset) { Text(stringResource(R.string.active_dialog_reset)) }
-                }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-            }
-        },
-    )
 }
 
 /** Hinweis, wenn Health Connect aktiviert ist, aber (noch) nicht gelesen werden kann. */

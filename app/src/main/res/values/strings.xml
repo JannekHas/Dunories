@@ -201,7 +201,7 @@
     <string name="health_connect_button">Mit Health Connect verbinden</string>
     <string name="health_install_button">Health Connect installieren</string>
     <string name="health_privacy_title">Health Connect &amp; Datenschutz</string>
-    <string name="health_privacy_text">KalorienApp liest aus Health Connect deine verbrannten Kalorien (aktiv und gesamt) und deine Schritte, um aktive Kalorien deinem Tagesziel gutzuschreiben. Trainings werden nur auf der Diagnose-Seite gezählt, um Verbindungsprobleme zu finden. Die Werte bleiben lokal auf deinem Handy, werden nicht hochgeladen und nicht an Dritte weitergegeben. Die App schreibt keine Daten in Health Connect.</string>
+    <string name="health_privacy_text">KalorienApp liest aus Health Connect deine verbrannten Kalorien (aktiv und gesamt), um sie deinem Tagesziel gutzuschreiben. Trainings und Schritte werden nur auf der Diagnose-Seite gezählt, um Verbindungsprobleme zu finden. Die Werte bleiben lokal auf deinem Handy, werden nicht hochgeladen und nicht an Dritte weitergegeben. Die App schreibt keine Daten in Health Connect.</string>
     <string name="close">Schließen</string>
     <string name="health_diag_open">Health Connect prüfen</string>
     <string name="health_diag_title">Health-Connect-Diagnose</string>
@@ -209,13 +209,4 @@
     <string name="health_diag_copy">Kopieren</string>
     <string name="health_diag_reload">Neu laden</string>
     <string name="health_diag_grant_all">Alle Berechtigungen erteilen</string>
-    <string name="cancel">Abbrechen</string>
-    <string name="active_source_manual">manuell</string>
-    <string name="active_source_steps">%1$s Schritte</string>
-    <string name="active_source_health_connect">Health Connect</string>
-    <string name="active_dialog_title">Aktive Kalorien</string>
-    <string name="active_dialog_text">Trag die aktiven Kalorien für diesen Tag ein, z. B. aus Samsung Health. Ein eigener Wert ersetzt die automatische Schätzung; gutgeschrieben wird davon dein eingestellter Prozentsatz.</string>
-    <string name="active_dialog_automatic">Automatisch: %1$d kcal (%2$s)</string>
-    <string name="active_dialog_label">Aktive Kalorien</string>
-    <string name="active_dialog_reset">Automatisch</string>
 </resources>

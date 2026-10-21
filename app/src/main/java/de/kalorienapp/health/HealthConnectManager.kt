@@ -13,6 +13,7 @@ import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.health.connect.client.units.Energy
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -20,24 +21,25 @@ import java.time.ZoneId
 
 enum class HealthConnectAvailability { AVAILABLE, NEEDS_INSTALL_OR_UPDATE, NOT_SUPPORTED }
 
-/** Rohwerte eines Tages aus Health Connect, jeweils null wenn nicht lesbar bzw. keine Daten. */
-data class ActivityReading(val activeKcal: Double?, val totalKcal: Double?, val steps: Long?)
+/** Rohwerte eines Tages aus Health Connect (kcal), jeweils null wenn nicht lesbar. */
+data class CaloriesReading(val activeKcal: Double?, val totalKcal: Double?)
 
-/** Dünne Hülle um den Health-Connect-Client – nur Lesen (Kalorien, Schritte; Trainings nur Diagnose). */
+/** Dünne Hülle um den Health-Connect-Client – nur Lesen der verbrannten Kalorien. */
 class HealthConnectManager(private val context: Context) {
 
     private val activePermission = HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class)
     private val totalPermission = HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class)
 
-    private val stepsPermission = HealthPermission.getReadPermission(StepsRecord::class)
-    private val activityReadPermissions = setOf(activePermission, totalPermission, stepsPermission)
+    private val calorieReadPermissions = setOf(activePermission, totalPermission)
 
     /**
-     * Angefragte Berechtigungen: aktive/gesamte Kalorien und Schritte (Samsung Health liefert oft nur Schritte).
-     * Trainings nur für die Diagnose.
+     * Angefragte Berechtigungen: „aktive Kalorien“ reicht, „gesamt“ ist der Fallback (z. B. Samsung Health).
+     * Training und Schritte nur für die Diagnose (welche Daten liefert die Quell-App überhaupt?).
      */
-    val permissions: Set<String> = activityReadPermissions +
-        HealthPermission.getReadPermission(ExerciseSessionRecord::class)
+    val permissions: Set<String> = calorieReadPermissions + setOf(
+        HealthPermission.getReadPermission(ExerciseSessionRecord::class),
+        HealthPermission.getReadPermission(StepsRecord::class),
+    )
 
     fun availability(): HealthConnectAvailability = when (HealthConnectClient.getSdkStatus(context)) {
         HealthConnectClient.SDK_AVAILABLE -> HealthConnectAvailability.AVAILABLE
@@ -52,24 +54,22 @@ class HealthConnectManager(private val context: Context) {
 
     internal suspend fun grantedPermissions(): Set<String> = client.permissionController.getGrantedPermissions()
 
-    /** true, wenn mindestens eine Kalorien- oder Schritte-Berechtigung erteilt ist. */
-    suspend fun hasPermission(): Boolean = grantedPermissions().any { it in activityReadPermissions }
+    /** true, wenn mindestens eine der beiden Kalorien-Berechtigungen erteilt ist. */
+    suspend fun hasPermission(): Boolean = grantedPermissions().any { it in calorieReadPermissions }
 
-    /** Liest aktive/gesamte Kalorien und Schritte für [date] (bis jetzt, falls heute). */
-    suspend fun readActivity(date: LocalDate, now: Instant = Instant.now()): ActivityReading {
+    /** Liest aktive und gesamte verbrannte Kalorien für [date] (bis jetzt, falls heute). */
+    suspend fun readCalories(date: LocalDate, now: Instant = Instant.now()): CaloriesReading {
         val zone = ZoneId.systemDefault()
         val start = date.atStartOfDay(zone).toInstant()
         val end = minOf(date.plusDays(1).atStartOfDay(zone).toInstant(), now)
-        if (!end.isAfter(start)) return ActivityReading(null, null, null)
+        if (!end.isAfter(start)) return CaloriesReading(null, null)
 
         val granted = grantedPermissions()
-        val metrics = buildSet<AggregateMetric<*>> {
+        val metrics = buildSet<AggregateMetric<Energy>> {
             if (activePermission in granted) add(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL)
             if (totalPermission in granted) add(TotalCaloriesBurnedRecord.ENERGY_TOTAL)
-            // Health Connect entfernt doppelte Schritte (Uhr + Handy) anhand der Quellen-Priorität.
-            if (stepsPermission in granted) add(StepsRecord.COUNT_TOTAL)
         }
-        if (metrics.isEmpty()) return ActivityReading(null, null, null)
+        if (metrics.isEmpty()) return CaloriesReading(null, null)
 
         val range = TimeRangeFilter.between(start, end)
         val result = client.aggregate(AggregateRequest(metrics, range))
@@ -77,10 +77,9 @@ class HealthConnectManager(private val context: Context) {
         // Grundumsatz (im Emulator z. B. 1564 kcal/Tag). Nur echte Datensätze einer App zählen.
         val hasTotalRecords = totalPermission in granted &&
             client.readRecords(ReadRecordsRequest(TotalCaloriesBurnedRecord::class, range, pageSize = 1)).records.isNotEmpty()
-        return ActivityReading(
+        return CaloriesReading(
             activeKcal = result[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories,
             totalKcal = result[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories?.takeIf { hasTotalRecords },
-            steps = result[StepsRecord.COUNT_TOTAL],
         )
     }
 
