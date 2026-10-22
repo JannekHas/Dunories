@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,6 +83,7 @@ import de.kalorienapp.ui.components.NeonPill
 import de.kalorienapp.ui.components.RingSpec
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
+import de.kalorienapp.ui.goal.GoalResultDialog
 import de.kalorienapp.ui.theme.Neon
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -93,6 +95,7 @@ private val dateFormatter = DateTimeFormatter.ofPattern("EEE, d. MMMM", Locale.G
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayScreen(
+    onSetGoal: () -> Unit,
     onAddEntry: (date: LocalDate, mealType: MealType?) -> Unit,
     onEditEntry: (FoodEntry) -> Unit,
     /** Gesetzt, wenn der Tag aus dem Kalender geöffnet wurde. */
@@ -100,6 +103,7 @@ fun TodayScreen(
     viewModel: TodayViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val endedGoal by viewModel.endedGoal.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val deletedMessage = stringResource(R.string.entry_deleted)
@@ -114,6 +118,14 @@ fun TodayScreen(
     var showActivityList by remember { mutableStateOf(false) }
     val activitySnackbar = remember { SnackbarHostState() }
     var activityDialog by remember { mutableStateOf<ActivityDialogState?>(null) }
+
+    endedGoal?.let { goal ->
+        GoalResultDialog(
+            goal = goal,
+            onNewGoal = { viewModel.dismissEndedGoal(); onSetGoal() },
+            onDismiss = viewModel::dismissEndedGoal,
+        )
+    }
 
     activityDialog?.let { dialog ->
         ActivityEditDialog(
@@ -211,6 +223,9 @@ fun TodayScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (!state.hasGoal && state.isToday) {
+                item(key = "goal_banner") { GoalBanner(onSetGoal) }
+            }
             state.summary?.let { summary ->
                 item(key = "summary") {
                     SummaryCard(
@@ -230,6 +245,23 @@ fun TodayScreen(
                     onToggleFavorite = ::toggleFavorite,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun GoalBanner(onSetGoal: () -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = Neon.SurfaceHigh)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                stringResource(R.string.goal_banner_text),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onSetGoal) { Text(stringResource(R.string.goal_set), color = Neon.Cyan) }
         }
     }
 }

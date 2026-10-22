@@ -3,7 +3,6 @@ package de.kalorienapp.domain
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.Nutrients
-import de.kalorienapp.domain.model.Pace
 import de.kalorienapp.domain.model.Profile
 import de.kalorienapp.domain.model.Sex
 import org.junit.Assert.assertEquals
@@ -18,15 +17,11 @@ class GoalCalculatorTest {
         age: Int = 30,
         heightCm: Double = 180.0,
         weightKg: Double = 80.0,
-        goal: Goal = Goal.MAINTAIN,
-        pace: Pace = Pace.NORMAL,
     ) = Profile(
         sex = sex,
         birthYear = year - age,
         heightCm = heightCm,
         weightKg = weightKg,
-        goal = goal,
-        pace = pace,
     )
 
     @Test
@@ -47,15 +42,6 @@ class GoalCalculatorTest {
     }
 
     @Test
-    fun `ziel anpassung nach tempo`() {
-        assertEquals(-300, GoalCalculator.goalAdjustment(Goal.LOSE, Pace.SLOW))
-        assertEquals(-500, GoalCalculator.goalAdjustment(Goal.LOSE, Pace.NORMAL))
-        assertEquals(0, GoalCalculator.goalAdjustment(Goal.MAINTAIN, Pace.NORMAL))
-        assertEquals(250, GoalCalculator.goalAdjustment(Goal.GAIN, Pace.SLOW))
-        assertEquals(400, GoalCalculator.goalAdjustment(Goal.GAIN, Pace.NORMAL))
-    }
-
-    @Test
     fun `targets halten - kcal und makroverteilung`() {
         // Grundumsatz 1780 kcal; Protein 1.6*80 = 128 g; Fett 1780*0.25/9 = 49.4 → 49 g
         // KH = (1780 - 128*4 - 49*9) / 4 = (1780 - 512 - 441) / 4 = 206.75 → 207 g
@@ -64,17 +50,17 @@ class GoalCalculatorTest {
     }
 
     @Test
-    fun `targets abnehmen - defizit und hoeheres protein`() {
-        // 1780 - 500 = 1280 kcal; Protein 1.8*80 = 144 g
-        val t = GoalCalculator.targets(profile(goal = Goal.LOSE, pace = Pace.NORMAL), year)
-        assertEquals(1280, t.kcal)
+    fun `abnehmen - anpassung aus dem zielplan und hoeheres protein`() {
+        // 1780 - 550 = 1230 kcal; Protein 1.8*80 = 144 g
+        val t = GoalCalculator.targets(profile(), year, direction = Goal.LOSE, adjustmentKcal = -550)
+        assertEquals(1230, t.kcal)
         assertEquals(144, t.proteinG)
     }
 
     @Test
     fun `kcal ziel faellt nicht unter minimum`() {
-        val p = profile(sex = Sex.FEMALE, age = 80, heightCm = 150.0, weightKg = 40.0, goal = Goal.LOSE)
-        assertEquals(GoalCalculator.MIN_KCAL_TARGET, GoalCalculator.targets(p, year).kcal)
+        val p = profile(sex = Sex.FEMALE, age = 80, heightCm = 150.0, weightKg = 40.0)
+        assertEquals(GoalCalculator.MIN_KCAL_TARGET, GoalCalculator.targets(p, year, Goal.LOSE, -1100).kcal)
     }
 
     @Test

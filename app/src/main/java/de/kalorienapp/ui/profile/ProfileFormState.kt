@@ -1,7 +1,5 @@
 package de.kalorienapp.ui.profile
 
-import de.kalorienapp.domain.model.Goal
-import de.kalorienapp.domain.model.Pace
 import de.kalorienapp.domain.model.Profile
 import de.kalorienapp.domain.model.Sex
 import de.kalorienapp.ui.components.parseDecimal
@@ -13,8 +11,6 @@ data class ProfileFormState(
     val age: String = "",
     val heightCm: String = "",
     val weightKg: String = "",
-    val goal: Goal = Goal.LOSE,
-    val pace: Pace = Pace.SLOW,
     val proteinPerKg: String = "",
     val kcalOverride: String = "",
     val proteinOverride: String = "",
@@ -51,8 +47,6 @@ data class ProfileFormState(
             birthYear = currentYear - ageValue!!,
             heightCm = heightValue!!,
             weightKg = weightValue!!,
-            goal = goal,
-            pace = pace,
             proteinPerKg = proteinPerKg.parseDecimal(),
             kcalTargetOverride = kcalOverride.toIntOrNull(),
             proteinOverrideG = proteinOverride.toIntOrNull(),
@@ -67,8 +61,6 @@ data class ProfileFormState(
             age = profile.ageIn(currentYear).toString(),
             heightCm = profile.heightCm.toInputString(),
             weightKg = profile.weightKg.toInputString(),
-            goal = profile.goal,
-            pace = profile.pace,
             proteinPerKg = profile.proteinPerKg?.toInputString() ?: "",
             kcalOverride = profile.kcalTargetOverride?.toString() ?: "",
             proteinOverride = profile.proteinOverrideG?.toString() ?: "",

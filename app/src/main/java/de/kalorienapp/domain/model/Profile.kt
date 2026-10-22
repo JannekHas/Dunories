@@ -2,9 +2,8 @@ package de.kalorienapp.domain.model
 
 enum class Sex { MALE, FEMALE }
 
+/** Richtung eines Gewichtsziels (siehe [WeightGoal.direction]). */
 enum class Goal { LOSE, MAINTAIN, GAIN }
-
-enum class Pace { SLOW, NORMAL }
 
 /**
  * Nutzerprofil. `null`-Werte bei Protein/kg und den Overrides bedeuten „automatisch berechnen“.
@@ -14,8 +13,6 @@ data class Profile(
     val birthYear: Int,
     val heightCm: Double,
     val weightKg: Double,
-    val goal: Goal,
-    val pace: Pace,
     val proteinPerKg: Double? = null,
     val kcalTargetOverride: Int? = null,
     val proteinOverrideG: Int? = null,

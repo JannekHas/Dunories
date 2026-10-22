@@ -39,10 +39,6 @@
     <string name="goal_lose">Abnehmen</string>
     <string name="goal_maintain">Halten</string>
     <string name="goal_gain">Zunehmen</string>
-    <string name="pace_lose_slow">Langsam (−300 kcal)</string>
-    <string name="pace_lose_normal">Normal (−500 kcal)</string>
-    <string name="pace_gain_slow">Langsam (+250 kcal)</string>
-    <string name="pace_gain_normal">Normal (+400 kcal)</string>
     <string name="meal_breakfast">Frühstück</string>
     <string name="meal_lunch">Mittagessen</string>
     <string name="meal_dinner">Abendessen</string>
@@ -58,8 +54,6 @@
     <string name="profile_age">Alter</string>
     <string name="profile_height">Größe</string>
     <string name="profile_weight">Gewicht</string>
-    <string name="profile_goal">Was möchtest du erreichen?</string>
-    <string name="profile_pace">Tempo</string>
     <string name="error_age">Alter zwischen 14 und 100</string>
     <string name="error_height">Größe zwischen 100 und 250 cm</string>
     <string name="error_weight">Gewicht zwischen 30 und 300 kg</string>
@@ -215,4 +209,41 @@
     <string name="weight_empty">Noch kein Gewicht eingetragen. Der jüngste Eintrag wird automatisch ins Profil übernommen.</string>
     <string name="weight_value">%1$s kg</string>
     <string name="weight_change">%1$s kg seit dem ersten Eintrag</string>
+    <string name="ok">OK</string>
+    <plurals name="days">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tagen</item>
+    </plurals>
+    <string name="goal_screen_title">Neues Ziel</string>
+    <string name="goal_screen_intro">Gib dein Wunschgewicht und bis wann du es erreichen möchtest an. Daraus berechnen wir jeden Tag neu, wie viel du essen kannst.</string>
+    <string name="goal_replace_hint">Dein bisheriges Ziel wird beendet und unter „Vergangene Ziele“ in der Statistik gespeichert.</string>
+    <string name="goal_current_weight">Aktuelles Gewicht: %1$s kg</string>
+    <string name="goal_target_weight">Wunschgewicht</string>
+    <string name="goal_maintain_button">Gewicht halten</string>
+    <string name="goal_maintain_hint">Wunschgewicht = aktuelles Gewicht: Du hältst dein Gewicht – ohne Zieldatum.</string>
+    <string name="goal_pick_date">Zieldatum wählen</string>
+    <string name="goal_target_date_value">Zieldatum: %1$s</string>
+    <string name="goal_preview_incomplete">Bitte Wunschgewicht und Zieldatum angeben.</string>
+    <string name="goal_preview_pace">Tempo heute: %1$s kg pro Woche (%2$s kcal pro Tag)</string>
+    <string name="goal_preview_kcal">Tagesziel: %1$s kcal</string>
+    <string name="goal_limited_hint">Das wäre schneller als gesund. Wir rechnen mit höchstens %1$s kg pro Woche – realistisch erreichst du dein Wunschgewicht am %2$s.</string>
+    <string name="goal_none_title">Kein Gewichtsziel</string>
+    <string name="goal_none_text">Setze ein Wunschgewicht mit Zieldatum – daraus berechnen wir dein Tagesziel. Bis dahin gilt dein Grundumsatz.</string>
+    <string name="goal_set">Ziel setzen</string>
+    <string name="goal_new">Neues Ziel setzen</string>
+    <string name="goal_range">%1$s → %2$s kg bis %3$s</string>
+    <string name="goal_maintain_since">%1$s kg halten, seit %2$s</string>
+    <string name="goal_remaining">Jetzt %1$s kg · noch %2$s kg in %3$s</string>
+    <string name="goal_result_reached">Ziel erreicht!</string>
+    <string name="goal_result_date">Zieldatum erreicht</string>
+    <string name="goal_result_text">Start %1$s kg · Ziel %2$s kg · Ende %3$s kg
+Veränderung: %4$s kg in %5$s</string>
+    <string name="goal_result_next">Wie geht es weiter? Setze ein neues Ziel – zum Beispiel dein Gewicht halten.</string>
+    <string name="goal_later">Später</string>
+    <string name="goal_banner_text">Kein aktives Gewichtsziel – dein Tagesziel ist gerade dein Grundumsatz.</string>
+    <string name="goal_history_title">Vergangene Ziele</string>
+    <string name="goal_history_dates">%1$s – %2$s</string>
+    <string name="goal_reason_reached">erreicht</string>
+    <string name="goal_reason_date">Datum erreicht</string>
+    <string name="goal_reason_replaced">ersetzt</string>
 </resources>

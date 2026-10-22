@@ -30,6 +30,7 @@ import de.kalorienapp.R
 import de.kalorienapp.ui.calendar.CalendarScreen
 import de.kalorienapp.ui.capture.CaptureScreen
 import de.kalorienapp.ui.entry.EntryEditScreen
+import de.kalorienapp.ui.goal.GoalScreen
 import de.kalorienapp.ui.onboarding.OnboardingScreen
 import de.kalorienapp.ui.profile.ProfileScreen
 import de.kalorienapp.ui.stats.StatsScreen
@@ -95,6 +96,7 @@ fun AppNavHost(startDestination: Any) {
             }
             composable<TodayRoute> {
                 TodayScreen(
+                    onSetGoal = { navController.navigate(GoalRoute) },
                     onAddEntry = { date, meal ->
                         navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
                     },
@@ -111,6 +113,7 @@ fun AppNavHost(startDestination: Any) {
             }
             composable<DayRoute> {
                 TodayScreen(
+                    onSetGoal = { navController.navigate(GoalRoute) },
                     onAddEntry = { date, meal ->
                         navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
                     },
@@ -121,7 +124,10 @@ fun AppNavHost(startDestination: Any) {
                 )
             }
             composable<ProfileRoute> {
-                ProfileScreen()
+                ProfileScreen(onNewGoal = { navController.navigate(GoalRoute) })
+            }
+            composable<GoalRoute> {
+                GoalScreen(onDone = { navController.popBackStack() })
             }
             composable<CaptureRoute> { entry ->
                 val route = entry.toRoute<CaptureRoute>()

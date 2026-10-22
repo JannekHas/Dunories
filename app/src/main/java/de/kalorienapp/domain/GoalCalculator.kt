@@ -4,7 +4,6 @@ import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.Nutrients
-import de.kalorienapp.domain.model.Pace
 import de.kalorienapp.domain.model.Profile
 import de.kalorienapp.domain.model.Sex
 import kotlin.math.roundToInt
@@ -26,13 +25,7 @@ object GoalCalculator {
         }
     }
 
-    fun goalAdjustment(goal: Goal, pace: Pace): Int = when (goal) {
-        Goal.LOSE -> if (pace == Pace.SLOW) -300 else -500
-        Goal.MAINTAIN -> 0
-        Goal.GAIN -> if (pace == Pace.SLOW) 250 else 400
-    }
-
-    fun defaultProteinPerKg(goal: Goal): Double = when (goal) {
+    fun defaultProteinPerKg(direction: Goal): Double = when (direction) {
         Goal.MAINTAIN -> 1.6
         Goal.LOSE, Goal.GAIN -> 1.8
     }
@@ -44,15 +37,24 @@ object GoalCalculator {
     fun maintenanceKcal(profile: Profile, currentYear: Int): Double =
         bmr(profile.sex, profile.weightKg, profile.heightCm, profile.ageIn(currentYear))
 
-    fun calculatedKcalTarget(profile: Profile, currentYear: Int): Int =
-        (maintenanceKcal(profile, currentYear) + goalAdjustment(profile.goal, profile.pace))
+    /** Grundumsatz + Anpassung aus dem Gewichtsziel (siehe [GoalPlanner]), mindestens [MIN_KCAL_TARGET]. */
+    fun calculatedKcalTarget(profile: Profile, currentYear: Int, adjustmentKcal: Int): Int =
+        (maintenanceKcal(profile, currentYear) + adjustmentKcal)
             .roundToInt()
             .coerceAtLeast(MIN_KCAL_TARGET)
 
-    /** Tagesziele; manuelle Overrides haben Vorrang vor den berechneten Werten. */
-    fun targets(profile: Profile, currentYear: Int): DailyTargets {
-        val kcal = profile.kcalTargetOverride ?: calculatedKcalTarget(profile, currentYear)
-        val proteinPerKg = profile.proteinPerKg ?: defaultProteinPerKg(profile.goal)
+    /**
+     * Tagesziele; manuelle Overrides haben Vorrang vor den berechneten Werten.
+     * [direction] und [adjustmentKcal] kommen aus dem aktiven Gewichtsziel (ohne Ziel: Halten, 0).
+     */
+    fun targets(
+        profile: Profile,
+        currentYear: Int,
+        direction: Goal = Goal.MAINTAIN,
+        adjustmentKcal: Int = 0,
+    ): DailyTargets {
+        val kcal = profile.kcalTargetOverride ?: calculatedKcalTarget(profile, currentYear, adjustmentKcal)
+        val proteinPerKg = profile.proteinPerKg ?: defaultProteinPerKg(direction)
         val protein = profile.proteinOverrideG ?: (proteinPerKg * profile.weightKg).roundToInt()
         val fat = profile.fatOverrideG ?: (kcal * FAT_KCAL_SHARE / KCAL_PER_G_FAT).roundToInt()
         val carbs = profile.carbsOverrideG

@@ -15,8 +15,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
 import de.kalorienapp.domain.model.DailyTargets
-import de.kalorienapp.domain.model.Goal
-import de.kalorienapp.domain.model.Pace
 import de.kalorienapp.domain.model.Sex
 import de.kalorienapp.ui.components.ChoiceChips
 import de.kalorienapp.ui.components.NumberField
@@ -70,28 +68,6 @@ fun BodyDataSection(form: ProfileFormState, onUpdate: FormUpdate) {
             errorText = stringResource(R.string.error_weight),
             modifier = Modifier.fillMaxWidth(),
         )
-    }
-}
-
-@Composable
-fun GoalSection(form: ProfileFormState, onUpdate: FormUpdate) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.profile_goal), style = MaterialTheme.typography.labelLarge)
-        ChoiceChips(
-            options = Goal.entries,
-            selected = form.goal,
-            onSelect = { goal -> onUpdate { it.copy(goal = goal) } },
-            label = { stringResource(it.labelRes) },
-        )
-        if (form.goal != Goal.MAINTAIN) {
-            Text(stringResource(R.string.profile_pace), style = MaterialTheme.typography.labelLarge)
-            ChoiceChips(
-                options = Pace.entries,
-                selected = form.pace,
-                onSelect = { pace -> onUpdate { it.copy(pace = pace) } },
-                label = { stringResource(it.labelRes(form.goal)) },
-            )
-        }
     }
 }
 

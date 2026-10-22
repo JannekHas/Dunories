@@ -9,6 +9,7 @@ import de.kalorienapp.KalorienApplication
 import de.kalorienapp.ui.calendar.CalendarViewModel
 import de.kalorienapp.ui.capture.CaptureViewModel
 import de.kalorienapp.ui.entry.EntryEditViewModel
+import de.kalorienapp.ui.goal.GoalViewModel
 import de.kalorienapp.ui.profile.ProfileViewModel
 import de.kalorienapp.ui.stats.StatsViewModel
 import de.kalorienapp.ui.today.TodayViewModel
@@ -19,20 +20,23 @@ object AppViewModelProvider {
         initializer {
             TodayViewModel(
                 createSavedStateHandle(),
-                container().profileRepository,
+                container().goalRepository,
                 container().foodEntryRepository,
                 container().foodLibraryRepository,
                 container().activityEntryRepository,
             )
         }
         initializer {
-            ProfileViewModel(container().profileRepository, container().weightRepository)
+            ProfileViewModel(container().profileRepository, container().weightRepository, container().goalRepository)
         }
         initializer {
             CalendarViewModel(container().statsRepository)
         }
         initializer {
-            StatsViewModel(container().statsRepository, container().weightRepository, container().profileRepository)
+            StatsViewModel(container().statsRepository, container().weightRepository, container().goalRepository)
+        }
+        initializer {
+            GoalViewModel(container().profileRepository, container().goalRepository)
         }
         initializer {
             EntryEditViewModel(createSavedStateHandle(), container().foodEntryRepository)

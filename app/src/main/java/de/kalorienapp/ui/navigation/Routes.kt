@@ -17,6 +17,10 @@ data object CalendarRoute
 @Serializable
 data object StatsRoute
 
+/** Neues Gewichtsziel setzen. */
+@Serializable
+data object GoalRoute
+
 /** Tagesansicht für ein bestimmtes Datum (aus dem Kalender geöffnet). */
 @Serializable
 data class DayRoute(val epochDay: Long)

@@ -12,11 +12,13 @@ import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.db.dao.ProfileDao
 import de.kalorienapp.data.db.dao.StatsDao
 import de.kalorienapp.data.db.dao.WeightEntryDao
+import de.kalorienapp.data.db.dao.WeightGoalDao
 import de.kalorienapp.data.db.entity.ActivityEntryEntity
 import de.kalorienapp.data.db.entity.FavoriteFoodEntity
 import de.kalorienapp.data.db.entity.FoodEntryEntity
 import de.kalorienapp.data.db.entity.ProfileEntity
 import de.kalorienapp.data.db.entity.WeightEntryEntity
+import de.kalorienapp.data.db.entity.WeightGoalEntity
 
 /** Schemaänderungen nur mit Versionserhöhung und Migration (Schemas liegen in app/schemas). */
 @Database(
@@ -26,8 +28,9 @@ import de.kalorienapp.data.db.entity.WeightEntryEntity
         FavoriteFoodEntity::class,
         ActivityEntryEntity::class,
         WeightEntryEntity::class,
+        WeightGoalEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,6 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun activityEntryDao(): ActivityEntryDao
     abstract fun weightEntryDao(): WeightEntryDao
     abstract fun statsDao(): StatsDao
+    abstract fun weightGoalDao(): WeightGoalDao
 
     companion object {
         /** v2: Mengeneinheit (g/ml) und optionale Zusatznährwerte. */
@@ -242,9 +246,67 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v10: Gewichtsziel (Wunschgewicht + Zieldatum) statt Ziel/Tempo im Profil.
+         * Wer bisher „Halten“ hatte, bekommt ein aktives Halten-Ziel; Abnehmen/Zunehmen wird neu gefragt.
+         */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS weight_goal (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        startDate INTEGER NOT NULL,
+                        startWeightKg REAL NOT NULL,
+                        targetWeightKg REAL NOT NULL,
+                        targetDate INTEGER,
+                        endedDate INTEGER,
+                        endWeightKg REAL,
+                        endReason TEXT
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO weight_goal (startDate, startWeightKg, targetWeightKg)
+                    SELECT CAST(julianday('now', 'localtime') - 2440587.5 AS INTEGER), weightKg, weightKg
+                    FROM profile WHERE goal = 'MAINTAIN'
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS profile_new (
+                        id INTEGER NOT NULL,
+                        sex TEXT NOT NULL,
+                        birthYear INTEGER NOT NULL,
+                        heightCm REAL NOT NULL,
+                        weightKg REAL NOT NULL,
+                        proteinPerKg REAL,
+                        kcalTargetOverride INTEGER,
+                        proteinOverrideG INTEGER,
+                        fatOverrideG INTEGER,
+                        carbsOverrideG INTEGER,
+                        PRIMARY KEY(id)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO profile_new (id, sex, birthYear, heightCm, weightKg,
+                        proteinPerKg, kcalTargetOverride, proteinOverrideG, fatOverrideG, carbsOverrideG)
+                    SELECT id, sex, birthYear, heightCm, weightKg,
+                        proteinPerKg, kcalTargetOverride, proteinOverrideG, fatOverrideG, carbsOverrideG
+                    FROM profile
+                    """.trimIndent(),
+                )
+                db.execSQL("DROP TABLE profile")
+                db.execSQL("ALTER TABLE profile_new RENAME TO profile")
+            }
+        }
+
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "kalorien.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                 .build()
     }
 }

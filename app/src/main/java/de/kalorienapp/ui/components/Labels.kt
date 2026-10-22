@@ -5,7 +5,6 @@ import de.kalorienapp.R
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.MealType
-import de.kalorienapp.domain.model.Pace
 import de.kalorienapp.domain.model.Sex
 
 @get:StringRes
@@ -22,12 +21,6 @@ val Goal.labelRes: Int
         Goal.MAINTAIN -> R.string.goal_maintain
         Goal.GAIN -> R.string.goal_gain
     }
-
-@StringRes
-fun Pace.labelRes(goal: Goal): Int = when (goal) {
-    Goal.GAIN -> if (this == Pace.SLOW) R.string.pace_gain_slow else R.string.pace_gain_normal
-    else -> if (this == Pace.SLOW) R.string.pace_lose_slow else R.string.pace_lose_normal
-}
 
 @get:StringRes
 val AmountUnit.labelRes: Int

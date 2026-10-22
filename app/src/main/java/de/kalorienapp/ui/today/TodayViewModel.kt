@@ -6,20 +6,25 @@ import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.repository.ActivityEntryRepository
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.FoodLibraryRepository
-import de.kalorienapp.data.repository.ProfileRepository
+import de.kalorienapp.data.repository.GoalRepository
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.domain.model.Nutrients
+import de.kalorienapp.domain.model.WeightGoal
 import de.kalorienapp.domain.model.sum
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -39,6 +44,8 @@ data class TodayUiState(
     val activities: List<ActivityEntry> = emptyList(),
     /** Namen der Favoriten (klein geschrieben) – für „Als Favorit speichern / entfernen“. */
     val favoriteNames: Set<String> = emptySet(),
+    /** false → Hinweis „Kein aktives Gewichtsziel“. */
+    val hasGoal: Boolean = true,
 ) {
     fun isFavorite(entry: FoodEntry) = entry.name.lowercase() in favoriteNames
 
@@ -48,7 +55,7 @@ data class TodayUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodayViewModel(
     savedStateHandle: SavedStateHandle,
-    profileRepository: ProfileRepository,
+    private val goalRepository: GoalRepository,
     private val entryRepository: FoodEntryRepository,
     private val library: FoodLibraryRepository,
     private val activityRepository: ActivityEntryRepository,
@@ -62,14 +69,14 @@ class TodayViewModel(
     val uiState: StateFlow<TodayUiState> = date
         .flatMapLatest { day ->
             combine(
-                profileRepository.profile,
+                goalRepository.current,
                 entryRepository.entriesFor(day),
                 library.favorites,
                 activityRepository.entriesFor(day),
-            ) { profile, entries, favorites, activities ->
-                val summary = profile?.let {
+            ) { goalState, entries, favorites, activities ->
+                val summary = goalState?.let {
                     GoalCalculator.daySummary(
-                        targets = GoalCalculator.targets(it, day.year),
+                        targets = it.targetsFor(day.year),
                         eaten = entries.map(FoodEntry::nutrients).sum(),
                         activityKcal = activities.sumOf(ActivityEntry::kcal),
                     )
@@ -84,10 +91,30 @@ class TodayViewModel(
                     },
                     activities = activities,
                     favoriteNames = favorites.map { it.name.lowercase() }.toSet(),
+                    hasGoal = goalState == null || goalState.goal != null,
                 )
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodayUiState())
+
+    /** Gerade beendetes Ziel (erreicht oder Datum vorbei) – wird einmal als Ergebnis gezeigt. */
+    private val _endedGoal = MutableStateFlow<WeightGoal?>(null)
+    val endedGoal: StateFlow<WeightGoal?> = _endedGoal.asStateFlow()
+
+    init {
+        // Bei jedem neuen Gewicht (und beim Start) prüfen, ob das aktive Ziel erreicht oder abgelaufen ist.
+        viewModelScope.launch {
+            goalRepository.current
+                .filterNotNull()
+                .map { it.profile.weightKg }
+                .distinctUntilChanged()
+                .collect { weight -> goalRepository.checkEnded(weight)?.let { _endedGoal.value = it } }
+        }
+    }
+
+    fun dismissEndedGoal() {
+        _endedGoal.value = null
+    }
 
     fun previousDay() = date.update { it.minusDays(1) }
 

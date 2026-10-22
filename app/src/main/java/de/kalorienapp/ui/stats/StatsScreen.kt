@@ -58,6 +58,7 @@ import de.kalorienapp.ui.components.NumberField
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.parseDecimal
 import de.kalorienapp.ui.components.toInputString
+import de.kalorienapp.ui.goal.GoalHistoryItem
 import de.kalorienapp.ui.theme.Neon
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -116,6 +117,11 @@ fun StatsScreen(viewModel: StatsViewModel = viewModel(factory = AppViewModelProv
                 onAdd = { showWeightDialog = true },
                 onDelete = viewModel::deleteWeight,
             )
+            if (state.goalHistory.isNotEmpty()) {
+                HorizontalDivider()
+                Text(stringResource(R.string.goal_history_title), style = MaterialTheme.typography.titleLarge)
+                state.goalHistory.forEach { GoalHistoryItem(it) }
+            }
         }
     }
 }

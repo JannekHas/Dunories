@@ -32,8 +32,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.ui.AppViewModelProvider
+import de.kalorienapp.ui.goal.GoalInputs
+import de.kalorienapp.ui.goal.GoalPreviewCard
 import de.kalorienapp.ui.profile.BodyDataSection
-import de.kalorienapp.ui.profile.GoalSection
 import de.kalorienapp.ui.profile.ProfileFormState
 import de.kalorienapp.ui.profile.ProfileViewModel
 import de.kalorienapp.ui.profile.TargetAdjustmentsSection
@@ -54,8 +55,8 @@ fun OnboardingScreen(
 
     val stepValid = when (step) {
         0 -> state.form.bodyDataValid
-        1 -> true
-        else -> state.form.isValid
+        1 -> state.goalState?.goal != null
+        else -> state.form.isValid && state.goalState?.goal != null
     }
 
     Scaffold(
@@ -117,7 +118,8 @@ fun OnboardingScreen(
                 }
                 1 -> {
                     StepIntro(stringResource(R.string.onboarding_goal_intro))
-                    GoalSection(form, viewModel::update)
+                    GoalInputs(state.goalForm, form.weightValue, viewModel::updateGoal)
+                    GoalPreviewCard(state.goalState?.takeIf { it.goal != null })
                 }
                 else -> {
                     StepIntro(stringResource(R.string.onboarding_targets_intro))
