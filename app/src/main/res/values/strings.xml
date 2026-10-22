@@ -307,6 +307,7 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="recipe_source_tiktok">Original auf TikTok ansehen</string>
     <string name="recipe_source_instagram">Original auf Instagram ansehen</string>
     <string name="recipe_source_link">Originalquelle öffnen</string>
+    <string name="recipe_source_url">Link zum Original (optional)</string>
     <string name="ingredient_add">Zutat hinzufügen</string>
     <string name="ingredient_edit">Zutat bearbeiten</string>
     <string name="ingredient_apply">Übernehmen</string>

@@ -100,7 +100,8 @@ data class RecipeForm(
         totalMinutes = minutesValue,
         effort = effort,
         imagePath = imagePath,
-        sourceUrl = sourceUrl,
+        sourceUrl = sourceUrl?.trim()?.takeIf { it.isNotEmpty() }
+            ?.let { if (it.startsWith("http://") || it.startsWith("https://")) it else "https://$it" },
         source = source,
         categoryIds = categoryIds + extraCategoryIds,
         ingredients = ingredients.filter { it.food.name.isNotBlank() }.map(IngredientForm::toDomain),

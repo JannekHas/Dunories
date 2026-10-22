@@ -67,7 +67,10 @@ import kotlinx.coroutines.launch
 
 data class RecipesUiState(
     val recipes: List<Recipe> = emptyList(),
+    /** Alle Kategorien (Verwaltung). */
     val categories: List<RecipeCategory> = emptyList(),
+    /** Nur Kategorien mit mindestens einem Rezept (Filter-Chips). */
+    val usedCategories: List<RecipeCategory> = emptyList(),
     val query: String = "",
     val categoryId: Long? = null,
     val hasAnyRecipe: Boolean = false,
@@ -88,8 +91,9 @@ class RecipesViewModel(private val repository: RecipeRepository) : ViewModel() {
                         recipe.ingredients.any { needle in it.name.lowercase() })
             },
             categories = categories,
+            usedCategories = categories.filter { c -> recipes.any { c.id in it.categoryIds } },
             query = q,
-            categoryId = category?.takeIf { id -> categories.any { it.id == id } },
+            categoryId = category?.takeIf { id -> recipes.any { id in it.categoryIds } },
             hasAnyRecipe = recipes.isNotEmpty(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RecipesUiState())
@@ -192,7 +196,7 @@ fun RecipesScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            item(key = "categories") {
+            if (state.usedCategories.isNotEmpty()) item(key = "categories") {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
                         FilterChip(
@@ -202,7 +206,7 @@ fun RecipesScreen(
                             colors = neonChipColors(),
                         )
                     }
-                    items(state.categories, key = { it.id }) { category ->
+                    items(state.usedCategories, key = { it.id }) { category ->
                         FilterChip(
                             selected = state.categoryId == category.id,
                             onClick = { viewModel.selectCategory(if (state.categoryId == category.id) null else category.id) },

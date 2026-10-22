@@ -61,6 +61,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -251,6 +252,17 @@ fun RecipeEditScreen(
                     label = { Text(stringResource(R.string.recipe_description)) },
                     minLines = 2,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item(key = "source") {
+                OutlinedTextField(
+                    value = form.sourceUrl.orEmpty(),
+                    onValueChange = { v -> viewModel.update { it.copy(sourceUrl = v.trim().ifEmpty { null }) } },
+                    label = { Text(stringResource(R.string.recipe_source_url)) },
+                    placeholder = { Text(stringResource(R.string.recipe_import_link_placeholder)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }

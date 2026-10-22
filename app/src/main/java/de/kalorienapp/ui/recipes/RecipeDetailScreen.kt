@@ -70,7 +70,8 @@ import de.kalorienapp.domain.RecipeCalculator
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.domain.model.Recipe
 import de.kalorienapp.domain.model.RecipeCategory
-import de.kalorienapp.domain.model.RecipeSource
+import de.kalorienapp.data.remote.social.SocialPageParser
+import de.kalorienapp.data.remote.social.SocialPlatform
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.MealTypePicker
 import de.kalorienapp.ui.components.NumberField
@@ -270,10 +271,10 @@ fun RecipeDetailScreen(
                     ) {
                         Text(
                             stringResource(
-                                when (recipe.source) {
-                                    RecipeSource.TIKTOK -> R.string.recipe_source_tiktok
-                                    RecipeSource.INSTAGRAM -> R.string.recipe_source_instagram
-                                    else -> R.string.recipe_source_link
+                                when (SocialPageParser.platformOf(url)) {
+                                    SocialPlatform.TIKTOK -> R.string.recipe_source_tiktok
+                                    SocialPlatform.INSTAGRAM -> R.string.recipe_source_instagram
+                                    SocialPlatform.OTHER -> R.string.recipe_source_link
                                 },
                             ),
                         )
