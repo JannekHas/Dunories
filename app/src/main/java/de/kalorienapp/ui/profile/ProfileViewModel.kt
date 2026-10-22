@@ -3,14 +3,17 @@ package de.kalorienapp.ui.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.repository.ProfileRepository
+import de.kalorienapp.data.repository.WeightRepository
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.model.DailyTargets
+import de.kalorienapp.domain.model.WeightEntry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.Year
 
 data class ProfileUiState(
@@ -27,6 +30,7 @@ data class ProfileUiState(
 /** Wird für Onboarding und Profil-Screen verwendet. */
 class ProfileViewModel(
     private val repository: ProfileRepository,
+    private val weightRepository: WeightRepository,
 ) : ViewModel() {
 
     private val currentYear get() = Year.now().value
@@ -60,10 +64,12 @@ class ProfileViewModel(
         }
     }
 
+    /** Onboarding-Abschluss: Profil speichern; das Startgewicht wird die erste Messung im Gewichtsverlauf. */
     fun save(onSaved: () -> Unit) {
         val profile = _uiState.value.form.toProfile(currentYear) ?: return
         viewModelScope.launch {
             repository.save(profile)
+            weightRepository.save(WeightEntry(measuredAt = Instant.now(), weightKg = profile.weightKg))
             onSaved()
         }
     }

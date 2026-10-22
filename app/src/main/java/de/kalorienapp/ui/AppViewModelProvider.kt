@@ -26,7 +26,7 @@ object AppViewModelProvider {
             )
         }
         initializer {
-            ProfileViewModel(container().profileRepository)
+            ProfileViewModel(container().profileRepository, container().weightRepository)
         }
         initializer {
             CalendarViewModel(container().statsRepository)
