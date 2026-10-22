@@ -366,4 +366,42 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="import_fail_file_text">Die geteilte Datei konnte nicht geöffnet werden.</string>
     <string name="import_tip_tiktok">Tipp: Wird das Rezept nur im Video gezeigt, speichere das Video in TikTok („Video speichern“) und teile die Datei an die KalorienApp – oder teile Screenshots.</string>
     <string name="import_tip_instagram">Tipp: Instagram gibt Beiträge oft nicht frei. Teile stattdessen Screenshots vom Rezept oder eine Bildschirmaufnahme des Reels an die KalorienApp.</string>
+    <!-- Benachrichtigungen -->
+    <string name="section_notifications">Benachrichtigungen</string>
+    <string name="channel_calories">Verbleibende Kalorien</string>
+    <string name="channel_reminders">Erinnerungen</string>
+    <string name="channel_reports">KI-Wochenauswertung</string>
+    <string name="notif_calories_left">Noch %1$s kcal</string>
+    <string name="notif_calories_over">%1$s kcal über dem Budget</string>
+    <string name="notif_weigh_title">Zeit zum Wiegen ⚖️</string>
+    <string name="notif_weigh_text">Am besten jetzt vor dem Frühstück – tippen zum Eintragen.</string>
+    <string name="notif_report_title">Deine Wochenauswertung ist da</string>
+    <string name="notif_permission_missing">Benachrichtigungen sind für die App ausgeschaltet.</string>
+    <string name="notif_permission_open">In den Einstellungen erlauben</string>
+    <string name="notif_setting_calories">Verbleibende Kalorien anzeigen</string>
+    <string name="notif_setting_calories_text">Dauerhafte Benachrichtigung mit den Ringen von „Heute“. Antippen öffnet die App, sie bleibt stehen.</string>
+    <string name="notif_setting_weigh">Wiege-Erinnerung</string>
+    <string name="notif_setting_weigh_text">Kurz vor deiner üblichen ersten Mahlzeit, wenn die letzte Messung zu alt ist.</string>
+    <string name="notif_weigh_after">Erinnern nach</string>
+    <plurals name="days_count">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tagen</item>
+    </plurals>
+    <string name="notif_setting_report">KI-Wochenauswertung</string>
+    <string name="notif_setting_report_text">Jeden Montagmorgen automatisch für die letzte Woche, mit Benachrichtigung.</string>
+    <!-- KI-Wochenauswertung -->
+    <string name="report_title">KI-Wochenauswertung</string>
+    <string name="report_empty">Die KI analysiert Ernährung, Bewegung und Gewicht und gibt dir konkrete Tipps für dein Ziel.</string>
+    <string name="report_generate">Letzte 7 Tage auswerten</string>
+    <string name="report_running">KI wertet aus … (bis zu einer Minute)</string>
+    <string name="report_auto_hint">Montags kommt automatisch die Auswertung der Vorwoche (abschaltbar im Profil).</string>
+    <string name="report_older">Frühere Auswertungen</string>
+    <string name="report_range">%1$s – %2$s</string>
+    <string name="report_wins">Das lief gut</string>
+    <string name="report_improvements">Da geht noch was</string>
+    <string name="report_tips">Tipps für die nächste Woche</string>
+    <string name="report_goal">Dein Ziel</string>
+    <string name="report_disclaimer">KI-Einschätzung ohne Gewähr – keine medizinische Beratung. Die App ändert dadurch nichts automatisch.</string>
+    <string name="report_delete_title">Auswertung löschen?</string>
+    <string name="report_error_data">Zu wenig Daten: Trage an mindestens 2 Tagen etwas ein.</string>
 </resources>

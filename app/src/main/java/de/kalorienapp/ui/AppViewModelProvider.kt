@@ -10,12 +10,14 @@ import de.kalorienapp.ui.calendar.CalendarViewModel
 import de.kalorienapp.ui.capture.CaptureViewModel
 import de.kalorienapp.ui.entry.EntryEditViewModel
 import de.kalorienapp.ui.goal.GoalViewModel
+import de.kalorienapp.ui.profile.NotificationSettingsViewModel
 import de.kalorienapp.ui.profile.ProfileViewModel
 import de.kalorienapp.ui.recipes.RecipeDetailViewModel
 import de.kalorienapp.ui.recipes.RecipeEditViewModel
 import de.kalorienapp.ui.recipes.RecipeImportViewModel
 import de.kalorienapp.ui.recipes.RecipesViewModel
 import de.kalorienapp.ui.stats.StatsViewModel
+import de.kalorienapp.ui.stats.WeeklyReportViewModel
 import de.kalorienapp.ui.today.TodayViewModel
 
 /** Factory für alle ViewModels – holt Abhängigkeiten aus dem [de.kalorienapp.AppContainer]. */
@@ -37,7 +39,18 @@ object AppViewModelProvider {
             CalendarViewModel(container().statsRepository)
         }
         initializer {
-            StatsViewModel(container().statsRepository, container().weightRepository, container().goalRepository)
+            StatsViewModel(
+                container().statsRepository,
+                container().weightRepository,
+                container().goalRepository,
+                container().weeklyReportRepository,
+            )
+        }
+        initializer {
+            WeeklyReportViewModel(createSavedStateHandle(), container().weeklyReportRepository)
+        }
+        initializer {
+            NotificationSettingsViewModel(container().settings, container().calorieNotifier, container().workScheduler)
         }
         initializer {
             RecipesViewModel(container().recipeRepository)

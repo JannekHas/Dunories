@@ -12,6 +12,7 @@ import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.db.dao.ProfileDao
 import de.kalorienapp.data.db.dao.RecipeDao
 import de.kalorienapp.data.db.dao.StatsDao
+import de.kalorienapp.data.db.dao.WeeklyReportDao
 import de.kalorienapp.data.db.dao.WeightEntryDao
 import de.kalorienapp.data.db.dao.WeightGoalDao
 import de.kalorienapp.data.db.entity.ActivityEntryEntity
@@ -23,6 +24,7 @@ import de.kalorienapp.data.db.entity.RecipeCategoryRefEntity
 import de.kalorienapp.data.db.entity.RecipeEntity
 import de.kalorienapp.data.db.entity.RecipeIngredientEntity
 import de.kalorienapp.data.db.entity.RecipeStepEntity
+import de.kalorienapp.data.db.entity.WeeklyReportEntity
 import de.kalorienapp.data.db.entity.WeightEntryEntity
 import de.kalorienapp.data.db.entity.WeightGoalEntity
 
@@ -40,8 +42,9 @@ import de.kalorienapp.data.db.entity.WeightGoalEntity
         RecipeStepEntity::class,
         RecipeCategoryEntity::class,
         RecipeCategoryRefEntity::class,
+        WeeklyReportEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -53,6 +56,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun statsDao(): StatsDao
     abstract fun weightGoalDao(): WeightGoalDao
     abstract fun recipeDao(): RecipeDao
+    abstract fun weeklyReportDao(): WeeklyReportDao
 
     companion object {
         /** v2: Mengeneinheit (g/ml) und optionale Zusatznährwerte. */
@@ -333,6 +337,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v12: KI-Wochenauswertungen (Inhalt als JSON). */
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `weekly_report` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`fromEpochDay` INTEGER NOT NULL, `toEpochDay` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `content` TEXT NOT NULL)",
+                )
+            }
+        }
+
         /** Aus dem exportierten Schema (app/schemas/…/11.json) übernommen. */
         private val RECIPE_TABLES_SQL = listOf(
             "CREATE TABLE IF NOT EXISTS `recipe` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `servings` INTEGER NOT NULL, `totalMinutes` INTEGER, `effort` TEXT, `imagePath` TEXT, `sourceUrl` TEXT, `source` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)",
@@ -350,7 +364,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) = insertDefaultCategories(db)
                 })
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                 .build()
     }
 }

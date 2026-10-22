@@ -18,6 +18,16 @@ interface FoodEntryDao {
     @Upsert
     suspend fun upsert(entry: FoodEntryEntity)
 
+    @Query("SELECT * FROM food_entry WHERE dateEpochDay BETWEEN :fromEpochDay AND :toEpochDay ORDER BY dateEpochDay, createdAt")
+    suspend fun between(fromEpochDay: Long, toEpochDay: Long): List<FoodEntryEntity>
+
+    @Query("SELECT COUNT(*) FROM food_entry WHERE dateEpochDay = :epochDay")
+    suspend fun countForDay(epochDay: Long): Int
+
+    /** Je Tag der Zeitpunkt des ersten Eintrags (für die übliche Uhrzeit der ersten Mahlzeit). */
+    @Query("SELECT dateEpochDay, MIN(createdAt) AS firstCreatedAt FROM food_entry WHERE dateEpochDay >= :fromEpochDay GROUP BY dateEpochDay")
+    suspend fun firstEntryPerDay(fromEpochDay: Long): List<FirstEntryRow>
+
     @Query("DELETE FROM food_entry WHERE id = :id")
     suspend fun deleteById(id: Long)
 
@@ -36,6 +46,8 @@ interface FoodEntryDao {
     )
     fun observeFrequent(limit: Int): Flow<List<FrequentEntryRow>>
 }
+
+data class FirstEntryRow(val dateEpochDay: Long, val firstCreatedAt: Long)
 
 data class FrequentEntryRow(
     @Embedded val entry: FoodEntryEntity,

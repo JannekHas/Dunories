@@ -1,0 +1,188 @@
+package de.kalorienapp.notify
+
+import android.annotation.SuppressLint
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.SweepGradient
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.compose.ui.graphics.toArgb
+import de.kalorienapp.KalorienApplication
+import de.kalorienapp.R
+import de.kalorienapp.data.AppSettings
+import de.kalorienapp.data.repository.ActivityEntryRepository
+import de.kalorienapp.data.repository.FoodEntryRepository
+import de.kalorienapp.data.repository.GoalRepository
+import de.kalorienapp.domain.GoalCalculator
+import de.kalorienapp.domain.model.ActivityEntry
+import de.kalorienapp.domain.model.DailyTargets
+import de.kalorienapp.domain.model.DaySummary
+import de.kalorienapp.domain.model.FoodEntry
+import de.kalorienapp.domain.model.sum
+import de.kalorienapp.ui.components.format
+import de.kalorienapp.ui.theme.Neon
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import kotlin.math.abs
+import kotlin.math.roundToInt
+
+/**
+ * Dauerhafte Benachrichtigung „Noch X kcal“ mit den vier Ringen als Bild.
+ * Wird sie weggewischt (ab Android 14 möglich), zeigt sie [DismissReceiver] sofort wieder an.
+ */
+class CalorieNotifier(
+    private val context: Context,
+    private val settings: AppSettings,
+    private val goals: GoalRepository,
+    private val entries: FoodEntryRepository,
+    private val activities: ActivityEntryRepository,
+) {
+    /** Angezeigter Tag; wird beim Tageswechsel (Worker, App-Start) neu gesetzt. */
+    private val today = MutableStateFlow(LocalDate.now())
+
+    /** Solange der App-Prozess läuft: bei jeder Änderung (Eintrag, Ziel, Einstellung) aktualisieren. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observe(scope: CoroutineScope) {
+        scope.launch {
+            today.flatMapLatest { day ->
+                combine(
+                    settings.caloriesNotification,
+                    goals.current,
+                    entries.entriesFor(day),
+                    activities.entriesFor(day),
+                ) { enabled, state, eaten, acts ->
+                    if (enabled && state != null) summaryOf(state.targetsFor(day.year), eaten, acts) else null
+                }
+            }.collect { summary -> if (summary == null) cancel() else post(summary) }
+        }
+    }
+
+    /** Von außen (Worker, Wegwischen, Neustart): Tag prüfen und neu anzeigen. */
+    suspend fun refresh() {
+        today.value = LocalDate.now()
+        val day = today.value
+        val state = goals.current.first()
+        if (!settings.caloriesNotification.value || state == null) {
+            cancel()
+            return
+        }
+        post(summaryOf(state.targetsFor(day.year), entries.entriesFor(day).first(), activities.entriesFor(day).first()))
+    }
+
+    fun cancel() = NotificationManagerCompat.from(context).cancel(Notifications.ID_CALORIES)
+
+    private fun summaryOf(targets: DailyTargets, eaten: List<FoodEntry>, acts: List<ActivityEntry>) =
+        GoalCalculator.daySummary(targets, eaten.map(FoodEntry::nutrients).sum(), acts.sumOf(ActivityEntry::kcal))
+
+    @SuppressLint("MissingPermission") // canPost prüft die Erlaubnis
+    private fun post(summary: DaySummary) {
+        if (!Notifications.canPost(context)) return
+        val remaining = summary.remainingKcal
+        val title = if (remaining >= 0) {
+            context.getString(R.string.notif_calories_left, remaining.format())
+        } else {
+            context.getString(R.string.notif_calories_over, abs(remaining).format())
+        }
+        val dismiss = PendingIntent.getBroadcast(
+            context, 0, Intent(context, DismissReceiver::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(context, Notifications.CHANNEL_CALORIES)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setLargeIcon(ringBitmap(summary, context.resources.displayMetrics.density))
+            .setColor(Neon.Cyan.toArgb())
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setShowWhen(false)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            // Antippen öffnet die App, die Benachrichtigung bleibt (kein AutoCancel).
+            .setContentIntent(Notifications.openAppIntent(context, Notifications.ID_CALORIES))
+            .setDeleteIntent(dismiss)
+            .build()
+        NotificationManagerCompat.from(context).notify(Notifications.ID_CALORIES, notification)
+    }
+
+    /** Weggewischt → sofort wieder anzeigen (solange der Schalter an ist). */
+    class DismissReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val pending = goAsync()
+            val container = (context.applicationContext as KalorienApplication).container
+            container.appScope.launch {
+                try {
+                    container.calorieNotifier.refresh()
+                } finally {
+                    pending.finish()
+                }
+            }
+        }
+    }
+
+    private companion object {
+        const val SIZE_DP = 64
+
+        /** Die vier Ringe von „Heute“: außen kcal (Regenbogen), dann Protein, KH, Fett. */
+        fun ringBitmap(summary: DaySummary, density: Float): Bitmap {
+            val size = (SIZE_DP * density).roundToInt()
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            val stroke = size * 0.085f
+            val gap = size * 0.035f
+            val budget = (summary.targets.kcal + summary.activityKcal).coerceAtLeast(1)
+            val rings = listOf(
+                (summary.eaten.kcal / budget).toFloat() to null,
+                ratio(summary.eaten.proteinG, summary.targets.proteinG) to Neon.Magenta.toArgb(),
+                ratio(summary.eaten.carbsG, summary.targets.carbsG) to Neon.Yellow.toArgb(),
+                ratio(summary.eaten.fatG, summary.targets.fatG) to Neon.Green.toArgb(),
+            )
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = stroke
+                strokeCap = Paint.Cap.ROUND
+            }
+            rings.forEachIndexed { index, (progress, color) ->
+                val inset = stroke / 2 + index * (stroke + gap)
+                val rect = RectF(inset, inset, size - inset, size - inset)
+                paint.shader = null
+                paint.color = Neon.Track.toArgb()
+                canvas.drawArc(rect, 0f, 360f, false, paint)
+                val main = progress.coerceIn(0f, 1f)
+                if (main > 0f) {
+                    if (color == null) {
+                        val colors = (Neon.Rainbow + Neon.Rainbow.first()).map { it.toArgb() }.toIntArray()
+                        paint.shader = SweepGradient(size / 2f, size / 2f, colors, null).apply {
+                            setLocalMatrix(android.graphics.Matrix().apply { setRotate(-90f, size / 2f, size / 2f) })
+                        }
+                    } else {
+                        paint.color = color
+                    }
+                    canvas.drawArc(rect, -90f, 360f * main, false, paint)
+                }
+                if (progress > 1f) {
+                    paint.shader = null
+                    paint.color = Neon.Red.toArgb()
+                    paint.strokeWidth = stroke * 0.45f
+                    canvas.drawArc(rect, -90f, 360f * (progress - 1f).coerceAtMost(1f), false, paint)
+                    paint.strokeWidth = stroke
+                }
+            }
+            return bitmap
+        }
+
+        private fun ratio(eaten: Double, target: Int) = if (target > 0) (eaten / target).toFloat() else 0f
+    }
+}

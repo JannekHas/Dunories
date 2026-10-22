@@ -11,6 +11,9 @@ interface ActivityEntryDao {
     @Query("SELECT * FROM activity_entry WHERE dateEpochDay = :epochDay ORDER BY createdAt")
     fun observeForDay(epochDay: Long): Flow<List<ActivityEntryEntity>>
 
+    @Query("SELECT * FROM activity_entry WHERE dateEpochDay BETWEEN :fromEpochDay AND :toEpochDay ORDER BY dateEpochDay")
+    suspend fun between(fromEpochDay: Long, toEpochDay: Long): List<ActivityEntryEntity>
+
     @Upsert
     suspend fun upsert(entry: ActivityEntryEntity)
 

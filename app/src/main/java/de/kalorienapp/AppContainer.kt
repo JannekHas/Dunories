@@ -2,10 +2,12 @@ package de.kalorienapp
 
 import android.content.Context
 import de.kalorienapp.capture.FoodAnalyzer
+import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.db.AppDatabase
 import de.kalorienapp.data.remote.gemini.GeminiClient
 import de.kalorienapp.data.remote.gemini.GeminiFiles
 import de.kalorienapp.data.remote.gemini.GeminiRecipeAnalyzer
+import de.kalorienapp.data.remote.gemini.GeminiWeeklyAnalyzer
 import de.kalorienapp.data.remote.openfoodfacts.OpenFoodFactsClient
 import de.kalorienapp.data.remote.social.SocialClient
 import de.kalorienapp.data.repository.ActivityEntryRepository
@@ -15,19 +17,32 @@ import de.kalorienapp.data.repository.GoalRepository
 import de.kalorienapp.data.repository.ProfileRepository
 import de.kalorienapp.data.repository.RecipeRepository
 import de.kalorienapp.data.repository.StatsRepository
+import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.data.repository.WeightRepository
+import de.kalorienapp.notify.CalorieNotifier
+import de.kalorienapp.notify.WorkScheduler
 import de.kalorienapp.recipe.RecipeDraftStore
 import de.kalorienapp.recipe.RecipeImageStore
 import de.kalorienapp.recipe.RecipeImporter
 import de.kalorienapp.recipe.ShareInbox
+import de.kalorienapp.ui.navigation.NavRequests
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /** Manuelle Dependency Injection: alle app-weiten Abhängigkeiten an einer Stelle. */
 class AppContainer(context: Context) {
     private val database = AppDatabase.create(context)
 
+    /** Lebt so lange wie der App-Prozess (Benachrichtigung aktualisieren, Receiver). */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    val settings = AppSettings(context)
+
+    val foodEntryDao = database.foodEntryDao()
     val profileRepository = ProfileRepository(database.profileDao())
-    val foodEntryRepository = FoodEntryRepository(database.foodEntryDao())
-    val foodLibraryRepository = FoodLibraryRepository(database.favoriteFoodDao(), database.foodEntryDao())
+    val foodEntryRepository = FoodEntryRepository(foodEntryDao)
+    val foodLibraryRepository = FoodLibraryRepository(database.favoriteFoodDao(), foodEntryDao)
     val activityEntryRepository = ActivityEntryRepository(database.activityEntryDao())
     val goalRepository = GoalRepository(database.weightGoalDao(), profileRepository)
     val statsRepository = StatsRepository(database.statsDao(), goalRepository)
@@ -54,4 +69,20 @@ class AppContainer(context: Context) {
         files = GeminiFiles(gemini),
         imageStore = recipeImages,
     )
+
+    val weeklyReportRepository = WeeklyReportRepository(
+        dao = database.weeklyReportDao(),
+        foodDao = foodEntryDao,
+        activityDao = database.activityEntryDao(),
+        statsRepository = statsRepository,
+        goalRepository = goalRepository,
+        weightRepository = weightRepository,
+        analyzer = GeminiWeeklyAnalyzer(gemini),
+    )
+
+    val calorieNotifier = CalorieNotifier(context, settings, goalRepository, foodEntryRepository, activityEntryRepository)
+    val workScheduler = WorkScheduler(context, settings, foodEntryDao)
+
+    /** Ziele aus Benachrichtigungen (Wiegen, Wochenauswertung). */
+    val navRequests = NavRequests()
 }

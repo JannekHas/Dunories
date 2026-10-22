@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,9 +71,22 @@ private val dateTimeFormatter = DateTimeFormatter.ofPattern("EEE, d. MMM yyyy ·
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatsScreen(viewModel: StatsViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
+fun StatsScreen(
+    /** Aus der Wiege-Erinnerung geöffnet → Dialog direkt zeigen. */
+    openWeighDialog: Boolean = false,
+    onWeighDialogShown: () -> Unit = {},
+    onOpenReport: (Long) -> Unit = {},
+    viewModel: StatsViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val generation by viewModel.reportGeneration.collectAsStateWithLifecycle()
     var showWeightDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(openWeighDialog) {
+        if (openWeighDialog) {
+            showWeightDialog = true
+            onWeighDialogShown()
+        }
+    }
     var goalToDelete by remember { mutableStateOf<WeightGoal?>(null) }
 
     goalToDelete?.let { goal ->
@@ -107,6 +121,12 @@ fun StatsScreen(viewModel: StatsViewModel = viewModel(factory = AppViewModelProv
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            WeeklyReportSection(
+                reports = state.reports,
+                generation = generation,
+                onGenerate = { viewModel.generateReport(onOpenReport) },
+                onOpen = { onOpenReport(it.id) },
+            )
             ChoiceChips(
                 options = StatsPeriod.entries,
                 selected = state.period,

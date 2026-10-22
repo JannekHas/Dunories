@@ -58,6 +58,9 @@ fun ProfileScreen(
             HorizontalDivider()
             SectionTitle(stringResource(R.string.section_targets))
             TargetAdjustmentsSection(state, viewModel::update)
+            HorizontalDivider()
+            SectionTitle(stringResource(R.string.section_notifications))
+            NotificationSettingsSection()
         }
     }
 }

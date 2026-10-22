@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
 import de.kalorienapp.ui.navigation.AppNavHost
 import de.kalorienapp.ui.navigation.OnboardingRoute
 import de.kalorienapp.ui.navigation.TodayRoute
@@ -30,7 +31,10 @@ class MainActivity : ComponentActivity() {
         val container = (application as KalorienApplication).container
         val profileRepository = container.profileRepository
         // Per „Teilen“ geöffnet (TikTok, Instagram, Galerie …) → Inhalt für den Rezept-Import merken.
-        if (savedInstanceState == null) container.shareInbox.accept(intent)
+        if (savedInstanceState == null) {
+            container.shareInbox.accept(intent)
+            container.navRequests.accept(intent)
+        }
 
         setContent {
             KalorienTheme {
@@ -40,15 +44,24 @@ class MainActivity : ComponentActivity() {
                     LaunchedEffect(Unit) {
                         startDestination = if (profileRepository.get() != null) TodayRoute else OnboardingRoute
                     }
-                    startDestination?.let { AppNavHost(startDestination = it, shareInbox = container.shareInbox) }
+                    startDestination?.let { AppNavHost(startDestination = it, container = container) }
                 }
             }
         }
     }
 
-    /** singleTask: weiteres Teilen, während die App offen ist, kommt hier an. */
+    /** singleTask: weiteres Teilen bzw. Antippen einer Benachrichtigung, während die App offen ist. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        (application as KalorienApplication).container.shareInbox.accept(intent)
+        val container = (application as KalorienApplication).container
+        container.shareInbox.accept(intent)
+        container.navRequests.accept(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Tageswechsel bei geöffneter App / nach langer Pause: Benachrichtigung auf heute bringen.
+        val container = (application as KalorienApplication).container
+        container.appScope.launch { container.calorieNotifier.refresh() }
     }
 }

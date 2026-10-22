@@ -35,7 +35,13 @@ import de.kalorienapp.ui.entry.EntryEditScreen
 import de.kalorienapp.ui.goal.GoalScreen
 import de.kalorienapp.ui.onboarding.OnboardingScreen
 import de.kalorienapp.recipe.ImportSource
-import de.kalorienapp.recipe.ShareInbox
+import de.kalorienapp.AppContainer
+import de.kalorienapp.ui.stats.WeeklyReportScreen
+import kotlinx.coroutines.launch
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import de.kalorienapp.ui.profile.ProfileScreen
 import de.kalorienapp.ui.recipes.RecipeDetailScreen
 import de.kalorienapp.ui.recipes.RecipeEditScreen
@@ -56,9 +62,14 @@ private val topLevelDestinations = listOf(
 )
 
 @Composable
-fun AppNavHost(startDestination: Any, shareInbox: ShareInbox) {
+fun AppNavHost(startDestination: Any, container: AppContainer) {
     val navController = rememberNavController()
+    val shareInbox = container.shareInbox
     val pendingShare by shareInbox.pending.collectAsStateWithLifecycle()
+    val pendingNav by container.navRequests.pending.collectAsStateWithLifecycle()
+    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) container.appScope.launch { container.calorieNotifier.refresh() }
+    }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val showBottomBar = topLevelDestinations.any { dest ->
@@ -97,6 +108,26 @@ fun AppNavHost(startDestination: Any, shareInbox: ShareInbox) {
                 navController.navigate(RecipeImportRoute)
             }
         }
+        // Antippen einer Benachrichtigung → passendes Ziel öffnen.
+        LaunchedEffect(pendingNav, currentDestination) {
+            val destination = currentDestination ?: return@LaunchedEffect
+            if (pendingNav == null || destination.hasRoute(OnboardingRoute::class)) return@LaunchedEffect
+            when (val request = container.navRequests.take()) {
+                NavRequest.Weigh -> navController.navigateTopLevel(StatsRoute)
+                is NavRequest.Report -> navController.navigate(WeeklyReportRoute(request.id))
+                null -> Unit
+            }
+        }
+        // Einmalig nach dem Onboarding um Erlaubnis für Benachrichtigungen bitten (Erinnerungen sind standardmäßig an).
+        LaunchedEffect(currentDestination) {
+            val destination = currentDestination ?: return@LaunchedEffect
+            if (Build.VERSION.SDK_INT >= 33 && !destination.hasRoute(OnboardingRoute::class) &&
+                !container.settings.notificationPermissionAsked
+            ) {
+                container.settings.notificationPermissionAsked = true
+                askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
         NavHost(
             navController = navController,
             startDestination = startDestination,
@@ -126,7 +157,14 @@ fun AppNavHost(startDestination: Any, shareInbox: ShareInbox) {
                 CalendarScreen(onDayClick = { date -> navController.navigate(DayRoute(date.toEpochDay())) })
             }
             composable<StatsRoute> {
-                StatsScreen()
+                StatsScreen(
+                    openWeighDialog = container.navRequests.openWeighDialog.collectAsStateWithLifecycle().value,
+                    onWeighDialogShown = container.navRequests::weighDialogShown,
+                    onOpenReport = { navController.navigate(WeeklyReportRoute(it)) },
+                )
+            }
+            composable<WeeklyReportRoute> {
+                WeeklyReportScreen(onBack = { navController.popBackStack() })
             }
             composable<DayRoute> {
                 TodayScreen(

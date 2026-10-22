@@ -31,6 +31,9 @@ data class RecipeEditRoute(val id: Long = 0, val fromImport: Boolean = false)
 @Serializable
 data object RecipeImportRoute
 
+@Serializable
+data class WeeklyReportRoute(val id: Long)
+
 /** Neues Gewichtsziel setzen. */
 @Serializable
 data object GoalRoute
