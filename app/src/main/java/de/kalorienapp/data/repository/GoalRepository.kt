@@ -25,11 +25,16 @@ class GoalRepository(
 ) {
     val activeGoal: Flow<WeightGoal?> = dao.observeActive().map { it?.toDomain() }
 
-    val history: Flow<List<WeightGoal>> = dao.observeHistory().map { list -> list.map { it.toDomain() } }
+    val reachedGoals: Flow<List<WeightGoal>> = dao.observeReached().map { list -> list.map { it.toDomain() } }
 
     /** Profil, aktives Ziel und dessen heutiger Plan (null ohne Profil). */
     val current: Flow<GoalState?> = combine(profileRepository.profile, activeGoal) { profile, goal ->
         profile?.let { GoalState.of(it, goal, LocalDate.now()) }
+    }
+
+    /** Nur für beendete Ziele (Historie); das aktive Ziel wird durch ein neues ersetzt. */
+    suspend fun deleteEnded(goal: WeightGoal) {
+        if (!goal.isActive) dao.delete(goal.id)
     }
 
     suspend fun active(): WeightGoal? = dao.active()?.toDomain()

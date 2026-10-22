@@ -216,7 +216,7 @@
     </plurals>
     <string name="goal_screen_title">Neues Ziel</string>
     <string name="goal_screen_intro">Gib dein Wunschgewicht und bis wann du es erreichen möchtest an. Daraus berechnen wir jeden Tag neu, wie viel du essen kannst.</string>
-    <string name="goal_replace_hint">Dein bisheriges Ziel wird beendet und unter „Vergangene Ziele“ in der Statistik gespeichert.</string>
+    <string name="goal_replace_hint">Dein bisheriges Ziel wird beendet. Erreichst du ein Ziel, erscheint es unter „Erreichte Ziele“ in der Statistik.</string>
     <string name="goal_current_weight">Aktuelles Gewicht: %1$s kg</string>
     <string name="goal_target_weight">Wunschgewicht</string>
     <string name="goal_maintain_button">Gewicht halten</string>
@@ -241,9 +241,8 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="goal_result_next">Wie geht es weiter? Setze ein neues Ziel – zum Beispiel dein Gewicht halten.</string>
     <string name="goal_later">Später</string>
     <string name="goal_banner_text">Kein aktives Gewichtsziel – dein Tagesziel ist gerade dein Grundumsatz.</string>
-    <string name="goal_history_title">Vergangene Ziele</string>
+    <string name="goal_history_title">Erreichte Ziele</string>
+    <string name="goal_delete_title">Ziel löschen?</string>
+    <string name="goal_delete_text">Das erreichte Ziel wird aus der Liste entfernt.</string>
     <string name="goal_history_dates">%1$s – %2$s</string>
-    <string name="goal_reason_reached">erreicht</string>
-    <string name="goal_reason_date">Datum erreicht</string>
-    <string name="goal_reason_replaced">ersetzt</string>
 </resources>

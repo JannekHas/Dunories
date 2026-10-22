@@ -55,11 +55,27 @@ class GoalPlannerTest {
     }
 
     @Test
-    fun `taeglich neu - wer vorne liegt bekommt ein kleineres defizit`() {
+    fun `wer vorne liegt behaelt das geplante tempo`() {
         val g = goal(98.0, 92.0, 12)
-        // Nach 6 Wochen schon 4 kg runter: 2 kg in 42 Tagen = −367 kcal/Tag
+        // Nach 6 Wochen schon 4 kg runter: rechnerisch nur noch −367 kcal/Tag nötig – es bleibt bei −550
         val plan = GoalPlanner.plan(g, 94.0, today.plusWeeks(6))
-        assertEquals(-367, plan.dailyAdjustmentKcal)
+        assertEquals(-550, plan.dailyAdjustmentKcal)
+        assertFalse(plan.limited)
+    }
+
+    @Test
+    fun `wer hinten liegt bekommt ein groesseres defizit`() {
+        val g = goal(98.0, 92.0, 12)
+        // Nach 6 Wochen erst 1 kg runter: 5 kg in 42 Tagen = −917 kcal/Tag
+        val plan = GoalPlanner.plan(g, 97.0, today.plusWeeks(6))
+        assertEquals(-917, plan.dailyAdjustmentKcal)
+    }
+
+    @Test
+    fun `zunehmen - wer vorne liegt behaelt das geplante tempo`() {
+        val g = goal(70.0, 73.0, 12)
+        // geplant 3 kg in 84 Tagen = +275 kcal/Tag
+        assertEquals(275, GoalPlanner.plan(g, 72.5, today.plusWeeks(6)).dailyAdjustmentKcal)
     }
 
     @Test

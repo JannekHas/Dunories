@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,6 +18,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -304,42 +306,29 @@ fun GoalResultDialog(goal: WeightGoal, onNewGoal: () -> Unit, onDismiss: () -> U
     )
 }
 
-@get:androidx.annotation.StringRes
-private val GoalEndReason.labelRes: Int
-    get() = when (this) {
-        GoalEndReason.REACHED -> R.string.goal_reason_reached
-        GoalEndReason.DATE_PASSED -> R.string.goal_reason_date
-        GoalEndReason.REPLACED -> R.string.goal_reason_replaced
-    }
-
-/** Ein beendetes Ziel in der Historie. */
+/** Ein erreichtes Ziel in der Historie (löschbar). */
 @Composable
-fun GoalHistoryItem(goal: WeightGoal, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+fun GoalHistoryItem(goal: WeightGoal, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 stringResource(goal.direction.labelRes),
                 style = MaterialTheme.typography.titleSmall,
                 color = goal.direction.color(),
-                modifier = Modifier.weight(1f),
             )
-            goal.endReason?.let {
-                Text(
-                    stringResource(it.labelRes),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (it == GoalEndReason.REACHED) Neon.Green else Neon.TextSecondary,
-                )
-            }
+            Text(
+                stringResource(
+                    R.string.goal_history_dates,
+                    goal.startDate.formatGoalDate(),
+                    (goal.endedDate ?: LocalDate.now()).formatGoalDate(),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = Neon.TextSecondary,
+            )
+            Text(goalSummaryText(goal), style = MaterialTheme.typography.bodyMedium)
         }
-        Text(
-            stringResource(
-                R.string.goal_history_dates,
-                goal.startDate.formatGoalDate(),
-                (goal.endedDate ?: LocalDate.now()).formatGoalDate(),
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = Neon.TextSecondary,
-        )
-        Text(goalSummaryText(goal), style = MaterialTheme.typography.bodyMedium)
+        IconButton(onClick = onDelete) {
+            Icon(Icons.Filled.Delete, stringResource(R.string.delete), tint = Neon.TextSecondary)
+        }
     }
 }

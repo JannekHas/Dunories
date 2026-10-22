@@ -13,8 +13,9 @@ import kotlin.math.roundToInt
 /**
  * Plant die tägliche Kalorienanpassung für ein Gewichtsziel.
  *
- * Wird täglich neu aus aktuellem Gewicht und verbleibenden Tagen berechnet. Das Tempo ist begrenzt
- * auf [MAX_LOSS_KG_PER_WEEK] Abnahme bzw. [MAX_GAIN_KG_PER_WEEK] Zunahme.
+ * Wird täglich neu aus aktuellem Gewicht und verbleibenden Tagen berechnet. Liegt man hinter dem Plan,
+ * steigt die Anpassung; liegt man vorn, bleibt das ursprünglich geplante Tempo (nie langsamer werden).
+ * Das Tempo ist begrenzt auf [MAX_LOSS_KG_PER_WEEK] Abnahme bzw. [MAX_GAIN_KG_PER_WEEK] Zunahme.
  */
 object GoalPlanner {
 
@@ -33,7 +34,11 @@ object GoalPlanner {
             return GoalPlan(0, 0.0, limited = false, realisticDate = null, remainingDays = null)
         }
         val remainingDays = ChronoUnit.DAYS.between(today, targetDate).coerceAtLeast(1)
-        val wanted = diffKg * KCAL_PER_KG / remainingDays
+        val needed = diffKg * KCAL_PER_KG / remainingDays
+        // Ursprünglich geplantes Tempo (Start → Ziel über die ganze Laufzeit) ist die Untergrenze.
+        val totalDays = ChronoUnit.DAYS.between(goal.startDate, targetDate).coerceAtLeast(1)
+        val planned = (goal.targetWeightKg - goal.startWeightKg) * KCAL_PER_KG / totalDays
+        val wanted = if (goal.direction == Goal.LOSE) minOf(needed, planned) else maxOf(needed, planned)
         val limited = wanted < -maxDeficitPerDay || wanted > maxSurplusPerDay
         val adjustment = wanted.coerceIn(-maxDeficitPerDay, maxSurplusPerDay)
         return GoalPlan(

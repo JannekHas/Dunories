@@ -51,6 +51,7 @@ import de.kalorienapp.R
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.PeriodStats
 import de.kalorienapp.domain.model.WeightEntry
+import de.kalorienapp.domain.model.WeightGoal
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.ChoiceChips
 import de.kalorienapp.ui.components.NeonPill
@@ -72,6 +73,21 @@ private val dateTimeFormatter = DateTimeFormatter.ofPattern("EEE, d. MMM yyyy ·
 fun StatsScreen(viewModel: StatsViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showWeightDialog by remember { mutableStateOf(false) }
+    var goalToDelete by remember { mutableStateOf<WeightGoal?>(null) }
+
+    goalToDelete?.let { goal ->
+        AlertDialog(
+            onDismissRequest = { goalToDelete = null },
+            title = { Text(stringResource(R.string.goal_delete_title)) },
+            text = { Text(stringResource(R.string.goal_delete_text)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteGoal(goal); goalToDelete = null }) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = { TextButton(onClick = { goalToDelete = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
 
     if (showWeightDialog) {
         WeightDialog(
@@ -117,10 +133,12 @@ fun StatsScreen(viewModel: StatsViewModel = viewModel(factory = AppViewModelProv
                 onAdd = { showWeightDialog = true },
                 onDelete = viewModel::deleteWeight,
             )
-            if (state.goalHistory.isNotEmpty()) {
+            if (state.reachedGoals.isNotEmpty()) {
                 HorizontalDivider()
                 Text(stringResource(R.string.goal_history_title), style = MaterialTheme.typography.titleLarge)
-                state.goalHistory.forEach { GoalHistoryItem(it) }
+                state.reachedGoals.forEach { goal ->
+                    GoalHistoryItem(goal, onDelete = { goalToDelete = goal })
+                }
             }
         }
     }

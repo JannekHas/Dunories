@@ -31,15 +31,15 @@ data class StatsUiState(
     val weights: List<WeightEntry> = emptyList(),
     /** Aktuelles Profilgewicht – Vorbelegung, solange noch kein Eintrag existiert. */
     val profileWeightKg: Double? = null,
-    /** Beendete Gewichtsziele, neueste zuerst. */
-    val goalHistory: List<WeightGoal> = emptyList(),
+    /** Erreichte Gewichtsziele, neueste zuerst. */
+    val reachedGoals: List<WeightGoal> = emptyList(),
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StatsViewModel(
     statsRepository: StatsRepository,
     private val weightRepository: WeightRepository,
-    goalRepository: GoalRepository,
+    private val goalRepository: GoalRepository,
 ) : ViewModel() {
 
     private val period = MutableStateFlow(StatsPeriod.WEEK)
@@ -51,15 +51,15 @@ class StatsViewModel(
                 statsRepository.days(today.minusDays(p.days - 1L), today),
                 weightRepository.entries,
                 goalRepository.current,
-                goalRepository.history,
-            ) { days, weights, goalState, history ->
+                goalRepository.reachedGoals,
+            ) { days, weights, goalState, reached ->
                 StatsUiState(
                     period = p,
                     stats = StatsCalculator.period(days),
                     targets = goalState?.targets,
                     weights = weights,
                     profileWeightKg = goalState?.profile?.weightKg,
-                    goalHistory = history,
+                    reachedGoals = reached,
                 )
             }
         }
@@ -72,6 +72,10 @@ class StatsViewModel(
     /** Neue Messung mit aktuellem Zeitpunkt – überschreibt nichts. */
     fun addWeight(weightKg: Double) {
         viewModelScope.launch { weightRepository.save(WeightEntry(measuredAt = Instant.now(), weightKg = weightKg)) }
+    }
+
+    fun deleteGoal(goal: WeightGoal) {
+        viewModelScope.launch { goalRepository.deleteEnded(goal) }
     }
 
     fun deleteWeight(entry: WeightEntry) {
