@@ -14,7 +14,9 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
@@ -32,7 +34,13 @@ import de.kalorienapp.ui.capture.CaptureScreen
 import de.kalorienapp.ui.entry.EntryEditScreen
 import de.kalorienapp.ui.goal.GoalScreen
 import de.kalorienapp.ui.onboarding.OnboardingScreen
+import de.kalorienapp.recipe.ImportSource
+import de.kalorienapp.recipe.ShareInbox
 import de.kalorienapp.ui.profile.ProfileScreen
+import de.kalorienapp.ui.recipes.RecipeDetailScreen
+import de.kalorienapp.ui.recipes.RecipeEditScreen
+import de.kalorienapp.ui.recipes.RecipeImportScreen
+import de.kalorienapp.ui.recipes.RecipesScreen
 import de.kalorienapp.ui.stats.StatsScreen
 import de.kalorienapp.ui.theme.Neon
 import de.kalorienapp.ui.today.TodayScreen
@@ -42,13 +50,15 @@ private data class TopLevelDestination(val route: Any, val icon: @Composable () 
 private val topLevelDestinations = listOf(
     TopLevelDestination(TodayRoute, { Icons.Filled.Home }, R.string.nav_today),
     TopLevelDestination(CalendarRoute, { Icons.Filled.DateRange }, R.string.nav_calendar),
+    TopLevelDestination(RecipesRoute, { ImageVector.vectorResource(R.drawable.ic_restaurant) }, R.string.nav_recipes),
     TopLevelDestination(StatsRoute, { ImageVector.vectorResource(R.drawable.ic_bar_chart) }, R.string.nav_stats),
     TopLevelDestination(ProfileRoute, { Icons.Filled.Person }, R.string.nav_profile),
 )
 
 @Composable
-fun AppNavHost(startDestination: Any) {
+fun AppNavHost(startDestination: Any, shareInbox: ShareInbox) {
     val navController = rememberNavController()
+    val pendingShare by shareInbox.pending.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val showBottomBar = topLevelDestinations.any { dest ->
@@ -80,6 +90,13 @@ fun AppNavHost(startDestination: Any) {
             }
         },
     ) { padding ->
+        // Geteilter Inhalt → Import öffnen (erst nach dem Onboarding; bis dahin bleibt er liegen).
+        LaunchedEffect(pendingShare, currentDestination) {
+            val destination = currentDestination ?: return@LaunchedEffect
+            if (pendingShare != null && !destination.hasRoute(OnboardingRoute::class) && !destination.hasRoute(RecipeImportRoute::class)) {
+                navController.navigate(RecipeImportRoute)
+            }
+        }
         NavHost(
             navController = navController,
             startDestination = startDestination,
@@ -125,6 +142,50 @@ fun AppNavHost(startDestination: Any) {
             }
             composable<ProfileRoute> {
                 ProfileScreen(onNewGoal = { navController.navigate(GoalRoute) })
+            }
+            composable<RecipesRoute> {
+                RecipesScreen(
+                    onOpen = { navController.navigate(RecipeDetailRoute(it.id)) },
+                    onCreate = { navController.navigate(RecipeEditRoute()) },
+                    onImportLink = { text -> shareInbox.put(ImportSource.Text(text)) },
+                )
+            }
+            composable<RecipeDetailRoute> {
+                RecipeDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onEdit = { navController.navigate(RecipeEditRoute(id = it.id)) },
+                )
+            }
+            composable<RecipeEditRoute> { entry ->
+                val route = entry.toRoute<RecipeEditRoute>()
+                RecipeEditScreen(
+                    onClose = { navController.popBackStack() },
+                    onSaved = { id ->
+                        if (route.id != 0L) {
+                            navController.popBackStack()
+                        } else {
+                            // Neues Rezept → Detailansicht statt Editor im Back-Stack.
+                            navController.navigate(RecipeDetailRoute(id)) {
+                                popUpTo<RecipeEditRoute> { inclusive = true }
+                            }
+                        }
+                    },
+                )
+            }
+            composable<RecipeImportRoute> {
+                RecipeImportScreen(
+                    onReview = {
+                        navController.navigate(RecipeEditRoute(fromImport = true)) {
+                            popUpTo<RecipeImportRoute> { inclusive = true }
+                        }
+                    },
+                    onManual = {
+                        navController.navigate(RecipeEditRoute()) {
+                            popUpTo<RecipeImportRoute> { inclusive = true }
+                        }
+                    },
+                    onClose = { navController.popBackStack() },
+                )
             }
             composable<GoalRoute> {
                 GoalScreen(onDone = { navController.popBackStack() })

@@ -57,12 +57,28 @@ class GeminiClient(private val apiKey: String) {
         source: EntrySource,
         parts: JsonArrayBuilder.() -> Unit,
     ): List<FoodDraft> {
+        val text = generateJson(RESPONSE_SCHEMA, parts = parts)
+        val drafts = GeminiResponseParser.parseItems(text, source)
+            ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
+        if (drafts.isEmpty()) throw GeminiException(GeminiError.NO_FOOD)
+        return drafts
+    }
+
+    /**
+     * Ein Aufruf mit festem JSON-Schema. @return Antworttext (JSON) ohne „Gedanken“-Teile.
+     * Fehler werden als [GeminiException] geworfen.
+     */
+    internal suspend fun generateJson(
+        schema: JsonObject,
+        timeoutMs: Int = 120_000,
+        parts: JsonArrayBuilder.() -> Unit,
+    ): String {
         if (apiKey.isBlank()) throw GeminiException(GeminiError.NO_API_KEY)
         val request = buildJsonObject {
             putJsonArray("contents") { addJsonObject { putJsonArray("parts", parts) } }
             putJsonObject("generationConfig") {
                 put("responseMimeType", "application/json")
-                put("responseSchema", RESPONSE_SCHEMA)
+                put("responseSchema", schema)
                 put("temperature", 0.2)
             }
         }
@@ -71,28 +87,26 @@ class GeminiClient(private val apiKey: String) {
                 url = "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent",
                 body = request.toString(),
                 headers = mapOf("x-goog-api-key" to apiKey),
-                timeoutMs = 120_000,
+                timeoutMs = timeoutMs,
             )
         } catch (e: HttpStatusException) {
-            throw GeminiException(
-                when (e.code) {
-                    429 -> GeminiError.QUOTA
-                    // Ungültiger Key liefert je nach Fall 400, 401 oder 403.
-                    400, 401, 403 -> GeminiError.REJECTED
-                    else -> GeminiError.NETWORK
-                },
-                e,
-            )
+            throw GeminiException(errorFor(e.code), e)
         } catch (e: IOException) {
             throw GeminiException(GeminiError.NETWORK, e)
         }
-        val drafts = GeminiResponseParser.parse(body, source)
-            ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
-        if (drafts.isEmpty()) throw GeminiException(GeminiError.NO_FOOD)
-        return drafts
+        return GeminiResponseParser.answerText(body) ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
     }
 
+    internal val key: String get() = apiKey
+
     companion object {
+        internal fun errorFor(code: Int): GeminiError = when (code) {
+            429 -> GeminiError.QUOTA
+            // Ungültiger Key liefert je nach Fall 400, 401 oder 403.
+            400, 401, 403 -> GeminiError.REJECTED
+            else -> GeminiError.NETWORK
+        }
+
         /**
          * Flash-Lite: im kostenlosen Kontingent schnell (wenige Sekunden). Das große Flash-Modell
          * brauchte im Test 90–160 s pro Anfrage und ist für die Erfassung zu langsam.
@@ -155,21 +169,27 @@ Beschreibung: """
 /** Parst die Gemini-Antwort; null bei unbrauchbarem Format (→ Fehlerfall, manuelle Eingabe). */
 internal object GeminiResponseParser {
 
-    fun parse(body: String, source: EntrySource): List<FoodDraft>? {
+    fun parse(body: String, source: EntrySource): List<FoodDraft>? =
+        answerText(body)?.let { parseItems(it, source) }
+
+    /** Antworttext aus der API-Antwort; „Gedanken“-Teile werden übersprungen. */
+    fun answerText(body: String): String? {
         val root = runCatching { lenientJson.parseToJsonElement(body).asObject() }.getOrNull() ?: return null
         val candidate = (root["candidates"] as? JsonArray)?.firstOrNull().asObject() ?: return null
         val parts = candidate["content"].asObject()?.get("parts") as? JsonArray ?: return null
-        // „Gedanken“-Teile überspringen, nur den eigentlichen Antworttext verwenden.
-        val text = parts.mapNotNull { it.asObject() }
+        return parts.mapNotNull { it.asObject() }
             .filterNot { (it["thought"] as? JsonPrimitive)?.boolean == true }
             .mapNotNull { it.string("text") }
             .joinToString("")
-        return parseItems(text, source)
+            .takeIf { it.isNotBlank() }
     }
 
+    /** Entfernt ```json-Zäune, die Modelle manchmal trotz JSON-Modus liefern. */
+    fun cleanJson(text: String): String =
+        text.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+
     fun parseItems(text: String, source: EntrySource): List<FoodDraft>? {
-        val cleaned = text.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
-        val obj = runCatching { lenientJson.parseToJsonElement(cleaned).asObject() }.getOrNull() ?: return null
+        val obj = runCatching { lenientJson.parseToJsonElement(cleanJson(text)).asObject() }.getOrNull() ?: return null
         val items = obj["items"] as? JsonArray ?: return null
         return items.mapNotNull { element ->
             val item = element.asObject() ?: return@mapNotNull null
@@ -193,5 +213,5 @@ internal object GeminiResponseParser {
         }
     }
 
-    private fun JsonObject.nonNegative(key: String) = number(key)?.coerceAtLeast(0.0)
+    internal fun JsonObject.nonNegative(key: String) = number(key)?.coerceAtLeast(0.0)
 }

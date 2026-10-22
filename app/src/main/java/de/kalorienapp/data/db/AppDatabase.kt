@@ -10,6 +10,7 @@ import de.kalorienapp.data.db.dao.ActivityEntryDao
 import de.kalorienapp.data.db.dao.FavoriteFoodDao
 import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.db.dao.ProfileDao
+import de.kalorienapp.data.db.dao.RecipeDao
 import de.kalorienapp.data.db.dao.StatsDao
 import de.kalorienapp.data.db.dao.WeightEntryDao
 import de.kalorienapp.data.db.dao.WeightGoalDao
@@ -17,6 +18,11 @@ import de.kalorienapp.data.db.entity.ActivityEntryEntity
 import de.kalorienapp.data.db.entity.FavoriteFoodEntity
 import de.kalorienapp.data.db.entity.FoodEntryEntity
 import de.kalorienapp.data.db.entity.ProfileEntity
+import de.kalorienapp.data.db.entity.RecipeCategoryEntity
+import de.kalorienapp.data.db.entity.RecipeCategoryRefEntity
+import de.kalorienapp.data.db.entity.RecipeEntity
+import de.kalorienapp.data.db.entity.RecipeIngredientEntity
+import de.kalorienapp.data.db.entity.RecipeStepEntity
 import de.kalorienapp.data.db.entity.WeightEntryEntity
 import de.kalorienapp.data.db.entity.WeightGoalEntity
 
@@ -29,8 +35,13 @@ import de.kalorienapp.data.db.entity.WeightGoalEntity
         ActivityEntryEntity::class,
         WeightEntryEntity::class,
         WeightGoalEntity::class,
+        RecipeEntity::class,
+        RecipeIngredientEntity::class,
+        RecipeStepEntity::class,
+        RecipeCategoryEntity::class,
+        RecipeCategoryRefEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -41,6 +52,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun weightEntryDao(): WeightEntryDao
     abstract fun statsDao(): StatsDao
     abstract fun weightGoalDao(): WeightGoalDao
+    abstract fun recipeDao(): RecipeDao
 
     companion object {
         /** v2: Mengeneinheit (g/ml) und optionale Zusatznährwerte. */
@@ -304,9 +316,41 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Startliste der Rezept-Kategorien (umbenennbar/löschbar). */
+        val DEFAULT_CATEGORIES = listOf("Frühstück", "Hauptgericht", "Salat", "Snack", "Dessert", "Backen", "Getränk", "Meal Prep")
+
+        private fun insertDefaultCategories(db: SupportSQLiteDatabase) {
+            DEFAULT_CATEGORIES.forEachIndexed { index, name ->
+                db.execSQL("INSERT INTO recipe_category (name, position) VALUES (?, ?)", arrayOf<Any>(name, index))
+            }
+        }
+
+        /** v11: Rezeptbuch – Rezepte, Zutaten (Nährwerte pro 100 g/ml), Schritte, Kategorien. */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                RECIPE_TABLES_SQL.forEach(db::execSQL)
+                insertDefaultCategories(db)
+            }
+        }
+
+        /** Aus dem exportierten Schema (app/schemas/…/11.json) übernommen. */
+        private val RECIPE_TABLES_SQL = listOf(
+            "CREATE TABLE IF NOT EXISTS `recipe` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `servings` INTEGER NOT NULL, `totalMinutes` INTEGER, `effort` TEXT, `imagePath` TEXT, `sourceUrl` TEXT, `source` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS `recipe_category` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `position` INTEGER NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS `recipe_ingredient` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `recipeId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `name` TEXT NOT NULL, `quantity` REAL, `quantityUnit` TEXT NOT NULL, `amount` REAL, `unit` TEXT NOT NULL, `kcal` REAL NOT NULL, `proteinG` REAL NOT NULL, `carbsG` REAL NOT NULL, `fatG` REAL NOT NULL, `saturatedFatG` REAL, `sugarG` REAL, `fiberG` REAL, `saltG` REAL, `note` TEXT, FOREIGN KEY(`recipeId`) REFERENCES `recipe`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            "CREATE INDEX IF NOT EXISTS `index_recipe_ingredient_recipeId` ON `recipe_ingredient` (`recipeId`)",
+            "CREATE TABLE IF NOT EXISTS `recipe_step` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `recipeId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `text` TEXT NOT NULL, FOREIGN KEY(`recipeId`) REFERENCES `recipe`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            "CREATE INDEX IF NOT EXISTS `index_recipe_step_recipeId` ON `recipe_step` (`recipeId`)",
+            "CREATE TABLE IF NOT EXISTS `recipe_category_ref` (`recipeId` INTEGER NOT NULL, `categoryId` INTEGER NOT NULL, PRIMARY KEY(`recipeId`, `categoryId`), FOREIGN KEY(`recipeId`) REFERENCES `recipe`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`categoryId`) REFERENCES `recipe_category`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            "CREATE INDEX IF NOT EXISTS `index_recipe_category_ref_categoryId` ON `recipe_category_ref` (`categoryId`)",
+        )
+
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "kalorien.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                .addCallback(object : Callback() {
+                    override fun onCreate(db: SupportSQLiteDatabase) = insertDefaultCategories(db)
+                })
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                 .build()
     }
 }

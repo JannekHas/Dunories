@@ -11,6 +11,10 @@ import de.kalorienapp.ui.capture.CaptureViewModel
 import de.kalorienapp.ui.entry.EntryEditViewModel
 import de.kalorienapp.ui.goal.GoalViewModel
 import de.kalorienapp.ui.profile.ProfileViewModel
+import de.kalorienapp.ui.recipes.RecipeDetailViewModel
+import de.kalorienapp.ui.recipes.RecipeEditViewModel
+import de.kalorienapp.ui.recipes.RecipeImportViewModel
+import de.kalorienapp.ui.recipes.RecipesViewModel
 import de.kalorienapp.ui.stats.StatsViewModel
 import de.kalorienapp.ui.today.TodayViewModel
 
@@ -34,6 +38,28 @@ object AppViewModelProvider {
         }
         initializer {
             StatsViewModel(container().statsRepository, container().weightRepository, container().goalRepository)
+        }
+        initializer {
+            RecipesViewModel(container().recipeRepository)
+        }
+        initializer {
+            RecipeDetailViewModel(createSavedStateHandle(), container().recipeRepository, container().foodEntryRepository)
+        }
+        initializer {
+            RecipeEditViewModel(
+                createSavedStateHandle(),
+                container().recipeRepository,
+                container().recipeImages,
+                container().recipeDrafts,
+            )
+        }
+        initializer {
+            RecipeImportViewModel(
+                container().shareInbox,
+                container().recipeImporter,
+                container().recipeRepository,
+                container().recipeDrafts,
+            )
         }
         initializer {
             GoalViewModel(container().profileRepository, container().goalRepository)

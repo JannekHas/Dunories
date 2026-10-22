@@ -1,5 +1,6 @@
 package de.kalorienapp
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -26,7 +27,10 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
-        val profileRepository = (application as KalorienApplication).container.profileRepository
+        val container = (application as KalorienApplication).container
+        val profileRepository = container.profileRepository
+        // Per „Teilen“ geöffnet (TikTok, Instagram, Galerie …) → Inhalt für den Rezept-Import merken.
+        if (savedInstanceState == null) container.shareInbox.accept(intent)
 
         setContent {
             KalorienTheme {
@@ -36,9 +40,15 @@ class MainActivity : ComponentActivity() {
                     LaunchedEffect(Unit) {
                         startDestination = if (profileRepository.get() != null) TodayRoute else OnboardingRoute
                     }
-                    startDestination?.let { AppNavHost(startDestination = it) }
+                    startDestination?.let { AppNavHost(startDestination = it, shareInbox = container.shareInbox) }
                 }
             }
         }
+    }
+
+    /** singleTask: weiteres Teilen, während die App offen ist, kommt hier an. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        (application as KalorienApplication).container.shareInbox.accept(intent)
     }
 }

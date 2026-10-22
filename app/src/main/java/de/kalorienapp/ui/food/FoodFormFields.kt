@@ -35,6 +35,8 @@ fun FoodFormFields(
     modifier: Modifier = Modifier,
     /** Wird zwischen Name und Menge eingefügt (z. B. Mahlzeit-Auswahl). */
     afterName: @Composable () -> Unit = {},
+    /** Beschriftung des Mengenfelds (Rezeptzutaten: „Gewicht für Nährwerte“). */
+    amountLabel: String = stringResource(R.string.entry_amount),
 ) {
     val unitLabel = stringResource(form.unit.labelRes)
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -57,7 +59,7 @@ fun FoodFormFields(
             NumberField(
                 value = form.amount,
                 onValueChange = { onChange(form.copy(amount = it)) },
-                label = stringResource(R.string.entry_amount),
+                label = amountLabel,
                 suffix = unitLabel,
                 isError = form.amountError,
                 errorText = stringResource(R.string.error_number),

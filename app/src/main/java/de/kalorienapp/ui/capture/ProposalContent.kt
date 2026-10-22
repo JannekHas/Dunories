@@ -171,4 +171,5 @@ private val EntrySource.proposalLabelRes: Int
         EntrySource.AI_PHOTO -> R.string.source_ai_photo
         EntrySource.AI_TEXT -> R.string.source_ai_text
         EntrySource.MANUAL -> R.string.source_manual
+        EntrySource.RECIPE -> R.string.source_recipe
     }

@@ -154,6 +154,7 @@
     <string name="source_ai_photo">KI-Schätzung aus Foto</string>
     <string name="source_ai_text">KI-Schätzung aus Beschreibung</string>
     <string name="source_manual">Manuell</string>
+    <string name="source_recipe">Rezept</string>
     <!-- Favoriten & häufig gegessen -->
     <string name="quick_title">Favoriten &amp; Häufiges</string>
     <string name="quick_short">Favoriten</string>
@@ -245,4 +246,122 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="goal_delete_title">Ziel löschen?</string>
     <string name="goal_delete_text">Das erreichte Ziel wird aus der Liste entfernt.</string>
     <string name="goal_history_dates">%1$s – %2$s</string>
+    <!-- Rezepte -->
+    <string name="nav_recipes">Rezepte</string>
+    <string name="share_target_label">Rezept importieren</string>
+    <string name="recipes_title">Rezeptbuch</string>
+    <string name="recipes_search">Rezept oder Zutat suchen</string>
+    <string name="recipes_all">Alle</string>
+    <string name="recipes_no_match">Keine passenden Rezepte.</string>
+    <string name="recipes_empty_title">Noch keine Rezepte</string>
+    <string name="recipes_empty_text">Teile ein Rezept-Video aus TikTok oder Instagram über „Teilen“ an die KalorienApp – die KI erkennt Zutaten, Schritte und Nährwerte. Oder lege mit + selbst ein Rezept an.</string>
+    <string name="recipe_new">Neues Rezept</string>
+    <string name="recipe_edit">Rezept bearbeiten</string>
+    <string name="recipe_not_found">Rezept nicht gefunden.</string>
+    <string name="recipe_name">Name</string>
+    <string name="recipe_description">Kurzbeschreibung</string>
+    <string name="recipe_servings_label">Portionen</string>
+    <string name="recipe_total_time">Gesamtdauer</string>
+    <string name="unit_min">Min.</string>
+    <string name="error_servings">1 bis 50 Portionen</string>
+    <string name="recipe_effort">Aufwand</string>
+    <string name="effort_easy">Einfach</string>
+    <string name="effort_medium">Mittel</string>
+    <string name="effort_hard">Aufwendig</string>
+    <string name="recipe_categories">Kategorien</string>
+    <string name="recipe_ingredients">Zutaten</string>
+    <string name="recipe_steps">Zubereitung</string>
+    <string name="recipe_step_add">Schritt hinzufügen</string>
+    <string name="recipe_duration">⏱ %1$s</string>
+    <string name="recipe_minutes">%1$d Min.</string>
+    <string name="recipe_hours">%1$d Std.</string>
+    <string name="recipe_hours_minutes">%1$d Std. %2$d Min.</string>
+    <string name="recipe_macro_p">P %1$s</string>
+    <string name="recipe_macro_c">KH %1$s</string>
+    <string name="recipe_macro_f">F %1$s</string>
+    <plurals name="recipe_per_serving_of">
+        <item quantity="one">Pro Portion · Rezept für %d Portion</item>
+        <item quantity="other">Pro Portion · Rezept für %d Portionen</item>
+    </plurals>
+    <plurals name="recipe_servings">
+        <item quantity="one">%d Portion</item>
+        <item quantity="other">%d Portionen</item>
+    </plurals>
+    <string name="recipe_col_serving">Portion</string>
+    <string name="recipe_col_total">Gesamt</string>
+    <string name="minus">−</string>
+    <string name="recipe_image_add">Bild hinzufügen</string>
+    <string name="recipe_image_change">Bild ändern</string>
+    <string name="recipe_image_gallery">Aus der Galerie</string>
+    <string name="recipe_image_camera">Foto aufnehmen</string>
+    <string name="recipe_image_remove">Bild entfernen</string>
+    <string name="recipe_log">Eintragen</string>
+    <string name="recipe_log_title">Ins Tagebuch eintragen</string>
+    <string name="recipe_portions">Portionen</string>
+    <string name="recipe_logged">Ins heutige Tagebuch eingetragen.</string>
+    <string name="recipe_delete_title">Rezept löschen?</string>
+    <string name="recipe_delete_text">„%1$s“ wird endgültig gelöscht. Einträge im Tagebuch bleiben erhalten.</string>
+    <string name="recipe_discard_title">Vorschlag verwerfen?</string>
+    <string name="recipe_discard_text">Das erkannte Rezept wird nicht gespeichert.</string>
+    <string name="recipe_discard">Verwerfen</string>
+    <string name="recipe_source_tiktok">Original auf TikTok ansehen</string>
+    <string name="recipe_source_instagram">Original auf Instagram ansehen</string>
+    <string name="recipe_source_link">Originalquelle öffnen</string>
+    <string name="ingredient_add">Zutat hinzufügen</string>
+    <string name="ingredient_edit">Zutat bearbeiten</string>
+    <string name="ingredient_apply">Übernehmen</string>
+    <string name="ingredient_quantity">Menge im Rezept</string>
+    <string name="ingredient_unit">Einheit</string>
+    <string name="ingredient_note">Hinweis (z. B. gewürfelt)</string>
+    <string name="ingredient_weight">Gewicht für Nährwerte</string>
+    <string name="ingredient_weight_linked">Bei g/ml ist die Menge im Rezept zugleich das Gewicht für die Nährwerte.</string>
+    <string name="ingredient_weight_hint">Bei Stück, EL usw. unten das ungefähre Gewicht in g/ml eintragen. Leer = Zutat zählt nicht mit (z. B. Salz nach Geschmack).</string>
+    <string name="ingredient_summary">%1$s %2$s · %3$s kcal</string>
+    <string name="ingredient_not_counted">zählt nicht zu den Nährwerten</string>
+    <string-array name="ingredient_units">
+        <item>g</item>
+        <item>ml</item>
+        <item>Stück</item>
+        <item>EL</item>
+        <item>TL</item>
+        <item>Prise</item>
+        <item>Dose</item>
+        <item>Packung</item>
+        <item>Zehe</item>
+        <item>Bund</item>
+        <item>Scheibe</item>
+    </string-array>
+    <string name="categories_manage">Kategorien verwalten</string>
+    <string name="category_new">Neue Kategorie</string>
+    <string name="category_rename">Umbenennen</string>
+    <string name="category_name">Name der Kategorie</string>
+    <string name="category_suggested">%1$s (neu)</string>
+    <string name="category_delete_title">„%1$s“ löschen?</string>
+    <string name="category_delete_text">Die Rezepte bleiben erhalten, nur die Kategorie wird entfernt.</string>
+    <string name="recipe_import_link">Link einfügen</string>
+    <string name="recipe_import_link_hint">Füge einen TikTok- oder Instagram-Link ein. Schneller geht es direkt in der App über „Teilen“ → KalorienApp.</string>
+    <string name="recipe_import_link_placeholder">https://www.tiktok.com/…</string>
+    <string name="recipe_import_start">Analysieren</string>
+    <string name="recipe_import_title">Rezept importieren</string>
+    <string name="recipe_import_nothing">Es wurde nichts zum Importieren geteilt.</string>
+    <string name="recipe_import_source_images">%1$d Bild(er)</string>
+    <string name="recipe_import_source_video">Video-Datei</string>
+    <string name="recipe_import_wait">Das kann je nach Beitrag 20–60 Sekunden dauern.</string>
+    <string name="import_stage_link">Beitrag wird gelesen</string>
+    <string name="import_stage_video">Video wird hochgeladen</string>
+    <string name="import_stage_ai">KI erkennt das Rezept</string>
+    <string name="import_stage_image">Bild vom fertigen Gericht wird ausgewählt</string>
+    <string name="recipe_import_manual">Manuell anlegen</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="recipe_import_review">Erkanntes Rezept</string>
+    <string name="recipe_import_review_hint">Von der KI erkannt – bitte kurz prüfen. Tippe auf eine Zutat, um Menge oder Nährwerte zu ändern.</string>
+    <string name="import_fail_link_title">Beitrag nicht lesbar</string>
+    <string name="import_fail_link_text">Der Beitrag konnte nicht geladen werden (privat, gelöscht oder gerade gesperrt).</string>
+    <string name="import_fail_recipe_title">Kein Rezept gefunden</string>
+    <string name="import_fail_recipe_text">Im Beitrag wurde kein Rezept erkannt.</string>
+    <string name="import_fail_ai_title">Analyse fehlgeschlagen</string>
+    <string name="import_fail_file_title">Datei nicht lesbar</string>
+    <string name="import_fail_file_text">Die geteilte Datei konnte nicht geöffnet werden.</string>
+    <string name="import_tip_tiktok">Tipp: Wird das Rezept nur im Video gezeigt, speichere das Video in TikTok („Video speichern“) und teile die Datei an die KalorienApp – oder teile Screenshots.</string>
+    <string name="import_tip_instagram">Tipp: Instagram gibt Beiträge oft nicht frei. Teile stattdessen Screenshots vom Rezept oder eine Bildschirmaufnahme des Reels an die KalorienApp.</string>
 </resources>

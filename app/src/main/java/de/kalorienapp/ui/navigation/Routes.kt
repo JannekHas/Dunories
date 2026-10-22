@@ -17,6 +17,20 @@ data object CalendarRoute
 @Serializable
 data object StatsRoute
 
+@Serializable
+data object RecipesRoute
+
+@Serializable
+data class RecipeDetailRoute(val id: Long)
+
+/** id = 0 → neues Rezept; fromImport → Vorschlag aus dem [de.kalorienapp.recipe.RecipeDraftStore]. */
+@Serializable
+data class RecipeEditRoute(val id: Long = 0, val fromImport: Boolean = false)
+
+/** Import aus dem Teilen-Menü bzw. eingefügtem Link (Inhalt liegt in der ShareInbox). */
+@Serializable
+data object RecipeImportRoute
+
 /** Neues Gewichtsziel setzen. */
 @Serializable
 data object GoalRoute
