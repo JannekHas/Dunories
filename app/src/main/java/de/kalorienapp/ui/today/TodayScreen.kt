@@ -20,6 +20,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
@@ -50,6 +52,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +70,7 @@ import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
+import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.ConcentricRings
 import de.kalorienapp.ui.components.NeonPill
@@ -307,6 +311,7 @@ private fun SummaryCard(
             MacroLegend(stringResource(R.string.protein), summary.eaten.proteinG, summary.targets.proteinG, MacroColors.protein)
             MacroLegend(stringResource(R.string.carbs), summary.eaten.carbsG, summary.targets.carbsG, MacroColors.carbs)
             MacroLegend(stringResource(R.string.fat), summary.eaten.fatG, summary.targets.fatG, MacroColors.fat)
+            ExtraNutrients(summary.eaten)
         }
     }
 }
@@ -318,6 +323,63 @@ private object MacroColors {
     val protein = Neon.Magenta
     val carbs = Neon.Yellow
     val fat = Neon.Green
+}
+
+/**
+ * Aufklappbare Tagessummen der optionalen Nährwerte in Etikett-Reihenfolge.
+ * Summiert werden nur Einträge, bei denen der Wert angegeben ist; ohne Angabe „–“.
+ */
+@Composable
+private fun ExtraNutrients(eaten: Nutrients) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.small)
+                .clickable { expanded = !expanded }
+                .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                stringResource(R.string.extra_nutrients_title),
+                style = MaterialTheme.typography.labelLarge,
+                color = Neon.TextSecondary,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(
+                if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                contentDescription = null,
+                tint = Neon.TextSecondary,
+            )
+        }
+        if (expanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                ExtraNutrientRow(stringResource(R.string.nutrient_saturated_fat), eaten.saturatedFatG, indent = true)
+                ExtraNutrientRow(stringResource(R.string.nutrient_sugar), eaten.sugarG, indent = true)
+                ExtraNutrientRow(stringResource(R.string.nutrient_fiber), eaten.fiberG)
+                ExtraNutrientRow(stringResource(R.string.nutrient_salt), eaten.saltG)
+                Text(
+                    stringResource(R.string.extra_nutrients_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Neon.TextSecondary,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExtraNutrientRow(label: String, grams: Double?, indent: Boolean = false) {
+    Row(Modifier.fillMaxWidth().padding(start = if (indent) 20.dp else 0.dp)) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(
+            grams?.let { stringResource(R.string.grams_value, it.format(1)) } ?: stringResource(R.string.value_missing),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+        )
+    }
 }
 
 /** Legende zu einem Makro-Ring: farbiger Punkt, Name, gegessen / Ziel. */
