@@ -1,6 +1,5 @@
 package de.kalorienapp.domain
 
-import de.kalorienapp.domain.model.ActivityLevel
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.Nutrients
@@ -21,7 +20,6 @@ class GoalCalculatorTest {
         weightKg: Double = 80.0,
         goal: Goal = Goal.MAINTAIN,
         pace: Pace = Pace.NORMAL,
-        activityLevel: ActivityLevel = ActivityLevel.SEDENTARY,
     ) = Profile(
         sex = sex,
         birthYear = year - age,
@@ -29,7 +27,6 @@ class GoalCalculatorTest {
         weightKg = weightKg,
         goal = goal,
         pace = pace,
-        activityLevel = activityLevel,
     )
 
     @Test
@@ -45,11 +42,8 @@ class GoalCalculatorTest {
     }
 
     @Test
-    fun `aktivitaetslevel bestimmt den gesamtumsatz`() {
-        // 1780 * 1,55 = 2759 kcal
-        val p = profile(activityLevel = ActivityLevel.MODERATE)
-        assertEquals(2759.0, GoalCalculator.maintenanceKcal(p, year), 0.001)
-        assertEquals(2759, GoalCalculator.targets(p, year).kcal)
+    fun `basis ist allein der grundumsatz`() {
+        assertEquals(1780.0, GoalCalculator.maintenanceKcal(profile(), year), 0.001)
     }
 
     @Test
@@ -63,17 +57,17 @@ class GoalCalculatorTest {
 
     @Test
     fun `targets halten - kcal und makroverteilung`() {
-        // 1780 * 1.2 = 2136 kcal; Protein 1.6*80 = 128 g; Fett 2136*0.25/9 = 59.33 → 59 g
-        // KH = (2136 - 128*4 - 59*9) / 4 = (2136 - 512 - 531) / 4 = 273.25 → 273 g
+        // Grundumsatz 1780 kcal; Protein 1.6*80 = 128 g; Fett 1780*0.25/9 = 49.4 → 49 g
+        // KH = (1780 - 128*4 - 49*9) / 4 = (1780 - 512 - 441) / 4 = 206.75 → 207 g
         val t = GoalCalculator.targets(profile(), year)
-        assertEquals(DailyTargets(kcal = 2136, proteinG = 128, carbsG = 273, fatG = 59), t)
+        assertEquals(DailyTargets(kcal = 1780, proteinG = 128, carbsG = 207, fatG = 49), t)
     }
 
     @Test
     fun `targets abnehmen - defizit und hoeheres protein`() {
-        // 2136 - 500 = 1636 kcal; Protein 1.8*80 = 144 g
+        // 1780 - 500 = 1280 kcal; Protein 1.8*80 = 144 g
         val t = GoalCalculator.targets(profile(goal = Goal.LOSE, pace = Pace.NORMAL), year)
-        assertEquals(1636, t.kcal)
+        assertEquals(1280, t.kcal)
         assertEquals(144, t.proteinG)
     }
 
@@ -103,9 +97,11 @@ class GoalCalculatorTest {
     }
 
     @Test
-    fun `verbleibend gleich ziel minus gegessen`() {
+    fun `verbleibend gleich ziel plus aktivitaet minus gegessen`() {
         val targets = DailyTargets(kcal = 2000, proteinG = 150, carbsG = 200, fatG = 60)
-        val summary = GoalCalculator.daySummary(targets = targets, eaten = Nutrients(kcal = 1200.0))
-        assertEquals(800, summary.remainingKcal)
+        assertEquals(800, GoalCalculator.daySummary(targets = targets, eaten = Nutrients(kcal = 1200.0)).remainingKcal)
+        val withActivity = GoalCalculator.daySummary(targets, Nutrients(kcal = 1200.0), activityKcal = 300)
+        assertEquals(1100, withActivity.remainingKcal)
+        assertEquals(300, withActivity.activityKcal)
     }
 }

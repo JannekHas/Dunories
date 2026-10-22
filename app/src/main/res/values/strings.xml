@@ -43,16 +43,6 @@
     <string name="pace_lose_normal">Normal (−500 kcal)</string>
     <string name="pace_gain_slow">Langsam (+250 kcal)</string>
     <string name="pace_gain_normal">Normal (+400 kcal)</string>
-    <string name="activity_sedentary">Sitzend</string>
-    <string name="activity_sedentary_desc">Bürojob, kaum Bewegung</string>
-    <string name="activity_light">Leicht aktiv</string>
-    <string name="activity_light_desc">1–3× Sport pro Woche oder viel zu Fuß</string>
-    <string name="activity_moderate">Mäßig aktiv</string>
-    <string name="activity_moderate_desc">3–5× Sport pro Woche</string>
-    <string name="activity_active">Sehr aktiv</string>
-    <string name="activity_active_desc">6–7× Sport pro Woche</string>
-    <string name="activity_very_active">Extrem aktiv</string>
-    <string name="activity_very_active_desc">Körperliche Arbeit plus tägliches Training</string>
     <string name="meal_breakfast">Frühstück</string>
     <string name="meal_lunch">Mittagessen</string>
     <string name="meal_dinner">Abendessen</string>
@@ -63,7 +53,6 @@
     <string name="profile_autosave_hint">Änderungen werden automatisch gespeichert.</string>
     <string name="section_body">Körperdaten</string>
     <string name="section_goal">Ziel</string>
-    <string name="section_activity">Aktivität</string>
     <string name="section_targets">Ziele anpassen</string>
     <string name="profile_sex">Geschlecht</string>
     <string name="profile_age">Alter</string>
@@ -71,7 +60,6 @@
     <string name="profile_weight">Gewicht</string>
     <string name="profile_goal">Was möchtest du erreichen?</string>
     <string name="profile_pace">Tempo</string>
-    <string name="profile_activity_level">Wie aktiv bist du im Alltag?</string>
     <string name="error_age">Alter zwischen 14 und 100</string>
     <string name="error_height">Größe zwischen 100 und 250 cm</string>
     <string name="error_weight">Gewicht zwischen 30 und 300 kg</string>
@@ -91,7 +79,6 @@
     <string name="onboarding_step">Schritt %1$d von %2$d</string>
     <string name="onboarding_body_intro">Für die Berechnung deines Kalorienbedarfs brauchen wir ein paar Angaben.</string>
     <string name="onboarding_goal_intro">Was ist dein Ziel?</string>
-    <string name="onboarding_activity_intro">Wähle, wie aktiv du im Alltag inklusive Sport bist – daraus ergibt sich dein Kalorienbedarf.</string>
     <string name="onboarding_targets_intro">Das sind deine berechneten Ziele. Du kannst sie jederzeit im Profil anpassen.</string>
 
     <!-- Tagesübersicht -->
@@ -186,22 +173,15 @@
     <string name="favorite_remove">Aus Favoriten entfernen</string>
     <string name="favorite_added">„%1$s“ als Favorit gespeichert</string>
     <string name="favorite_removed">„%1$s“ aus Favoriten entfernt</string>
-    <string name="profile_import_workouts">Trainings aus Samsung Health übernehmen</string>
-    <string name="profile_import_workouts_desc">Über Health Connect. Nur bewusst gestartete Trainings; ihre Kalorien (ohne Grundumsatz) kommen zum Tagesziel dazu.</string>
-    <string name="profile_activity_level_without_sport">Wie aktiv bist du im Alltag – ohne Sport?</string>
-    <string name="summary_training">Training</string>
-    <string name="health_hint_no_permission">Health Connect ist noch nicht verbunden – deine Trainings werden noch nicht berücksichtigt.</string>
-    <string name="health_hint_needs_install">Für die Trainings wird die App „Health Connect“ benötigt (oder ein Update davon).</string>
-    <string name="health_hint_not_supported">Health Connect wird auf diesem Gerät nicht unterstützt. Schalte die Trainings im Profil aus.</string>
-    <string name="health_hint_error">Die Trainings konnten gerade nicht gelesen werden.</string>
-    <string name="health_connect_button">Mit Health Connect verbinden</string>
-    <string name="health_install_button">Health Connect installieren</string>
-    <string name="health_privacy_title">Health Connect &amp; Datenschutz</string>
-    <string name="health_privacy_text">KalorienApp liest aus Health Connect ausschließlich deine Trainings und die dabei verbrannten Kalorien, um sie deinem Tagesziel gutzuschreiben. Die Werte bleiben lokal auf deinem Handy, werden nicht hochgeladen und nicht an Dritte weitergegeben. Die App schreibt keine Daten in Health Connect.</string>
-    <string name="close">Schließen</string>
-    <string name="activity_sedentary_everyday">Bürojob, im Alltag kaum Bewegung</string>
-    <string name="activity_light_everyday">Teils im Stehen oder Gehen, z. B. Wege zu Fuß</string>
-    <string name="activity_moderate_everyday">Viel auf den Beinen, z. B. Verkauf, Pflege, Gastronomie</string>
-    <string name="activity_active_everyday">Körperlich anstrengender Job, z. B. Handwerk</string>
-    <string name="activity_very_active_everyday">Schwere körperliche Arbeit den ganzen Tag</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="summary_activity">Aktivität</string>
+    <string name="activity_default_name">Aktivität</string>
+    <string name="activity_add_title">Aktivität eintragen</string>
+    <string name="activity_edit_title">Aktivität bearbeiten</string>
+    <string name="activity_kcal_label">Verbrannte Kalorien</string>
+    <string name="activity_name_label">Bezeichnung (optional)</string>
+    <string name="activity_name_placeholder">z. B. Joggen</string>
+    <string name="activity_list_title">Aktivitäten heute</string>
+    <string name="activity_list_empty">Noch keine Aktivität eingetragen. Verbrannte Kalorien erhöhen dein Tagesbudget.</string>
+    <string name="activity_deleted">„%1$s“ gelöscht</string>
 </resources>

@@ -2,7 +2,6 @@ package de.kalorienapp.ui.components
 
 import androidx.annotation.StringRes
 import de.kalorienapp.R
-import de.kalorienapp.domain.model.ActivityLevel
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.MealType
@@ -31,41 +30,10 @@ fun Pace.labelRes(goal: Goal): Int = when (goal) {
 }
 
 @get:StringRes
-val ActivityLevel.labelRes: Int
-    get() = when (this) {
-        ActivityLevel.SEDENTARY -> R.string.activity_sedentary
-        ActivityLevel.LIGHT -> R.string.activity_light
-        ActivityLevel.MODERATE -> R.string.activity_moderate
-        ActivityLevel.ACTIVE -> R.string.activity_active
-        ActivityLevel.VERY_ACTIVE -> R.string.activity_very_active
-    }
-
-@get:StringRes
-val ActivityLevel.descriptionRes: Int
-    get() = when (this) {
-        ActivityLevel.SEDENTARY -> R.string.activity_sedentary_desc
-        ActivityLevel.LIGHT -> R.string.activity_light_desc
-        ActivityLevel.MODERATE -> R.string.activity_moderate_desc
-        ActivityLevel.ACTIVE -> R.string.activity_active_desc
-        ActivityLevel.VERY_ACTIVE -> R.string.activity_very_active_desc
-    }
-
-@get:StringRes
 val AmountUnit.labelRes: Int
     get() = when (this) {
         AmountUnit.GRAM -> R.string.unit_g
         AmountUnit.MILLILITER -> R.string.unit_ml
-    }
-
-/** Beschreibung nur des Alltags – wenn Trainings separat aus Health Connect kommen. */
-@get:StringRes
-val ActivityLevel.everydayDescriptionRes: Int
-    get() = when (this) {
-        ActivityLevel.SEDENTARY -> R.string.activity_sedentary_everyday
-        ActivityLevel.LIGHT -> R.string.activity_light_everyday
-        ActivityLevel.MODERATE -> R.string.activity_moderate_everyday
-        ActivityLevel.ACTIVE -> R.string.activity_active_everyday
-        ActivityLevel.VERY_ACTIVE -> R.string.activity_very_active_everyday
     }
 
 @get:StringRes

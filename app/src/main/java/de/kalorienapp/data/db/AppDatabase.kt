@@ -6,26 +6,26 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import de.kalorienapp.data.db.dao.DailyTrainingDao
+import de.kalorienapp.data.db.dao.ActivityEntryDao
 import de.kalorienapp.data.db.dao.FavoriteFoodDao
 import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.db.dao.ProfileDao
-import de.kalorienapp.data.db.entity.DailyTrainingEntity
+import de.kalorienapp.data.db.entity.ActivityEntryEntity
 import de.kalorienapp.data.db.entity.FavoriteFoodEntity
 import de.kalorienapp.data.db.entity.FoodEntryEntity
 import de.kalorienapp.data.db.entity.ProfileEntity
 
 /** Schemaänderungen nur mit Versionserhöhung und Migration (Schemas liegen in app/schemas). */
 @Database(
-    entities = [ProfileEntity::class, FoodEntryEntity::class, FavoriteFoodEntity::class, DailyTrainingEntity::class],
-    version = 6,
+    entities = [ProfileEntity::class, FoodEntryEntity::class, FavoriteFoodEntity::class, ActivityEntryEntity::class],
+    version = 7,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun foodEntryDao(): FoodEntryDao
     abstract fun favoriteFoodDao(): FavoriteFoodDao
-    abstract fun dailyTrainingDao(): DailyTrainingDao
+    abstract fun activityEntryDao(): ActivityEntryDao
 
     companion object {
         /** v2: Mengeneinheit (g/ml) und optionale Zusatznährwerte. */
@@ -142,9 +142,62 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v7: Kein Health Connect und kein Aktivitätslevel mehr – Tagesziel = Grundumsatz ± Ziel/Tempo.
+         * Bewegung trägt der Nutzer selbst ein (Tabelle activity_entry). daily_training entfällt.
+         * Profil ohne activityLevel/importWorkouts → Tabelle neu anlegen (kein DROP COLUMN auf API 28).
+         */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS daily_training")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS activity_entry (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        dateEpochDay INTEGER NOT NULL,
+                        name TEXT NOT NULL,
+                        kcal INTEGER NOT NULL,
+                        createdAt INTEGER NOT NULL
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_activity_entry_dateEpochDay ON activity_entry (dateEpochDay)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS profile_new (
+                        id INTEGER NOT NULL,
+                        sex TEXT NOT NULL,
+                        birthYear INTEGER NOT NULL,
+                        heightCm REAL NOT NULL,
+                        weightKg REAL NOT NULL,
+                        goal TEXT NOT NULL,
+                        pace TEXT NOT NULL,
+                        proteinPerKg REAL,
+                        kcalTargetOverride INTEGER,
+                        proteinOverrideG INTEGER,
+                        fatOverrideG INTEGER,
+                        carbsOverrideG INTEGER,
+                        PRIMARY KEY(id)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO profile_new (id, sex, birthYear, heightCm, weightKg, goal, pace,
+                        proteinPerKg, kcalTargetOverride, proteinOverrideG, fatOverrideG, carbsOverrideG)
+                    SELECT id, sex, birthYear, heightCm, weightKg, goal, pace,
+                        proteinPerKg, kcalTargetOverride, proteinOverrideG, fatOverrideG, carbsOverrideG
+                    FROM profile
+                    """.trimIndent(),
+                )
+                db.execSQL("DROP TABLE profile")
+                db.execSQL("ALTER TABLE profile_new RENAME TO profile")
+            }
+        }
+
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "kalorien.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .build()
     }
 }

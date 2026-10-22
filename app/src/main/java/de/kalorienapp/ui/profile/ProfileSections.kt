@@ -5,22 +5,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
-import de.kalorienapp.domain.model.ActivityLevel
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.Pace
@@ -29,8 +22,6 @@ import de.kalorienapp.ui.components.ChoiceChips
 import de.kalorienapp.ui.components.NumberField
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
-import de.kalorienapp.ui.components.descriptionRes
-import de.kalorienapp.ui.components.everydayDescriptionRes
 import de.kalorienapp.ui.components.toInputString
 
 typealias FormUpdate = ((ProfileFormState) -> ProfileFormState) -> Unit
@@ -99,65 +90,6 @@ fun GoalSection(form: ProfileFormState, onUpdate: FormUpdate) {
                 onSelect = { pace -> onUpdate { it.copy(pace = pace) } },
                 label = { stringResource(it.labelRes(form.goal)) },
             )
-        }
-    }
-}
-
-@Composable
-fun ActivitySection(form: ProfileFormState, onUpdate: FormUpdate) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .toggleable(
-                    value = form.importWorkouts,
-                    onValueChange = { on -> onUpdate { it.copy(importWorkouts = on) } },
-                    role = Role.Switch,
-                ),
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.profile_import_workouts), style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    stringResource(R.string.profile_import_workouts_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(checked = form.importWorkouts, onCheckedChange = null)
-        }
-        ActivityLevelPicker(
-            selected = form.activityLevel,
-            everydayOnly = form.importWorkouts,
-        ) { level -> onUpdate { it.copy(activityLevel = level) } }
-    }
-}
-
-@Composable
-private fun ActivityLevelPicker(selected: ActivityLevel, everydayOnly: Boolean, onSelect: (ActivityLevel) -> Unit) {
-    Column(Modifier.selectableGroup()) {
-        Text(
-            stringResource(if (everydayOnly) R.string.profile_activity_level_without_sport else R.string.profile_activity_level),
-            style = MaterialTheme.typography.labelLarge,
-        )
-        ActivityLevel.entries.forEach { level ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectable(selected = level == selected, onClick = { onSelect(level) }, role = Role.RadioButton)
-                    .padding(vertical = 4.dp),
-            ) {
-                RadioButton(selected = level == selected, onClick = null)
-                Column(Modifier.padding(start = 12.dp)) {
-                    Text(stringResource(level.labelRes), style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        stringResource(if (everydayOnly) level.everydayDescriptionRes else level.descriptionRes),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
         }
     }
 }

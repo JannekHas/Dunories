@@ -32,7 +32,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.ui.AppViewModelProvider
-import de.kalorienapp.ui.profile.ActivitySection
 import de.kalorienapp.ui.profile.BodyDataSection
 import de.kalorienapp.ui.profile.GoalSection
 import de.kalorienapp.ui.profile.ProfileFormState
@@ -40,7 +39,7 @@ import de.kalorienapp.ui.profile.ProfileViewModel
 import de.kalorienapp.ui.profile.TargetAdjustmentsSection
 import de.kalorienapp.ui.profile.TargetsCard
 
-private const val STEP_COUNT = 4
+private const val STEP_COUNT = 3
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +55,6 @@ fun OnboardingScreen(
     val stepValid = when (step) {
         0 -> state.form.bodyDataValid
         1 -> true
-        2 -> true
         else -> state.form.isValid
     }
 
@@ -120,10 +118,6 @@ fun OnboardingScreen(
                 1 -> {
                     StepIntro(stringResource(R.string.onboarding_goal_intro))
                     GoalSection(form, viewModel::update)
-                }
-                2 -> {
-                    StepIntro(stringResource(R.string.onboarding_activity_intro))
-                    ActivitySection(form, viewModel::update)
                 }
                 else -> {
                     StepIntro(stringResource(R.string.onboarding_targets_intro))

@@ -54,9 +54,6 @@ fun ProfileScreen(
             SectionTitle(stringResource(R.string.section_goal))
             GoalSection(state.form, viewModel::update)
             HorizontalDivider()
-            SectionTitle(stringResource(R.string.section_activity))
-            ActivitySection(state.form, viewModel::update)
-            HorizontalDivider()
             SectionTitle(stringResource(R.string.section_targets))
             TargetAdjustmentsSection(state, viewModel::update)
         }

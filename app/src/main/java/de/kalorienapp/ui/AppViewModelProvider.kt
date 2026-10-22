@@ -19,7 +19,7 @@ object AppViewModelProvider {
                 container().profileRepository,
                 container().foodEntryRepository,
                 container().foodLibraryRepository,
-                container().trainingRepository,
+                container().activityEntryRepository,
             )
         }
         initializer {

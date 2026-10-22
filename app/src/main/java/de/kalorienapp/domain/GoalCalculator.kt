@@ -37,10 +37,12 @@ object GoalCalculator {
         Goal.LOSE, Goal.GAIN -> 1.8
     }
 
-    /** Gesamtumsatz (ohne Ziel-Anpassung). */
+    /**
+     * Basis des Tagesziels ist allein der Grundumsatz – so, als würde man sich nicht bewegen.
+     * Bewegung trägt der Nutzer selbst als Aktivität ein (siehe [daySummary]).
+     */
     fun maintenanceKcal(profile: Profile, currentYear: Int): Double =
-        bmr(profile.sex, profile.weightKg, profile.heightCm, profile.ageIn(currentYear)) *
-            profile.activityLevel.factor
+        bmr(profile.sex, profile.weightKg, profile.heightCm, profile.ageIn(currentYear))
 
     fun calculatedKcalTarget(profile: Profile, currentYear: Int): Int =
         (maintenanceKcal(profile, currentYear) + goalAdjustment(profile.goal, profile.pace))
@@ -60,11 +62,11 @@ object GoalCalculator {
         return DailyTargets(kcal = kcal, proteinG = protein, carbsG = carbs, fatG = fat)
     }
 
-    /** Verbleibend = Ziel + Trainingskalorien − Gegessenes (Alltagsbewegung steckt im Aktivitätslevel). */
-    fun daySummary(targets: DailyTargets, eaten: Nutrients, trainingKcal: Int = 0): DaySummary = DaySummary(
+    /** Verbleibend = Ziel + selbst eingetragene Aktivitäten − Gegessenes. */
+    fun daySummary(targets: DailyTargets, eaten: Nutrients, activityKcal: Int = 0): DaySummary = DaySummary(
         targets = targets,
         eaten = eaten,
-        trainingKcal = trainingKcal,
-        remainingKcal = (targets.kcal + trainingKcal - eaten.kcal).roundToInt(),
+        activityKcal = activityKcal,
+        remainingKcal = (targets.kcal + activityKcal - eaten.kcal).roundToInt(),
     )
 }

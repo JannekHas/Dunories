@@ -1,9 +1,7 @@
 package de.kalorienapp.data.db.entity
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import de.kalorienapp.domain.model.ActivityLevel
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.Pace
 import de.kalorienapp.domain.model.Profile
@@ -19,8 +17,6 @@ data class ProfileEntity(
     val weightKg: Double,
     val goal: Goal,
     val pace: Pace,
-    val activityLevel: ActivityLevel,
-    @ColumnInfo(defaultValue = "0") val importWorkouts: Boolean,
     val proteinPerKg: Double?,
     val kcalTargetOverride: Int?,
     val proteinOverrideG: Int?,
@@ -34,8 +30,6 @@ data class ProfileEntity(
         weightKg = weightKg,
         goal = goal,
         pace = pace,
-        activityLevel = activityLevel,
-        importWorkouts = importWorkouts,
         proteinPerKg = proteinPerKg,
         kcalTargetOverride = kcalTargetOverride,
         proteinOverrideG = proteinOverrideG,
@@ -53,8 +47,6 @@ data class ProfileEntity(
             weightKg = p.weightKg,
             goal = p.goal,
             pace = p.pace,
-            activityLevel = p.activityLevel,
-            importWorkouts = p.importWorkouts,
             proteinPerKg = p.proteinPerKg,
             kcalTargetOverride = p.kcalTargetOverride,
             proteinOverrideG = p.proteinOverrideG,

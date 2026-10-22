@@ -1,6 +1,5 @@
 package de.kalorienapp.ui.profile
 
-import de.kalorienapp.domain.model.ActivityLevel
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.Pace
 import de.kalorienapp.domain.model.Profile
@@ -16,8 +15,6 @@ data class ProfileFormState(
     val weightKg: String = "",
     val goal: Goal = Goal.LOSE,
     val pace: Pace = Pace.SLOW,
-    val activityLevel: ActivityLevel = ActivityLevel.LIGHT,
-    val importWorkouts: Boolean = false,
     val proteinPerKg: String = "",
     val kcalOverride: String = "",
     val proteinOverride: String = "",
@@ -56,8 +53,6 @@ data class ProfileFormState(
             weightKg = weightValue!!,
             goal = goal,
             pace = pace,
-            activityLevel = activityLevel,
-            importWorkouts = importWorkouts,
             proteinPerKg = proteinPerKg.parseDecimal(),
             kcalTargetOverride = kcalOverride.toIntOrNull(),
             proteinOverrideG = proteinOverride.toIntOrNull(),
@@ -74,8 +69,6 @@ data class ProfileFormState(
             weightKg = profile.weightKg.toInputString(),
             goal = profile.goal,
             pace = profile.pace,
-            activityLevel = profile.activityLevel,
-            importWorkouts = profile.importWorkouts,
             proteinPerKg = profile.proteinPerKg?.toInputString() ?: "",
             kcalOverride = profile.kcalTargetOverride?.toString() ?: "",
             proteinOverride = profile.proteinOverrideG?.toString() ?: "",
