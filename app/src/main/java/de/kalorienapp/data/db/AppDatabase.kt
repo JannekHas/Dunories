@@ -10,15 +10,24 @@ import de.kalorienapp.data.db.dao.ActivityEntryDao
 import de.kalorienapp.data.db.dao.FavoriteFoodDao
 import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.db.dao.ProfileDao
+import de.kalorienapp.data.db.dao.StatsDao
+import de.kalorienapp.data.db.dao.WeightEntryDao
 import de.kalorienapp.data.db.entity.ActivityEntryEntity
 import de.kalorienapp.data.db.entity.FavoriteFoodEntity
 import de.kalorienapp.data.db.entity.FoodEntryEntity
 import de.kalorienapp.data.db.entity.ProfileEntity
+import de.kalorienapp.data.db.entity.WeightEntryEntity
 
 /** Schemaänderungen nur mit Versionserhöhung und Migration (Schemas liegen in app/schemas). */
 @Database(
-    entities = [ProfileEntity::class, FoodEntryEntity::class, FavoriteFoodEntity::class, ActivityEntryEntity::class],
-    version = 7,
+    entities = [
+        ProfileEntity::class,
+        FoodEntryEntity::class,
+        FavoriteFoodEntity::class,
+        ActivityEntryEntity::class,
+        WeightEntryEntity::class,
+    ],
+    version = 8,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,6 +35,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun foodEntryDao(): FoodEntryDao
     abstract fun favoriteFoodDao(): FavoriteFoodDao
     abstract fun activityEntryDao(): ActivityEntryDao
+    abstract fun weightEntryDao(): WeightEntryDao
+    abstract fun statsDao(): StatsDao
 
     companion object {
         /** v2: Mengeneinheit (g/ml) und optionale Zusatznährwerte. */
@@ -195,9 +206,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v8: Gewichtsverlauf (höchstens ein Eintrag pro Tag). */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS weight_entry (
+                        dateEpochDay INTEGER NOT NULL,
+                        weightKg REAL NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        PRIMARY KEY(dateEpochDay)
+                    )
+                    """.trimIndent(),
+                )
+            }
+        }
+
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "kalorien.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 .build()
     }
 }

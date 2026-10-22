@@ -9,6 +9,8 @@ import de.kalorienapp.data.repository.ActivityEntryRepository
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.data.repository.ProfileRepository
+import de.kalorienapp.data.repository.StatsRepository
+import de.kalorienapp.data.repository.WeightRepository
 
 /** Manuelle Dependency Injection: alle app-weiten Abhängigkeiten an einer Stelle. */
 class AppContainer(context: Context) {
@@ -18,6 +20,8 @@ class AppContainer(context: Context) {
     val foodEntryRepository = FoodEntryRepository(database.foodEntryDao())
     val foodLibraryRepository = FoodLibraryRepository(database.favoriteFoodDao(), database.foodEntryDao())
     val activityEntryRepository = ActivityEntryRepository(database.activityEntryDao())
+    val statsRepository = StatsRepository(database.statsDao(), profileRepository)
+    val weightRepository = WeightRepository(database.weightEntryDao(), profileRepository)
 
     val foodAnalyzer = FoodAnalyzer(
         context = context,
