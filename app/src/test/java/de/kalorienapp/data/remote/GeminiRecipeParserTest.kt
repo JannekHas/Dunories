@@ -49,6 +49,18 @@ class GeminiRecipeParserTest {
     }
 
     @Test
+    fun `zaehlbare zutat ohne doppelten namen als einheit`() {
+        val draft = GeminiRecipeParser.parse(
+            """{"found":true,"name":"X","servings":4,"steps":[],"ingredients":[
+              {"name":"Möhren","quantity":6,"quantity_unit":"Möhren","amount":600,"unit":"g","kcal":41,"fat":0.2,"carbs":7,"protein":1,"note":null}]}""",
+            RecipeSource.TEXT,
+            null,
+        )!!
+        assertEquals("", draft.recipe.ingredients.single().quantityUnit)
+        assertEquals(600.0, draft.recipe.ingredients.single().amount!!, 0.001)
+    }
+
+    @Test
     fun `kein rezept erkannt`() {
         val draft = GeminiRecipeParser.parse("""{"found":false,"name":"","servings":1,"ingredients":[],"steps":[]}""", RecipeSource.TIKTOK, null)!!
         assertTrue(draft.recipe.ingredients.isEmpty())

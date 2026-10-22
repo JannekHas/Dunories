@@ -85,19 +85,27 @@ Du bekommst Inhalte eines Social-Media-Beitrags (Beschreibung, gesprochener Text
 Extrahiere daraus genau EIN Kochrezept auf Deutsch (übersetze bei Bedarf). Ist kein Rezept erkennbar: found = false.
 
 Regeln:
-- name: kurzer, appetitlicher deutscher Rezeptname, ohne Emojis und Hashtags.
+- Steht das Rezept schriftlich im Beitrag, übernimm Zutaten und Schritte VOLLSTÄNDIG und so wörtlich wie möglich –
+  nichts weglassen, zusammenfassen oder umformulieren (alle Mengen, Zahlen, Zeiten, Temperaturen behalten).
+- name: Rezeptname wie im Beitrag (ohne Emojis und Hashtags); nur wenn keiner genannt ist, einen kurzen deutschen Namen bilden.
 - description: 1–2 Sätze, worum es geht.
 - servings: Portionen laut Rezept, sonst sinnvoll schätzen.
 - total_minutes: Gesamtzeit inkl. Back-/Garzeit (schätzen, falls nicht genannt).
 - effort: easy, medium oder hard.
 - categories: 1–3 passende aus dieser Liste: ${categories.joinToString(", ")}. Nur wenn nichts passt, einen neuen kurzen deutschen Namen.
-- ingredients: ALLE Zutaten. quantity + quantity_unit wie im Rezept, deutsche Einheiten
-  (g, ml, Stück, EL, TL, Prise, Dose, Packung, Bund, Zehe, Scheibe); Cups/oz/lb/tbsp/tsp umrechnen.
-  amount = Menge in g (fest) bzw. ml (flüssig) für die Nährwertberechnung – bei Stück/EL/TL schätzen,
-  bei „nach Geschmack“ null. Nährwerte PRO 100 g bzw. PRO 100 ml (Produkt wie gekauft/roh) mit typischen
-  Werten aus deutschen Nährwerttabellen. Unbekannte optionale Werte null. note: z. B. „gewürfelt“, sonst null.
+- ingredients: ALLE Zutaten, jede einzeln (z. B. „Salz, Pfeffer & Muskat“ → drei Zutaten).
+  name: Zutat mit allen Eigenschaften aus dem Rezept („fettreduziertes Rinderhackfleisch“, „Frischkäse light“).
+  quantity + quantity_unit genau wie im Rezept geschrieben: „6 Möhren (ca. 600 g)“ → quantity 6, quantity_unit "", amount 600.
+  Zählbare Zutaten ohne Einheit: „1 Ei“ → quantity 1, quantity_unit "" (NICHT „Stück“).
+  Deutsche Einheiten (g, ml, EL, TL, Prise, Dose, Packung, Bund, Zehe, Scheibe); Cups/oz/lb/tbsp/tsp umrechnen.
+  note: Zustand/Zusatz aus dem Rezept, z. B. „tiefgekühlt“, „roh“, „Größe M“, „gewürfelt“, „nach Geschmack“ – sonst null.
+  amount = Menge in g (fest) bzw. ml (flüssig) für die Nährwertberechnung – bei Stück/EL/TL schätzen
+  (z. B. Ei Größe M ≈ 55 g), bei „nach Geschmack“/Prise null. Wasser zählt mit 0 kcal; „Wasser + Brühe“ als zwei Zutaten.
+  Nährwerte PRO 100 g bzw. PRO 100 ml im genannten Zustand (roh/tiefgekühlt wie gekauft) mit typischen Werten
+  aus deutschen Nährwerttabellen. Unbekannte optionale Werte null.
 - Im Beitrag genannte Kalorien/Makros nur zur Plausibilitätsprüfung; maßgeblich sind die Zutaten.
-- steps: alle Zubereitungsschritte in sinnvoller Reihenfolge, kurz und klar, ohne Nummerierung.
+- steps: alle Zubereitungsschritte vollständig (mit allen Mengen/Zahlen wie „14 Klößchen“, Zeiten, Hitze), ohne Nummerierung.
+  Nur wenn das Rezept bloß gesprochen/gezeigt wird, selbst klare Schritte formulieren.
 - image: Wähle aus den nummerierten Bildern (Index ab 0) das, auf dem das FERTIGE Gericht am größten und
   appetitlichsten zu sehen ist – nicht Personen, Hände oder Text. box_2d = [ymin, xmin, ymax, xmax] (0–1000)
   eng um das fertige Essen. dish_visible = false, wenn auf keinem Bild fertiges Essen zu sehen ist; ohne Bilder index = -1.
@@ -201,10 +209,13 @@ internal object GeminiRecipeParser {
         val ingredients = (obj["ingredients"] as? JsonArray).orEmpty().mapNotNull { element ->
             val item = element.asObject() ?: return@mapNotNull null
             val name = item.string("name") ?: return@mapNotNull null
+            // „6 Möhren“ kommt manchmal als Einheit „Möhren“ zurück → doppelt in der Anzeige.
+            val unit = item.string("quantity_unit").orEmpty()
+                .takeUnless { it.length > 2 && name.contains(it, ignoreCase = true) }.orEmpty()
             RecipeIngredient(
                 name = name,
                 quantity = item.number("quantity")?.takeIf { it > 0 },
-                quantityUnit = item.string("quantity_unit").orEmpty(),
+                quantityUnit = unit,
                 amount = item.number("amount")?.takeIf { it > 0 },
                 unit = if (item.string("unit")?.lowercase() == "ml") AmountUnit.MILLILITER else AmountUnit.GRAM,
                 per100 = Nutrients(

@@ -53,7 +53,8 @@ object SocialPageParser {
             platform = SocialPlatform.TIKTOK,
             url = url,
             caption = item.string("desc"),
-            coverUrl = video?.string("originCover") ?: video?.string("cover")
+            // „cover“ ist meist 1080 px breit, „originCover“ nur 540 px → großes zuerst (sonst unscharfer Ausschnitt).
+            coverUrl = video?.string("cover") ?: video?.string("reflowCover") ?: video?.string("originCover")
                 ?: item["imagePost"].asObject()?.get("cover").asObject()?.get("imageURL").asObject()
                     ?.let { (it["urlList"] as? JsonArray)?.firstOrNull() as? JsonPrimitive }?.content,
             imageUrls = images,

@@ -380,7 +380,8 @@ private fun IngredientRow(ingredient: IngredientForm, onClick: () -> Unit, onDel
         Row(Modifier.padding(start = 14.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    listOf(domain.quantityText(), domain.name.ifBlank { "?" }).filter(String::isNotBlank).joinToString(" "),
+                    listOf(domain.quantityText(), domain.name.ifBlank { "?" }).filter(String::isNotBlank).joinToString(" ") +
+                        (domain.note?.let { " ($it)" } ?: ""),
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (ingredient.isValid) Neon.TextPrimary else Neon.Red,
                     maxLines = 1,

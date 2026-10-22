@@ -36,9 +36,18 @@ object RecipeCalculator {
     /**
      * Ausschnitt fürs Rezeptbild: die von der KI gefundene Box (normiert 0–1000, [ymin, xmin, ymax, xmax])
      * mit etwas Rand, auf das Seitenverhältnis [aspect] (Breite/Höhe) erweitert und ins Bild geschoben.
+     * Der Ausschnitt ist mindestens [minWidthFraction] der Bildbreite breit, damit kleine Bereiche
+     * nicht stark hochskaliert (und unscharf) werden.
      * Ergebnis in Pixeln: [left, top, right, bottom]; null bei unbrauchbarer Box.
      */
-    fun cropRect(box: List<Int>, width: Int, height: Int, aspect: Double = 4.0 / 3.0, margin: Double = 0.06): IntArray? {
+    fun cropRect(
+        box: List<Int>,
+        width: Int,
+        height: Int,
+        aspect: Double = 4.0 / 3.0,
+        margin: Double = 0.06,
+        minWidthFraction: Double = 0.6,
+    ): IntArray? {
         if (box.size != 4 || width <= 0 || height <= 0) return null
         val (yMin, xMin, yMax, xMax) = box.map { it.coerceIn(0, 1000) / 1000.0 }
         if (yMax - yMin < 0.05 || xMax - xMin < 0.05) return null
@@ -51,7 +60,7 @@ object RecipeCalculator {
         left -= padX; right += padX; top -= padY; bottom += padY
 
         // Auf Seitenverhältnis erweitern (nie verkleinern), höchstens auf Bildgröße.
-        var w = right - left
+        var w = max(right - left, width * minWidthFraction)
         var h = bottom - top
         if (w / h < aspect) w = min(h * aspect, width.toDouble()) else h = min(w / aspect, height.toDouble())
         // Passt das Verhältnis nach dem Begrenzen nicht mehr, die andere Seite kürzen.

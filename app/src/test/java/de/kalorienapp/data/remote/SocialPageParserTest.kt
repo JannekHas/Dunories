@@ -32,7 +32,7 @@ class SocialPageParserTest {
             <html><script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">
             {"__DEFAULT_SCOPE__":{"webapp.reflow.video.detail":{"itemInfo":{"itemStruct":{
               "desc":"Protein Pasta 🍝 Zutaten: 250g Nudeln",
-              "video":{"cover":"https://c/small.jpg","originCover":"https://c/origin.jpg",
+              "video":{"cover":"https://c/large.jpg","originCover":"https://c/small.jpg",
                 "subtitleInfos":[
                   {"LanguageCodeName":"fra-FR","Url":"https://s/fr.vtt","Format":"webvtt","Source":"MT"},
                   {"LanguageCodeName":"eng-US","Url":"https://s/en.vtt","Format":"webvtt","Source":"ASR"}
@@ -43,7 +43,7 @@ class SocialPageParserTest {
         val post = SocialPageParser.parseTikTok(html, "https://www.tiktok.com/@a/video/1")!!
         assertEquals(SocialPlatform.TIKTOK, post.platform)
         assertEquals("Protein Pasta 🍝 Zutaten: 250g Nudeln", post.caption)
-        assertEquals("https://c/origin.jpg", post.coverUrl)
+        assertEquals("https://c/large.jpg", post.coverUrl) // großes Cover statt 540-px-originCover
         assertEquals("https://s/en.vtt", post.subtitleUrl) // gesprochener Originalton bevorzugt
     }
 

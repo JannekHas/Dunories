@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.data.remote.social.SocialPageParser
 import de.kalorienapp.data.remote.social.SocialPlatform
 import de.kalorienapp.data.repository.RecipeRepository
 import de.kalorienapp.recipe.ImportFailure
@@ -161,7 +162,9 @@ private fun sourceText(source: ImportSource): String = when (source) {
 @Composable
 private fun Progress(source: ImportSource, current: ImportStage?) {
     val stages = buildList {
-        if (source is ImportSource.Link || source is ImportSource.Text) add(ImportStage.READING_LINK)
+        val hasLink = source is ImportSource.Link ||
+            (source is ImportSource.Text && SocialPageParser.extractUrl(source.text) != null)
+        if (hasLink) add(ImportStage.READING_LINK)
         if (source is ImportSource.Video) add(ImportStage.UPLOADING_VIDEO)
         add(ImportStage.ANALYZING)
         add(ImportStage.PREPARING_IMAGE)
