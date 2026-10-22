@@ -27,6 +27,9 @@ interface RecipeDao {
     @Query("SELECT * FROM recipe WHERE id = :id")
     suspend fun get(id: Long): RecipeWithDetails?
 
+    @Query("SELECT imagePath FROM recipe WHERE imagePath IS NOT NULL")
+    suspend fun imagePaths(): List<String>
+
     @Upsert
     suspend fun upsertRecipe(recipe: RecipeEntity): Long
 

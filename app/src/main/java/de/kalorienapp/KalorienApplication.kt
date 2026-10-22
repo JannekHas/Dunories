@@ -15,5 +15,6 @@ class KalorienApplication : Application() {
         // Kalorien-Benachrichtigung folgt jeder Änderung; Erinnerungen/Auswertung neu planen.
         container.calorieNotifier.observe(container.appScope)
         container.appScope.launch { container.workScheduler.scheduleAll() }
+        container.appScope.launch { container.recipeRepository.cleanupImages() }
     }
 }

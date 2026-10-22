@@ -52,6 +52,9 @@ class RecipeRepository(
         return id
     }
 
+    /** Bilder ohne zugehöriges Rezept aufräumen (beim App-Start). */
+    suspend fun cleanupImages() = images.deleteUnreferenced(dao.imagePaths().toSet())
+
     suspend fun delete(recipe: Recipe) {
         dao.deleteRecipe(recipe.id)
         recipe.imagePath?.let(images::delete)

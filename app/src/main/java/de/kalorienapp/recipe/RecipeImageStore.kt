@@ -24,6 +24,18 @@ class RecipeImageStore(context: Context) {
         file.absolutePath
     }
 
+    /**
+     * Verwaiste Bilder entfernen (z. B. wenn Android die App beendet hat, während ein Import-Vorschlag offen war).
+     * Nur Dateien älter als [minAgeMs] – ein gerade offener Vorschlag bleibt unangetastet.
+     */
+    suspend fun deleteUnreferenced(referenced: Set<String>, minAgeMs: Long = 24 * 60 * 60 * 1000L) = withContext(Dispatchers.IO) {
+        val keep = referenced.mapNotNull { runCatching { File(it).canonicalPath }.getOrNull() }.toSet()
+        val cutoff = System.currentTimeMillis() - minAgeMs
+        dir.listFiles().orEmpty()
+            .filter { it.isFile && it.lastModified() < cutoff && it.canonicalPath !in keep }
+            .forEach { it.delete() }
+    }
+
     /** Löscht nur Dateien aus dem eigenen Ordner. */
     fun delete(path: String) {
         val file = File(path)
