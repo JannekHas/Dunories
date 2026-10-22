@@ -23,6 +23,7 @@ import de.kalorienapp.ui.components.NumberField
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
 import de.kalorienapp.ui.components.toInputString
+import de.kalorienapp.ui.theme.Neon
 
 typealias FormUpdate = ((ProfileFormState) -> ProfileFormState) -> Unit
 
@@ -106,6 +107,7 @@ fun TargetsCard(targets: DailyTargets?, modifier: Modifier = Modifier) {
                 Text(
                     stringResource(R.string.kcal_value, targets.kcal.format()),
                     style = MaterialTheme.typography.headlineMedium,
+                    color = Neon.Cyan,
                 )
                 Text(
                     stringResource(R.string.targets_macros, targets.proteinG, targets.carbsG, targets.fatG),

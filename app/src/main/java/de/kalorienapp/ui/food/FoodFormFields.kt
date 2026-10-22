@@ -24,6 +24,7 @@ import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.ui.components.NumberField
 import de.kalorienapp.ui.components.format
+import de.kalorienapp.ui.components.neonChipColors
 import de.kalorienapp.ui.components.labelRes
 
 /** Name, Menge + Einheit, Nährwerte pro 100 in Etikett-Reihenfolge und die gezählte Summe. */
@@ -67,6 +68,7 @@ fun FoodFormFields(
                     selected = unit == form.unit,
                     onClick = { onChange(form.copy(unit = unit)) },
                     label = { Text(stringResource(unit.labelRes)) },
+                    colors = neonChipColors(),
                 )
             }
         }

@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.today
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -25,7 +28,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,6 +37,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -52,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,9 +68,12 @@ import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.ui.AppViewModelProvider
-import de.kalorienapp.ui.components.MacroProgress
+import de.kalorienapp.ui.components.ConcentricRings
+import de.kalorienapp.ui.components.NeonPill
+import de.kalorienapp.ui.components.RingSpec
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
+import de.kalorienapp.ui.theme.Neon
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -165,7 +174,11 @@ fun TodayScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onAddEntry(state.date, null) }) {
+            FloatingActionButton(
+                onClick = { onAddEntry(state.date, null) },
+                containerColor = Neon.Yellow,
+                contentColor = Neon.OnNeon,
+            ) {
                 Icon(painterResource(R.drawable.ic_camera), stringResource(R.string.add_entry))
             }
         },
@@ -181,7 +194,7 @@ fun TodayScreen(
                     SummaryCard(
                         summary = summary,
                         onActivityClick = { showActivityList = true },
-                        onAddActivity = { activityDialog = ActivityDialogState(null) },
+                        onAddActivity = { showActivityList = true },
                     )
                 }
             }
@@ -222,46 +235,108 @@ private fun SummaryCard(
     onAddActivity: () -> Unit,
 ) {
     val over = summary.remainingKcal < 0
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+    val budget = (summary.targets.kcal + summary.activityKcal).coerceAtLeast(1)
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // Außen Kalorien (Regenbogen), innen Protein, Kohlenhydrate, Fett.
+        ConcentricRings(
+            rings = listOf(
+                RingSpec((summary.eaten.kcal / budget).toFloat(), Neon.Rainbow),
+                RingSpec(ratio(summary.eaten.proteinG, summary.targets.proteinG), listOf(MacroColors.protein)),
+                RingSpec(ratio(summary.eaten.carbsG, summary.targets.carbsG), listOf(MacroColors.carbs)),
+                RingSpec(ratio(summary.eaten.fatG, summary.targets.fatG), listOf(MacroColors.fat)),
+            ),
+            modifier = Modifier.fillMaxWidth(0.82f),
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    (if (over) -summary.remainingKcal else summary.remainingKcal).format(),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (over) Neon.Red else Neon.TextPrimary,
+                )
                 Text(
                     stringResource(if (over) R.string.kcal_over else R.string.kcal_remaining),
                     style = MaterialTheme.typography.labelLarge,
-                )
-                Text(
-                    (if (over) -summary.remainingKcal else summary.remainingKcal).format(),
-                    style = MaterialTheme.typography.displayMedium,
-                    color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    color = Neon.TextSecondary,
                 )
             }
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SummaryValue(stringResource(R.string.summary_target), summary.targets.kcal.format())
-                SummaryValue(stringResource(R.string.summary_eaten), summary.eaten.kcal.format())
-                // Aktivität: Tippen öffnet die Übersicht, „+“ trägt direkt eine neue ein.
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.small)
-                            .clickable(onClick = onActivityClick)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    ) {
-                        SummaryValue(stringResource(R.string.summary_activity), "+" + summary.activityKcal.format())
-                    }
-                    FilledTonalIconButton(onClick = onAddActivity, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Filled.Add, stringResource(R.string.activity_add_title), modifier = Modifier.size(18.dp))
-                    }
-                }
-            }
-            MacroProgress(stringResource(R.string.protein), summary.eaten.proteinG, summary.targets.proteinG)
-            MacroProgress(stringResource(R.string.carbs), summary.eaten.carbsG, summary.targets.carbsG)
-            MacroProgress(stringResource(R.string.fat), summary.eaten.fatG, summary.targets.fatG)
         }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            NeonPill(
+                value = summary.targets.kcal.format(),
+                label = stringResource(R.string.summary_target),
+                color = Neon.Cyan,
+                modifier = Modifier.weight(1f),
+            )
+            NeonPill(
+                value = summary.eaten.kcal.format(),
+                label = stringResource(R.string.summary_eaten),
+                color = Neon.Orange,
+                modifier = Modifier.weight(1f),
+            )
+            // Aktivität: Tippen oder „+“ öffnen die Übersicht der Aktivitäten.
+            NeonPill(
+                value = "+" + summary.activityKcal.format(),
+                label = stringResource(R.string.summary_activity),
+                color = Neon.Violet,
+                modifier = Modifier.weight(1f),
+                onClick = onActivityClick,
+            )
+            FilledIconButton(
+                onClick = onAddActivity,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = Neon.Violet,
+                    contentColor = Neon.OnNeon,
+                ),
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(Icons.Filled.Add, stringResource(R.string.activity_add_title))
+            }
+        }
+
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            MacroLegend(stringResource(R.string.protein), summary.eaten.proteinG, summary.targets.proteinG, MacroColors.protein)
+            MacroLegend(stringResource(R.string.carbs), summary.eaten.carbsG, summary.targets.carbsG, MacroColors.carbs)
+            MacroLegend(stringResource(R.string.fat), summary.eaten.fatG, summary.targets.fatG, MacroColors.fat)
+        }
+    }
+}
+
+private fun ratio(eaten: Double, target: Int): Float = if (target > 0) (eaten / target).toFloat() else 0f
+
+/** Farben der Makro-Ringe. */
+private object MacroColors {
+    val protein = Neon.Magenta
+    val carbs = Neon.Yellow
+    val fat = Neon.Green
+}
+
+/** Legende zu einem Makro-Ring: farbiger Punkt, Name, gegessen / Ziel. */
+@Composable
+private fun MacroLegend(label: String, eatenG: Double, targetG: Int, color: Color) {
+    val over = targetG > 0 && eatenG > targetG * 1.05
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(10.dp).clip(CircleShape).background(color))
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(start = 10.dp).weight(1f),
+        )
+        Text(
+            stringResource(R.string.macro_progress_value, eatenG.format(), targetG.format()),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = if (over) Neon.Red else Neon.TextPrimary,
+        )
     }
 }
 
@@ -283,22 +358,28 @@ private fun MealCard(
     onToggleFavorite: (FoodEntry) -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(group.mealType.labelRes),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f),
-            )
-            if (group.entries.isNotEmpty()) {
+        Surface(color = group.mealType.neonColor, contentColor = Neon.OnNeon, shape = RoundedCornerShape(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    stringResource(R.string.kcal_value, group.total.kcal.format()),
-                    style = MaterialTheme.typography.labelLarge,
+                    stringResource(group.mealType.labelRes),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
                 )
+                if (group.entries.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.kcal_value, group.total.kcal.format()),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                IconButton(onClick = onAdd) {
+                    Icon(Icons.Filled.Add, stringResource(R.string.add_short))
+                }
             }
-            TextButton(onClick = onAdd) { Text(stringResource(R.string.add_short)) }
         }
         group.entries.forEach { entry ->
             EntryRow(
@@ -310,7 +391,7 @@ private fun MealCard(
             )
         }
         if (group.entries.isEmpty()) {
-            Box(Modifier.padding(start = 16.dp, bottom = 12.dp)) {
+            Box(Modifier.padding(start = 16.dp, top = 10.dp, bottom = 12.dp)) {
                 Text(
                     stringResource(R.string.meal_empty),
                     style = MaterialTheme.typography.bodySmall,
@@ -376,3 +457,12 @@ private fun EntryRow(
 
 /** Offener Aktivitäts-Dialog; existing == null → neue Aktivität. */
 private data class ActivityDialogState(val existing: ActivityEntry?)
+
+/** Neon-Farbe je Mahlzeit. */
+private val MealType.neonColor: Color
+    get() = when (this) {
+        MealType.BREAKFAST -> Neon.Orange
+        MealType.LUNCH -> Neon.Green
+        MealType.DINNER -> Neon.Blue
+        MealType.SNACK -> Neon.Magenta
+    }

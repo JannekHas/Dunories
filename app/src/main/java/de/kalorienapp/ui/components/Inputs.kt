@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import de.kalorienapp.domain.model.MealType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +19,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
+import de.kalorienapp.ui.theme.Neon
 
 /** Einzeiliges Zahlenfeld (Komma oder Punkt als Dezimaltrenner). */
 @Composable
@@ -74,10 +76,19 @@ fun <T> ChoiceChips(
                 selected = option == selected,
                 onClick = { onSelect(option) },
                 label = { Text(label(option)) },
+                colors = neonChipColors(),
             )
         }
     }
 }
+
+/** Ausgewählte Chips in Neon-Cyan mit schwarzer Schrift. */
+@Composable
+fun neonChipColors() = FilterChipDefaults.filterChipColors(
+    selectedContainerColor = Neon.Cyan,
+    selectedLabelColor = Neon.OnNeon,
+    selectedLeadingIconColor = Neon.OnNeon,
+)
 
 /** Auswahl der Mahlzeit mit Überschrift. */
 @Composable

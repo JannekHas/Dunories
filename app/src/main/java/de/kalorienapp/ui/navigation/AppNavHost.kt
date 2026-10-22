@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +29,7 @@ import de.kalorienapp.ui.capture.CaptureScreen
 import de.kalorienapp.ui.entry.EntryEditScreen
 import de.kalorienapp.ui.onboarding.OnboardingScreen
 import de.kalorienapp.ui.profile.ProfileScreen
+import de.kalorienapp.ui.theme.Neon
 import de.kalorienapp.ui.today.TodayScreen
 
 private data class TopLevelDestination(val route: Any, val icon: ImageVector, val labelRes: Int)
@@ -51,13 +53,20 @@ fun AppNavHost(startDestination: Any) {
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
+                NavigationBar(containerColor = Neon.Surface) {
                     topLevelDestinations.forEach { dest ->
                         NavigationBarItem(
                             selected = currentDestination?.hasRoute(dest.route::class) == true,
                             onClick = { navController.navigateTopLevel(dest.route) },
                             icon = { Icon(dest.icon, contentDescription = null) },
                             label = { Text(stringResource(dest.labelRes)) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Neon.OnNeon,
+                                selectedTextColor = Neon.Cyan,
+                                indicatorColor = Neon.Cyan,
+                                unselectedIconColor = Neon.TextSecondary,
+                                unselectedTextColor = Neon.TextSecondary,
+                            ),
                         )
                     }
                 }
