@@ -184,7 +184,8 @@
     <string name="activity_list_title">Aktivitäten heute</string>
     <string name="activity_list_empty">Noch keine Aktivität eingetragen. Verbrannte Kalorien erhöhen dein Tagesbudget.</string>
     <string name="activity_deleted">„%1$s“ gelöscht</string>
-    <string name="extra_nutrients_title">Weitere Nährwerte</string>
+    <string name="nutrient_details_show">Alle Nährwerte</string>
+    <string name="nutrient_details_hide">Weniger anzeigen</string>
     <string name="extra_nutrients_hint">Summe aus allen Einträgen, bei denen der Wert angegeben ist.</string>
     <string name="grams_value">%1$s g</string>
     <string name="value_missing">–</string>
