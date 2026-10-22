@@ -189,4 +189,30 @@
     <string name="extra_nutrients_hint">Summe aus allen Einträgen, bei denen der Wert angegeben ist.</string>
     <string name="grams_value">%1$s g</string>
     <string name="value_missing">–</string>
+    <!-- Kalender & Statistik -->
+    <string name="nav_calendar">Kalender</string>
+    <string name="nav_stats">Statistik</string>
+    <string name="previous_month">Vorheriger Monat</string>
+    <string name="next_month">Nächster Monat</string>
+    <string name="calendar_on_target">Im Budget</string>
+    <string name="calendar_slightly_over">Knapp drüber</string>
+    <string name="calendar_over">Drüber</string>
+    <string name="calendar_no_data">Kein Eintrag</string>
+    <string name="stats_title">Statistik</string>
+    <string name="stats_period_week">7 Tage</string>
+    <string name="stats_period_month">30 Tage</string>
+    <string name="stats_chart_caption">Balken: gegessen (Farbe = Zielerreichung) · Strich: Budget (Ziel + Aktivitäten)</string>
+    <string name="stats_no_data">In diesem Zeitraum gibt es noch keine Einträge.</string>
+    <string name="stats_logged_days">Tage erfasst</string>
+    <string name="stats_on_target">im Budget</string>
+    <string name="stats_avg_kcal">Ø kcal</string>
+    <string name="stats_protein_hit">Proteinziel</string>
+    <string name="stats_avg_title">Durchschnitt pro Tag</string>
+    <string name="stats_logged_days_text">an %1$d von %2$d Tagen erfasst – Tage ohne Einträge zählen nicht mit</string>
+    <string name="weight_title">Gewicht</string>
+    <string name="weight_add">Eintragen</string>
+    <string name="weight_add_title">Gewicht eintragen</string>
+    <string name="weight_empty">Noch kein Gewicht eingetragen. Der jüngste Eintrag wird automatisch ins Profil übernommen.</string>
+    <string name="weight_value">%1$s kg</string>
+    <string name="weight_change">%1$s kg seit dem ersten Eintrag</string>
 </resources>

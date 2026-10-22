@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -16,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
@@ -25,18 +27,22 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import de.kalorienapp.R
+import de.kalorienapp.ui.calendar.CalendarScreen
 import de.kalorienapp.ui.capture.CaptureScreen
 import de.kalorienapp.ui.entry.EntryEditScreen
 import de.kalorienapp.ui.onboarding.OnboardingScreen
 import de.kalorienapp.ui.profile.ProfileScreen
+import de.kalorienapp.ui.stats.StatsScreen
 import de.kalorienapp.ui.theme.Neon
 import de.kalorienapp.ui.today.TodayScreen
 
-private data class TopLevelDestination(val route: Any, val icon: ImageVector, val labelRes: Int)
+private data class TopLevelDestination(val route: Any, val icon: @Composable () -> ImageVector, val labelRes: Int)
 
 private val topLevelDestinations = listOf(
-    TopLevelDestination(TodayRoute, Icons.Filled.Home, R.string.nav_today),
-    TopLevelDestination(ProfileRoute, Icons.Filled.Person, R.string.nav_profile),
+    TopLevelDestination(TodayRoute, { Icons.Filled.Home }, R.string.nav_today),
+    TopLevelDestination(CalendarRoute, { Icons.Filled.DateRange }, R.string.nav_calendar),
+    TopLevelDestination(StatsRoute, { ImageVector.vectorResource(R.drawable.ic_bar_chart) }, R.string.nav_stats),
+    TopLevelDestination(ProfileRoute, { Icons.Filled.Person }, R.string.nav_profile),
 )
 
 @Composable
@@ -58,7 +64,7 @@ fun AppNavHost(startDestination: Any) {
                         NavigationBarItem(
                             selected = currentDestination?.hasRoute(dest.route::class) == true,
                             onClick = { navController.navigateTopLevel(dest.route) },
-                            icon = { Icon(dest.icon, contentDescription = null) },
+                            icon = { Icon(dest.icon(), contentDescription = null) },
                             label = { Text(stringResource(dest.labelRes)) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Neon.OnNeon,
@@ -95,6 +101,23 @@ fun AppNavHost(startDestination: Any) {
                     onEditEntry = { entry ->
                         navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
                     },
+                )
+            }
+            composable<CalendarRoute> {
+                CalendarScreen(onDayClick = { date -> navController.navigate(DayRoute(date.toEpochDay())) })
+            }
+            composable<StatsRoute> {
+                StatsScreen()
+            }
+            composable<DayRoute> {
+                TodayScreen(
+                    onAddEntry = { date, meal ->
+                        navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
+                    },
+                    onEditEntry = { entry ->
+                        navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
+                    },
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable<ProfileRoute> {

@@ -11,6 +11,16 @@ data object TodayRoute
 @Serializable
 data object ProfileRoute
 
+@Serializable
+data object CalendarRoute
+
+@Serializable
+data object StatsRoute
+
+/** Tagesansicht für ein bestimmtes Datum (aus dem Kalender geöffnet). */
+@Serializable
+data class DayRoute(val epochDay: Long)
+
 /** Ein-Foto-Erfassung (Kamera/Galerie/Text) für [epochDay]; mealType = optionale Vorauswahl. */
 @Serializable
 data class CaptureRoute(

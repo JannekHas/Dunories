@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.today
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.repository.ActivityEntryRepository
@@ -46,13 +47,17 @@ data class TodayUiState(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodayViewModel(
+    savedStateHandle: SavedStateHandle,
     profileRepository: ProfileRepository,
     private val entryRepository: FoodEntryRepository,
     private val library: FoodLibraryRepository,
     private val activityRepository: ActivityEntryRepository,
 ) : ViewModel() {
 
-    private val date = MutableStateFlow(LocalDate.now())
+    /** Aus dem Kalender geöffnet → dieses Datum, sonst heute. */
+    private val date = MutableStateFlow(
+        savedStateHandle.get<Long>("epochDay")?.let(LocalDate::ofEpochDay) ?: LocalDate.now(),
+    )
 
     val uiState: StateFlow<TodayUiState> = date
         .flatMapLatest { day ->

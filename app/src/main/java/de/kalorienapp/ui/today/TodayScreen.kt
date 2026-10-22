@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
@@ -94,6 +95,8 @@ private val dateFormatter = DateTimeFormatter.ofPattern("EEE, d. MMMM", Locale.G
 fun TodayScreen(
     onAddEntry: (date: LocalDate, mealType: MealType?) -> Unit,
     onEditEntry: (FoodEntry) -> Unit,
+    /** Gesetzt, wenn der Tag aus dem Kalender geöffnet wurde. */
+    onBack: (() -> Unit)? = null,
     viewModel: TodayViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -170,11 +173,22 @@ fun TodayScreen(
             TopAppBar(
                 title = { DateTitle(state.date, onClick = viewModel::goToToday) },
                 navigationIcon = {
-                    IconButton(onClick = viewModel::previousDay) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.previous_day))
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        }
+                    } else {
+                        IconButton(onClick = viewModel::previousDay) {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.previous_day))
+                        }
                     }
                 },
                 actions = {
+                    if (onBack != null) {
+                        IconButton(onClick = viewModel::previousDay) {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.previous_day))
+                        }
+                    }
                     IconButton(onClick = viewModel::nextDay) {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.next_day))
                     }
