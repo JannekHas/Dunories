@@ -38,7 +38,7 @@ import java.time.LocalTime
 /** Eine Komponente im Vorschlag (bearbeitbar, erst nach Bestätigung gespeichert). */
 data class ProposalItem(val id: Long, val form: FoodForm, val source: EntrySource)
 
-enum class CaptureError { NO_API_KEY, REJECTED, NETWORK, QUOTA, INVALID_RESPONSE, NO_FOOD, IMAGE, UNKNOWN }
+enum class CaptureError { NO_API_KEY, REJECTED, NETWORK, QUOTA, OVERLOADED, INVALID_RESPONSE, NO_FOOD, IMAGE, UNKNOWN }
 
 sealed interface CaptureStep {
     data object Camera : CaptureStep
@@ -241,6 +241,7 @@ class CaptureViewModel(
             GeminiError.REJECTED -> CaptureError.REJECTED
             GeminiError.NETWORK -> CaptureError.NETWORK
             GeminiError.QUOTA -> CaptureError.QUOTA
+            GeminiError.OVERLOADED -> CaptureError.OVERLOADED
             GeminiError.INVALID_RESPONSE -> CaptureError.INVALID_RESPONSE
             GeminiError.NO_FOOD -> CaptureError.NO_FOOD
         }

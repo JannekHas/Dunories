@@ -22,10 +22,12 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
+import kotlinx.coroutines.delay
 import java.io.IOException
+import java.net.SocketTimeoutException
 
 /** Warum eine KI-Analyse fehlgeschlagen ist – die UI bietet dann immer die manuelle Eingabe an. */
-enum class GeminiError { NO_API_KEY, REJECTED, NETWORK, QUOTA, INVALID_RESPONSE, NO_FOOD }
+enum class GeminiError { NO_API_KEY, REJECTED, NETWORK, QUOTA, OVERLOADED, INVALID_RESPONSE, NO_FOOD }
 
 class GeminiException(val error: GeminiError, cause: Throwable? = null) : Exception(error.name, cause)
 
@@ -82,17 +84,32 @@ class GeminiClient(private val apiKey: String) {
                 put("temperature", 0.2)
             }
         }
-        val body = try {
-            Http.postJson(
-                url = "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent",
-                body = request.toString(),
-                headers = mapOf("x-goog-api-key" to apiKey),
-                timeoutMs = timeoutMs,
-            )
-        } catch (e: HttpStatusException) {
-            throw GeminiException(errorFor(e.code), e)
-        } catch (e: IOException) {
-            throw GeminiException(GeminiError.NETWORK, e)
+        // Das kostenlose Kontingent ist zeitweise überlastet (503) → automatisch erneut versuchen.
+        var attempt = 0
+        var body: String? = null
+        while (body == null) {
+            attempt++
+            val error = try {
+                body = Http.postJson(
+                    url = "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent",
+                    body = request.toString(),
+                    headers = mapOf("x-goog-api-key" to apiKey),
+                    timeoutMs = timeoutMs,
+                )
+                null
+            } catch (e: HttpStatusException) {
+                GeminiException(errorFor(e.code), e)
+            } catch (e: SocketTimeoutException) {
+                // Nach langem Warten nicht noch einmal minutenlang warten lassen.
+                throw GeminiException(GeminiError.NETWORK, e)
+            } catch (e: IOException) {
+                GeminiException(GeminiError.NETWORK, e)
+            }
+            if (error != null) {
+                val retryable = error.error == GeminiError.OVERLOADED || error.error == GeminiError.NETWORK
+                if (!retryable || attempt >= MAX_ATTEMPTS) throw error
+                delay(RETRY_DELAY_MS * attempt)
+            }
         }
         return GeminiResponseParser.answerText(body) ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
     }
@@ -104,8 +121,12 @@ class GeminiClient(private val apiKey: String) {
             429 -> GeminiError.QUOTA
             // Ungültiger Key liefert je nach Fall 400, 401 oder 403.
             400, 401, 403 -> GeminiError.REJECTED
+            in 500..599 -> GeminiError.OVERLOADED
             else -> GeminiError.NETWORK
         }
+
+        private const val MAX_ATTEMPTS = 3
+        private const val RETRY_DELAY_MS = 2_500L
 
         /**
          * Flash-Lite: im kostenlosen Kontingent schnell (wenige Sekunden). Das große Flash-Modell

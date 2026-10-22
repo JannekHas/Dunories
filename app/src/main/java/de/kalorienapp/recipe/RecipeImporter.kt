@@ -47,6 +47,7 @@ enum class ImportFailure {
     NO_RECIPE,
     NO_API_KEY,
     QUOTA,
+    OVERLOADED,
     NETWORK,
     AI_ERROR,
     FILE_UNREADABLE,
@@ -205,6 +206,7 @@ class RecipeImporter(
     private fun GeminiException.toFailure() = when (error) {
         de.kalorienapp.data.remote.gemini.GeminiError.NO_API_KEY -> ImportFailure.NO_API_KEY
         de.kalorienapp.data.remote.gemini.GeminiError.QUOTA -> ImportFailure.QUOTA
+        de.kalorienapp.data.remote.gemini.GeminiError.OVERLOADED -> ImportFailure.OVERLOADED
         de.kalorienapp.data.remote.gemini.GeminiError.NETWORK -> ImportFailure.NETWORK
         de.kalorienapp.data.remote.gemini.GeminiError.NO_FOOD -> ImportFailure.NO_RECIPE
         else -> ImportFailure.AI_ERROR

@@ -133,6 +133,7 @@
     <string name="capture_back_to_camera">Neues Foto / zurück</string>
     <string name="error_ai_no_key">Es ist kein Gemini-API-Key hinterlegt. Trage ihn in local.properties ein und baue die App neu.</string>
     <string name="error_ai_rejected">Gemini hat die Anfrage abgelehnt. Bitte prüfe den API-Key.</string>
+    <string name="error_ai_overloaded">Gemini ist gerade überlastet. Versuch es in ein paar Sekunden noch einmal.</string>
     <string name="error_ai_quota">Das kostenlose Gemini-Kontingent ist gerade aufgebraucht. Versuch es später noch einmal.</string>
     <string name="error_ai_invalid">Die KI-Antwort war unbrauchbar.</string>
     <string name="error_ai_no_food">Auf dem Foto wurde kein Essen erkannt.</string>

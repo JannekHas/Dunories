@@ -376,6 +376,7 @@ private val CaptureError.messageRes: Int
         CaptureError.REJECTED -> R.string.error_ai_rejected
         CaptureError.NETWORK -> R.string.error_network
         CaptureError.QUOTA -> R.string.error_ai_quota
+        CaptureError.OVERLOADED -> R.string.error_ai_overloaded
         CaptureError.INVALID_RESPONSE -> R.string.error_ai_invalid
         CaptureError.NO_FOOD -> R.string.error_ai_no_food
         CaptureError.IMAGE -> R.string.error_image

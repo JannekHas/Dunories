@@ -137,7 +137,7 @@ fun RecipeImportScreen(
             } else {
                 FailureCard(failure, state.platform)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (failure in setOf(ImportFailure.NETWORK, ImportFailure.QUOTA, ImportFailure.AI_ERROR, ImportFailure.LINK_UNREADABLE)) {
+                    if (failure in setOf(ImportFailure.NETWORK, ImportFailure.QUOTA, ImportFailure.OVERLOADED, ImportFailure.AI_ERROR, ImportFailure.LINK_UNREADABLE)) {
                         OutlinedButton(onClick = viewModel::retry, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.retry)) }
                     }
                     Button(
@@ -208,6 +208,7 @@ private fun FailureCard(failure: ImportFailure, platform: SocialPlatform?) {
         ImportFailure.NO_RECIPE -> R.string.import_fail_recipe_title to R.string.import_fail_recipe_text
         ImportFailure.NO_API_KEY -> R.string.import_fail_ai_title to R.string.error_ai_no_key
         ImportFailure.QUOTA -> R.string.import_fail_ai_title to R.string.error_ai_quota
+        ImportFailure.OVERLOADED -> R.string.import_fail_ai_title to R.string.error_ai_overloaded
         ImportFailure.NETWORK -> R.string.import_fail_ai_title to R.string.error_network
         ImportFailure.AI_ERROR -> R.string.import_fail_ai_title to R.string.error_ai_invalid
         ImportFailure.FILE_UNREADABLE -> R.string.import_fail_file_title to R.string.import_fail_file_text
