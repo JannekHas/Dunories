@@ -27,7 +27,7 @@ import de.kalorienapp.data.db.entity.WeightEntryEntity
         ActivityEntryEntity::class,
         WeightEntryEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -222,9 +222,29 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v9: Mehrere Gewichte pro Tag – eigene ID und Messzeitpunkt statt „ein Eintrag pro Tag“. */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS weight_entry_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        measuredAt INTEGER NOT NULL,
+                        weightKg REAL NOT NULL
+                    )
+                    """.trimIndent(),
+                )
+                // Bisheriger Erfassungszeitpunkt wird zum Messzeitpunkt.
+                db.execSQL("INSERT INTO weight_entry_new (measuredAt, weightKg) SELECT createdAt, weightKg FROM weight_entry")
+                db.execSQL("DROP TABLE weight_entry")
+                db.execSQL("ALTER TABLE weight_entry_new RENAME TO weight_entry")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_weight_entry_measuredAt ON weight_entry (measuredAt)")
+            }
+        }
+
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "kalorien.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                 .build()
     }
 }

@@ -59,12 +59,12 @@ import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.parseDecimal
 import de.kalorienapp.ui.components.toInputString
 import de.kalorienapp.ui.theme.Neon
-import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val dateFormatter = DateTimeFormatter.ofPattern("EEE, d. MMM yyyy", Locale.GERMAN)
+private val dateTimeFormatter = DateTimeFormatter.ofPattern("EEE, d. MMM yyyy · HH:mm", Locale.GERMAN)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +75,7 @@ fun StatsScreen(viewModel: StatsViewModel = viewModel(factory = AppViewModelProv
     if (showWeightDialog) {
         WeightDialog(
             initialKg = state.weights.lastOrNull()?.weightKg ?: state.profileWeightKg,
-            onSave = { kg -> viewModel.saveWeight(LocalDate.now(), kg); showWeightDialog = false },
+            onSave = { kg -> viewModel.addWeight(kg); showWeightDialog = false },
             onDismiss = { showWeightDialog = false },
         )
     }
@@ -254,7 +254,11 @@ private fun WeightSection(entries: List<WeightEntry>, onAdd: () -> Unit, onDelet
         WeightLineChart(entries, Modifier.fillMaxWidth())
         entries.takeLast(10).reversed().forEach { entry ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(entry.date.format(dateFormatter), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                Text(
+                    entry.measuredAt.atZone(ZoneId.systemDefault()).format(dateTimeFormatter),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
                 Text(stringResource(R.string.weight_value, entry.weightKg.toInputString()), style = MaterialTheme.typography.bodyMedium)
                 IconButton(onClick = { onDelete(entry) }) {
                     Icon(Icons.Filled.Delete, stringResource(R.string.delete), tint = Neon.TextSecondary)

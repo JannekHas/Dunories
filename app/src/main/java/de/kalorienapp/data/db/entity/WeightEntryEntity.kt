@@ -1,20 +1,22 @@
 package de.kalorienapp.data.db.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import de.kalorienapp.domain.model.WeightEntry
-import java.time.LocalDate
+import java.time.Instant
 
-/** Höchstens ein Gewicht pro Tag – ein neuer Eintrag am selben Tag ersetzt den alten. */
-@Entity(tableName = "weight_entry")
+/** Eine Gewichtsmessung – beliebig viele pro Tag, nichts wird überschrieben. */
+@Entity(tableName = "weight_entry", indices = [Index("measuredAt")])
 data class WeightEntryEntity(
-    @PrimaryKey val dateEpochDay: Long,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** Zeitpunkt der Messung (Epoch-Millisekunden). */
+    val measuredAt: Long,
     val weightKg: Double,
-    val createdAt: Long,
 ) {
-    fun toDomain() = WeightEntry(LocalDate.ofEpochDay(dateEpochDay), weightKg)
+    fun toDomain() = WeightEntry(id = id, measuredAt = Instant.ofEpochMilli(measuredAt), weightKg = weightKg)
 
     companion object {
-        fun fromDomain(w: WeightEntry) = WeightEntryEntity(w.date.toEpochDay(), w.weightKg, System.currentTimeMillis())
+        fun fromDomain(w: WeightEntry) = WeightEntryEntity(w.id, w.measuredAt.toEpochMilli(), w.weightKg)
     }
 }

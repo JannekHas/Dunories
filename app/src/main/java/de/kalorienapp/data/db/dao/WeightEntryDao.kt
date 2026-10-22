@@ -8,15 +8,15 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WeightEntryDao {
-    @Query("SELECT * FROM weight_entry ORDER BY dateEpochDay")
+    @Query("SELECT * FROM weight_entry ORDER BY measuredAt")
     fun observeAll(): Flow<List<WeightEntryEntity>>
 
-    @Query("SELECT * FROM weight_entry ORDER BY dateEpochDay DESC LIMIT 1")
+    @Query("SELECT * FROM weight_entry ORDER BY measuredAt DESC LIMIT 1")
     suspend fun latest(): WeightEntryEntity?
 
     @Upsert
     suspend fun upsert(entry: WeightEntryEntity)
 
-    @Query("DELETE FROM weight_entry WHERE dateEpochDay = :epochDay")
-    suspend fun delete(epochDay: Long)
+    @Query("DELETE FROM weight_entry WHERE id = :id")
+    suspend fun delete(id: Long)
 }

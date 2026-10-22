@@ -1,8 +1,14 @@
 package de.kalorienapp.domain.model
 
+import java.time.Instant
 import java.time.LocalDate
 
-data class WeightEntry(val date: LocalDate, val weightKg: Double)
+/** Eine Gewichtsmessung; mehrere pro Tag möglich. */
+data class WeightEntry(
+    val id: Long = 0,
+    val measuredAt: Instant,
+    val weightKg: Double,
+)
 
 /** Zielerreichung eines Tages – bestimmt die Farbe im Kalender. */
 enum class DayStatus {

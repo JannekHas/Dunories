@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 
 /** Zeitraum der Statistik (rollierend bis heute). */
@@ -64,8 +65,9 @@ class StatsViewModel(
         period.value = value
     }
 
-    fun saveWeight(date: LocalDate, weightKg: Double) {
-        viewModelScope.launch { weightRepository.save(WeightEntry(date, weightKg)) }
+    /** Neue Messung mit aktuellem Zeitpunkt – überschreibt nichts. */
+    fun addWeight(weightKg: Double) {
+        viewModelScope.launch { weightRepository.save(WeightEntry(measuredAt = Instant.now(), weightKg = weightKg)) }
     }
 
     fun deleteWeight(entry: WeightEntry) {

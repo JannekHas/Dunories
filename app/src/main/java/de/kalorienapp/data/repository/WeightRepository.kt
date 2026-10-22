@@ -19,11 +19,11 @@ class WeightRepository(
     }
 
     suspend fun delete(entry: WeightEntry) {
-        dao.delete(entry.date.toEpochDay())
+        dao.delete(entry.id)
         syncProfileWeight()
     }
 
-    /** Profilgewicht = jüngster Eintrag (falls vorhanden). */
+    /** Profilgewicht = zuletzt gemessener Wert (falls vorhanden). */
     private suspend fun syncProfileWeight() {
         val latest = dao.latest() ?: return
         val profile = profileRepository.get() ?: return

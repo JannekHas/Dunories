@@ -56,11 +56,12 @@ fun WeightLineChart(entries: List<WeightEntry>, modifier: Modifier = Modifier) {
         val min = entries.minOf { it.weightKg }
         val max = entries.maxOf { it.weightKg }
         val range = (max - min).coerceAtLeast(1.0)
-        val first = entries.first().date.toEpochDay()
-        val span = (entries.last().date.toEpochDay() - first).coerceAtLeast(1L).toFloat()
+        // x-Achse nach Messzeitpunkt – mehrere Messungen am selben Tag liegen nebeneinander.
+        val first = entries.first().measuredAt.toEpochMilli()
+        val span = (entries.last().measuredAt.toEpochMilli() - first).coerceAtLeast(1L).toFloat()
         val pad = 8.dp.toPx()
         fun point(e: WeightEntry) = Offset(
-            pad + (e.date.toEpochDay() - first) / span * (size.width - 2 * pad),
+            pad + (e.measuredAt.toEpochMilli() - first) / span * (size.width - 2 * pad),
             pad + ((max - e.weightKg) / range).toFloat() * (size.height - 2 * pad),
         )
         val path = Path()
