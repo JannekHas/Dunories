@@ -1,6 +1,7 @@
 package de.kalorienapp.ui.stats
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -94,14 +95,19 @@ fun WeeklyReportSection(
             if (latest == null) {
                 Text(stringResource(R.string.report_empty), style = MaterialTheme.typography.bodyMedium, color = Neon.TextSecondary)
             } else {
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Neon.SurfaceHighest)) {
-                    TextButton(onClick = { onOpen(latest) }, modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.fillMaxWidth()) {
-                            Text(reportRange(latest.from, latest.to), style = MaterialTheme.typography.labelMedium, color = Neon.TextSecondary)
-                            Text(latest.headline, style = MaterialTheme.typography.titleMedium, color = Neon.TextPrimary, fontWeight = FontWeight.Bold)
-                            Text(latest.summary, style = MaterialTheme.typography.bodyMedium, color = Neon.TextPrimary, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
+                // Eigene klickbare Fläche statt TextButton – dessen Form schnitt den Text am Rand ab.
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Neon.SurfaceHighest)
+                        .clickable { onOpen(latest) }
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(reportRange(latest.from, latest.to), style = MaterialTheme.typography.labelMedium, color = Neon.TextSecondary)
+                    Text(latest.headline, style = MaterialTheme.typography.titleMedium, color = Neon.TextPrimary, fontWeight = FontWeight.Bold)
+                    Text(latest.summary, style = MaterialTheme.typography.bodyMedium, color = Neon.TextPrimary, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 }
             }
             when (generation) {
