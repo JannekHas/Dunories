@@ -415,7 +415,36 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="backup_restore">Sicherung einspielen</string>
     <string name="backup_share_title">Sicherung senden an</string>
     <string name="backup_working">Einen Moment …</string>
-    <string name="backup_saved">Sicherung gespeichert.</string>
+    <string name="backup_saved">Gespeichert – die Sicherung enthält:</string>
+    <string name="backup_created">Erstellt – die Sicherung enthält:</string>
+    <string name="backup_restore_contains">Diese Datei enthält:</string>
+    <string name="backup_summary_created">Gesichert am %1$s</string>
+    <string name="backup_summary_range">Tagebuch %1$s – %2$s</string>
+    <string name="backup_summary_no_diary">Keine Tagebuch-Einträge</string>
+    <plurals name="backup_entries">
+        <item quantity="one">%d Eintrag</item>
+        <item quantity="other">%d Einträge</item>
+    </plurals>
+    <plurals name="backup_recipes">
+        <item quantity="one">%d Rezept</item>
+        <item quantity="other">%d Rezepte</item>
+    </plurals>
+    <plurals name="backup_weights">
+        <item quantity="one">%d Gewicht</item>
+        <item quantity="other">%d Gewichte</item>
+    </plurals>
+    <plurals name="backup_measurements">
+        <item quantity="one">%d Körpermaß</item>
+        <item quantity="other">%d Körpermaße</item>
+    </plurals>
+    <plurals name="backup_shopping">
+        <item quantity="one">%d Artikel auf der Einkaufsliste</item>
+        <item quantity="other">%d Artikel auf der Einkaufsliste</item>
+    </plurals>
+    <plurals name="backup_reports">
+        <item quantity="one">%d KI-Auswertung</item>
+        <item quantity="other">%d KI-Auswertungen</item>
+    </plurals>
     <string name="backup_restore_title">Sicherung einspielen?</string>
     <string name="backup_restore_text">Alle aktuellen Daten in der App werden durch die Sicherung ersetzt. Das lässt sich nicht rückgängig machen. Die App startet danach neu.</string>
     <string name="backup_restore_confirm">Ersetzen</string>

@@ -8,10 +8,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -20,13 +23,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
@@ -42,15 +44,23 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.File
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 sealed interface BackupState {
     data object Idle : BackupState
     data object Working : BackupState
 
-    /** Sicherung liegt bereit → teilen bzw. Speicherort wählen. */
-    data class Ready(val file: File, val share: Boolean) : BackupState
-    data object Saved : BackupState
+    /** Sicherung erstellt → teilen bzw. Speicherort wählen. */
+    data class Ready(val created: BackupManager.Created, val share: Boolean) : BackupState
+
+    /** Geteilt oder gespeichert – Übersicht bleibt sichtbar. */
+    data class Done(val summary: BackupFormat.Summary, val saved: Boolean) : BackupState
+
+    /** Datei geprüft → Übersicht zeigen und Bestätigung abwarten. */
+    data class Confirm(val prepared: BackupManager.Prepared) : BackupState
     data class Failed(val message: Int) : BackupState
 }
 
@@ -66,28 +76,84 @@ class BackupViewModel(private val backup: BackupManager) : ViewModel() {
         }
     }
 
-    fun saveTo(file: File, target: Uri) {
+    fun shared(created: BackupManager.Created) {
+        _state.value = BackupState.Done(created.summary, saved = false)
+    }
+
+    fun saveTo(created: BackupManager.Created, target: Uri?) {
+        if (target == null) {
+            _state.value = BackupState.Idle
+            return
+        }
         _state.value = BackupState.Working
         viewModelScope.launch {
-            _state.value = runCatching { backup.saveTo(file, target); BackupState.Saved }
+            _state.value = runCatching { backup.saveTo(created.file, target); BackupState.Done(created.summary, saved = true) }
                 .getOrElse { BackupState.Failed(R.string.backup_error_create) }
         }
     }
 
-    fun restore(uri: Uri) {
+    fun prepareRestore(uri: Uri) {
         _state.value = BackupState.Working
         viewModelScope.launch {
-            when (val result = backup.restore(uri)) {
-                BackupManager.RestoreResult.Success -> backup.restartApp()
-                is BackupManager.RestoreResult.Failed -> _state.value = BackupState.Failed(
+            _state.value = when (val result = backup.prepareRestore(uri)) {
+                is BackupManager.PrepareResult.Ready -> BackupState.Confirm(result.prepared)
+                is BackupManager.PrepareResult.Failed -> BackupState.Failed(
                     if (result.problem == BackupFormat.Problem.NEWER_APP) R.string.backup_error_newer else R.string.backup_error_invalid,
                 )
             }
         }
     }
 
-    fun reset() {
+    fun confirmRestore(prepared: BackupManager.Prepared) {
+        _state.value = BackupState.Working
+        viewModelScope.launch {
+            runCatching { backup.applyRestore(prepared) }
+                .onSuccess { backup.restartApp() }
+                .onFailure { _state.value = BackupState.Failed(R.string.backup_error_invalid) }
+        }
+    }
+
+    fun cancelRestore() {
+        backup.discardRestore()
         _state.value = BackupState.Idle
+    }
+}
+
+private val dayFormatter = DateTimeFormatter.ofPattern("d. MMM yyyy", Locale.GERMAN)
+private val dateTimeFormatter = DateTimeFormatter.ofPattern("d. MMM yyyy, HH:mm", Locale.GERMAN)
+
+/** Inhalt einer Sicherung in Kurzform: Zeitraum und Anzahl. */
+@Composable
+fun BackupSummaryText(summary: BackupFormat.Summary) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        summary.createdAt?.let {
+            Text(
+                stringResource(R.string.backup_summary_created, Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(dateTimeFormatter)),
+                style = MaterialTheme.typography.bodySmall,
+                color = Neon.TextSecondary,
+            )
+        }
+        val first = summary.firstDay
+        val last = summary.lastDay
+        Text(
+            if (first != null && last != null) {
+                stringResource(R.string.backup_summary_range, first.format(dayFormatter), last.format(dayFormatter))
+            } else {
+                stringResource(R.string.backup_summary_no_diary)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = Neon.Cyan,
+        )
+        val parts = listOfNotNull(
+            pluralStringResource(R.plurals.backup_entries, summary.foodEntries.toInt(), summary.foodEntries.toInt()),
+            pluralStringResource(R.plurals.backup_recipes, summary.recipes.toInt(), summary.recipes.toInt()),
+            pluralStringResource(R.plurals.backup_weights, summary.weights.toInt(), summary.weights.toInt()),
+            summary.measurements.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.backup_measurements, it.toInt(), it.toInt()) },
+            summary.shoppingItems.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.backup_shopping, it.toInt(), it.toInt()) },
+            summary.reports.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.backup_reports, it.toInt(), it.toInt()) },
+        )
+        Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -96,66 +162,76 @@ class BackupViewModel(private val backup: BackupManager) : ViewModel() {
 fun BackupSection(viewModel: BackupViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var pendingRestore by remember { mutableStateOf<Uri?>(null) }
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
-        val ready = state as? BackupState.Ready
-        if (uri != null && ready != null) viewModel.saveTo(ready.file, uri) else viewModel.reset()
+        (state as? BackupState.Ready)?.let { viewModel.saveTo(it.created, uri) }
     }
     val openLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) pendingRestore = uri
+        if (uri != null) viewModel.prepareRestore(uri)
     }
 
     // Sicherung fertig → Teilen-Menü bzw. „Speichern unter“ öffnen.
     LaunchedEffect(state) {
         val ready = state as? BackupState.Ready ?: return@LaunchedEffect
+        val file = ready.created.file
         if (ready.share) {
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", ready.file)
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
             val send = Intent(Intent.ACTION_SEND).apply {
                 type = "application/zip"
                 putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, ready.file.name)
+                putExtra(Intent.EXTRA_SUBJECT, file.name)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(Intent.createChooser(send, context.getString(R.string.backup_share_title)))
-            viewModel.reset()
+            viewModel.shared(ready.created)
         } else {
-            saveLauncher.launch(ready.file.name)
+            saveLauncher.launch(file.name)
         }
     }
 
-    pendingRestore?.let { uri ->
+    (state as? BackupState.Confirm)?.let { confirm ->
         AlertDialog(
-            onDismissRequest = { pendingRestore = null },
+            onDismissRequest = viewModel::cancelRestore,
             title = { Text(stringResource(R.string.backup_restore_title)) },
-            text = { Text(stringResource(R.string.backup_restore_text)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Card(colors = CardDefaults.cardColors(containerColor = Neon.SurfaceHigh)) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text(stringResource(R.string.backup_restore_contains), style = MaterialTheme.typography.labelLarge)
+                            BackupSummaryText(confirm.prepared.summary)
+                        }
+                    }
+                    Text(stringResource(R.string.backup_restore_text))
+                }
+            },
             confirmButton = {
-                TextButton(onClick = { pendingRestore = null; viewModel.restore(uri) }) {
+                TextButton(onClick = { viewModel.confirmRestore(confirm.prepared) }) {
                     Text(stringResource(R.string.backup_restore_confirm), color = Neon.Red)
                 }
             },
-            dismissButton = { TextButton(onClick = { pendingRestore = null }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { TextButton(onClick = viewModel::cancelRestore) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
+    val busy = state == BackupState.Working
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(stringResource(R.string.backup_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = { viewModel.create(share = true) },
-                enabled = state != BackupState.Working,
+                enabled = !busy,
                 colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
                 modifier = Modifier.weight(1f),
             ) { Text(stringResource(R.string.backup_share)) }
             OutlinedButton(
                 onClick = { viewModel.create(share = false) },
-                enabled = state != BackupState.Working,
+                enabled = !busy,
                 modifier = Modifier.weight(1f),
             ) { Text(stringResource(R.string.backup_save)) }
         }
         OutlinedButton(
             onClick = { openLauncher.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed", "*/*")) },
-            enabled = state != BackupState.Working,
+            enabled = !busy,
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.backup_restore)) }
         when (val s = state) {
@@ -163,7 +239,16 @@ fun BackupSection(viewModel: BackupViewModel = viewModel(factory = AppViewModelP
                 CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Neon.Cyan)
                 Text(stringResource(R.string.backup_working), style = MaterialTheme.typography.bodySmall)
             }
-            BackupState.Saved -> Text(stringResource(R.string.backup_saved), style = MaterialTheme.typography.bodySmall, color = Neon.Green)
+            is BackupState.Done -> Card(colors = CardDefaults.cardColors(containerColor = Neon.SurfaceHigh), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    Text(
+                        stringResource(if (s.saved) R.string.backup_saved else R.string.backup_created),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Neon.Green,
+                    )
+                    BackupSummaryText(s.summary)
+                }
+            }
             is BackupState.Failed -> Text(stringResource(s.message), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
             else -> Unit
         }

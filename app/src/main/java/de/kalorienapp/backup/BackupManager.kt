@@ -26,13 +26,23 @@ class BackupManager(
 ) {
     private val imagesDir get() = File(context.filesDir, "recipe_images")
 
-    sealed interface RestoreResult {
-        data object Success : RestoreResult
-        data class Failed(val problem: BackupFormat.Problem?) : RestoreResult
+    /** Erstellte Sicherung samt Übersicht des Inhalts. */
+    data class Created(val file: File, val summary: BackupFormat.Summary)
+
+    /** Geprüfte, entpackte Sicherung – wird erst mit [applyRestore] übernommen. */
+    data class Prepared(val summary: BackupFormat.Summary, internal val manifest: BackupFormat.Manifest)
+
+    sealed interface PrepareResult {
+        data class Ready(val prepared: Prepared) : PrepareResult
+        data class Failed(val problem: BackupFormat.Problem) : PrepareResult
     }
 
+    private val staging get() = File(context.cacheDir, "restore")
+    private val stagedDb get() = File(staging, BackupFormat.DATABASE)
+    private val stagedImages get() = File(staging, "images")
+
     /** Erstellt die Sicherung im Cache (zum Teilen/Speichern). */
-    suspend fun create(): File = withContext(Dispatchers.IO) {
+    suspend fun create(): Created = withContext(Dispatchers.IO) {
         // Alles aus dem WAL in die Hauptdatei schreiben, damit die Kopie vollständig ist.
         database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(TRUNCATE)").use { it.moveToFirst() }
         val dir = File(context.cacheDir, "backup").apply { mkdirs() }
@@ -60,7 +70,11 @@ class BackupManager(
                 zip.closeEntry()
             }
         }
-        file
+        val db = database.openHelper.readableDatabase
+        val summary = BackupFormat.summary(manifest.createdAt) { sql ->
+            runCatching { db.query(sql).use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null } }.getOrNull()
+        }
+        Created(file, summary)
     }
 
     /** Kopiert die erstellte Sicherung an einen vom Nutzer gewählten Ort („Speichern unter“). */
@@ -70,13 +84,12 @@ class BackupManager(
     }
 
     /**
-     * Prüft und entpackt die Sicherung erst in einen Zwischenordner; nur wenn alles passt,
-     * werden die aktuellen Daten ersetzt.
+     * Schritt 1: Sicherung prüfen und in einen Zwischenordner entpacken, Übersicht lesen.
+     * Die aktuellen Daten bleiben unangetastet, bis der Nutzer bestätigt ([applyRestore]).
      */
-    suspend fun restore(uri: Uri): RestoreResult = withContext(Dispatchers.IO) {
-        val staging = File(context.cacheDir, "restore").apply { deleteRecursively(); mkdirs() }
-        val stagedImages = File(staging, "images").apply { mkdirs() }
-        val stagedDb = File(staging, BackupFormat.DATABASE)
+    suspend fun prepareRestore(uri: Uri): PrepareResult = withContext(Dispatchers.IO) {
+        staging.deleteRecursively()
+        stagedImages.mkdirs()
         var manifestJson: String? = null
         val ok = runCatching {
             context.contentResolver.openInputStream(uri)?.use { input ->
@@ -95,13 +108,19 @@ class BackupManager(
                 }
             } != null
         }.getOrDefault(false)
-        if (!ok || !stagedDb.exists()) return@withContext RestoreResult.Failed(BackupFormat.Problem.NOT_A_BACKUP)
+        if (!ok || !stagedDb.exists()) return@withContext PrepareResult.Failed(BackupFormat.Problem.NOT_A_BACKUP)
         val check = BackupFormat.check(manifestJson, database.openHelper.readableDatabase.version)
-        if (check is BackupFormat.Result.Invalid) return@withContext RestoreResult.Failed(check.problem)
+        if (check is BackupFormat.Result.Invalid) return@withContext PrepareResult.Failed(check.problem)
         val manifest = (check as BackupFormat.Result.Valid).manifest
-        if (!prepareDatabase(stagedDb)) return@withContext RestoreResult.Failed(BackupFormat.Problem.NOT_A_BACKUP)
+        val summary = prepareDatabase(stagedDb, manifest.createdAt)
+            ?: return@withContext PrepareResult.Failed(BackupFormat.Problem.NOT_A_BACKUP)
+        PrepareResult.Ready(Prepared(summary, manifest))
+    }
 
-        // Ab hier wird ersetzt.
+    /** Schritt 2: aktuelle Daten durch die vorbereitete Sicherung ersetzen (danach [restartApp]). */
+    suspend fun applyRestore(prepared: Prepared) = withContext(Dispatchers.IO) {
+        val manifest = prepared.manifest
+        check(stagedDb.exists()) { "Keine vorbereitete Sicherung" }
         database.close()
         val dbFile = context.getDatabasePath(AppDatabase.NAME)
         listOf(dbFile, File(dbFile.path + "-wal"), File(dbFile.path + "-shm")).forEach { it.delete() }
@@ -113,13 +132,17 @@ class BackupManager(
         settings.setWeightReminderDays(manifest.settings.weightReminderDays)
         settings.setWeeklyReport(manifest.settings.weeklyReport)
         staging.deleteRecursively()
-        RestoreResult.Success
     }
 
-    /** Datenbank lesbar? Bildpfade auf dieses Gerät umbiegen. */
-    private fun prepareDatabase(file: File): Boolean = runCatching {
+    /** Abgebrochen → Zwischenordner aufräumen. */
+    fun discardRestore() {
+        staging.deleteRecursively()
+    }
+
+    /** Datenbank lesbar? Bildpfade auf dieses Gerät umbiegen und Übersicht lesen; null = unbrauchbar. */
+    private fun prepareDatabase(file: File, createdAt: Long): BackupFormat.Summary? = runCatching {
         SQLiteDatabase.openDatabase(file.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
-            db.rawQuery("PRAGMA integrity_check", null).use { c -> c.moveToFirst() && c.getString(0) == "ok" } || return false
+            db.rawQuery("PRAGMA integrity_check", null).use { c -> c.moveToFirst() && c.getString(0) == "ok" } || return null
             val hasRecipes = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='recipe'", null).use { it.count > 0 }
             if (hasRecipes) {
                 val rows = db.rawQuery("SELECT id, imagePath FROM recipe WHERE imagePath IS NOT NULL", null).use { c ->
@@ -131,9 +154,11 @@ class BackupManager(
             }
             // Room erwartet keinen WAL-Rest aus der fremden Datei.
             db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null).use { it.moveToFirst() }
-            true
+            BackupFormat.summary(createdAt) { sql ->
+                runCatching { db.rawQuery(sql, null).use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null } }.getOrNull()
+            }
         }
-    }.getOrDefault(false)
+    }.getOrNull()
 
     /** Startet die App mit den eingespielten Daten neu (Datenbank wurde geschlossen). */
     fun restartApp() {

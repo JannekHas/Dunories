@@ -69,6 +69,24 @@ class BackupFormatTest {
     }
 
     @Test
+    fun `uebersicht aus der datenbank, fehlende tabellen zaehlen null`() {
+        val answers = mapOf(
+            "SELECT MIN(dateEpochDay) FROM food_entry" to LocalDate.of(2026, 6, 1).toEpochDay(),
+            "SELECT MAX(dateEpochDay) FROM food_entry" to LocalDate.of(2026, 10, 23).toEpochDay(),
+            "SELECT COUNT(*) FROM food_entry" to 412L,
+            "SELECT COUNT(*) FROM recipe" to 7L,
+        )
+        val summary = BackupFormat.summary(createdAt = 99L) { answers[it] }
+        assertEquals(LocalDate.of(2026, 6, 1), summary.firstDay)
+        assertEquals(LocalDate.of(2026, 10, 23), summary.lastDay)
+        assertEquals(412L, summary.foodEntries)
+        assertEquals(7L, summary.recipes)
+        // ältere Sicherung ohne Tabelle → 0
+        assertEquals(0L, summary.shoppingItems)
+        assertEquals(99L, summary.createdAt)
+    }
+
+    @Test
     fun dateiname() {
         assertEquals("KalorienApp-Sicherung-2026-10-23.zip", BackupFormat.fileName(LocalDate.of(2026, 10, 23)))
     }

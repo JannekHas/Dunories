@@ -37,6 +37,40 @@ object BackupFormat {
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }
 
+    /** Was in einer Sicherung steckt – zum Prüfen, ob es die richtige Datei ist. */
+    data class Summary(
+        /** Zeitraum des Tagebuchs (erster/letzter Tag mit Einträgen). */
+        val firstDay: java.time.LocalDate?,
+        val lastDay: java.time.LocalDate?,
+        val foodEntries: Long,
+        val recipes: Long,
+        val weights: Long,
+        val measurements: Long,
+        val shoppingItems: Long,
+        val reports: Long,
+        /** Zeitpunkt der Sicherung (Epoch-ms), falls bekannt. */
+        val createdAt: Long? = null,
+    )
+
+    /**
+     * Übersicht aus einer Datenbank lesen. [query] liefert die erste Zahl eines SELECT oder null
+     * (z. B. wenn es die Tabelle in einer älteren Sicherung noch nicht gibt).
+     */
+    fun summary(createdAt: Long?, query: (String) -> Long?): Summary {
+        fun count(table: String) = query("SELECT COUNT(*) FROM $table") ?: 0L
+        return Summary(
+            firstDay = query("SELECT MIN(dateEpochDay) FROM food_entry")?.let(java.time.LocalDate::ofEpochDay),
+            lastDay = query("SELECT MAX(dateEpochDay) FROM food_entry")?.let(java.time.LocalDate::ofEpochDay),
+            foodEntries = count("food_entry"),
+            recipes = count("recipe"),
+            weights = count("weight_entry"),
+            measurements = count("body_measurement"),
+            shoppingItems = count("shopping_item"),
+            reports = count("weekly_report"),
+            createdAt = createdAt,
+        )
+    }
+
     fun encode(manifest: Manifest): String = json.encodeToString(Manifest.serializer(), manifest)
 
     /** @return Manifest oder das Problem, warum die Datei nicht eingespielt werden kann. */
