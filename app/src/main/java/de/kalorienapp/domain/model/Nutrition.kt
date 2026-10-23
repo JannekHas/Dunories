@@ -13,6 +13,8 @@ data class Nutrients(
     val sugarG: Double? = null,
     val fiberG: Double? = null,
     val saltG: Double? = null,
+    /** Vitamine/Mineralstoffe; fehlender Schlüssel = nicht angegeben (wie die Zusatzwerte). */
+    val micros: Map<Micro, Double> = emptyMap(),
 ) {
     operator fun plus(other: Nutrients) = Nutrients(
         kcal = kcal + other.kcal,
@@ -23,6 +25,7 @@ data class Nutrients(
         sugarG = sugarG plusOrNull other.sugarG,
         fiberG = fiberG plusOrNull other.fiberG,
         saltG = saltG plusOrNull other.saltG,
+        micros = (micros.keys + other.micros.keys).associateWith { (micros[it] ?: 0.0) + (other.micros[it] ?: 0.0) },
     )
 
     operator fun times(factor: Double) = Nutrients(
@@ -34,6 +37,7 @@ data class Nutrients(
         sugarG = sugarG?.times(factor),
         fiberG = fiberG?.times(factor),
         saltG = saltG?.times(factor),
+        micros = micros.mapValues { it.value * factor },
     )
 
     /** Diese Werte gelten pro 100 g/ml → Werte für [amount] g/ml. */

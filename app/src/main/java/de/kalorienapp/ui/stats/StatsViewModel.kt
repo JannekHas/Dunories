@@ -14,6 +14,7 @@ import de.kalorienapp.domain.TrendPoint
 import de.kalorienapp.domain.WeightTrend
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.PeriodStats
+import de.kalorienapp.domain.model.Sex
 import de.kalorienapp.domain.model.WeightEntry
 import de.kalorienapp.domain.model.WeeklyReport
 import de.kalorienapp.domain.model.WeightGoal
@@ -43,6 +44,7 @@ data class StatsUiState(
     val profileWeightKg: Double? = null,
     /** Erreichte Gewichtsziele, neueste zuerst. */
     val reachedGoals: List<WeightGoal> = emptyList(),
+    val sex: Sex? = null,
     /** KI-Wochenauswertungen, neueste zuerst. */
     val reports: List<WeeklyReport> = emptyList(),
 )
@@ -87,6 +89,7 @@ class StatsViewModel(
                     weightTrend = WeightTrend.compute(weights),
                     profileWeightKg = goalState?.profile?.weightKg,
                     reachedGoals = reached,
+                    sex = goalState?.profile?.sex,
                     reports = reports,
                 )
             }

@@ -3,6 +3,7 @@ package de.kalorienapp.domain
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.DayStats
 import de.kalorienapp.domain.model.DayStatus
+import de.kalorienapp.domain.model.Micro
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.domain.model.PeriodStats
 import de.kalorienapp.domain.model.sum
@@ -74,6 +75,10 @@ object StatsCalculator {
                 sugarG = logged.averageOf { it.eaten.sugarG },
                 fiberG = logged.averageOf { it.eaten.fiberG },
                 saltG = logged.averageOf { it.eaten.saltG },
+                // Vitamine: nur über Tage, an denen der Wert angegeben ist.
+                micros = Micro.entries.mapNotNull { micro ->
+                    logged.averageOf { it.eaten.micros[micro] }?.let { micro to it }
+                }.toMap(),
             ),
             averageActivityKcal = (logged.sumOf { it.activityKcal } / n).roundToInt(),
             averageBudgetKcal = (logged.sumOf { it.budgetKcal } / n).roundToInt(),

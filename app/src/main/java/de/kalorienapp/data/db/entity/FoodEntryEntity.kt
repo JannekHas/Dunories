@@ -8,6 +8,7 @@ import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.EntrySource
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
+import de.kalorienapp.domain.model.Micro
 import de.kalorienapp.domain.model.Nutrients
 import java.time.LocalDate
 
@@ -31,6 +32,8 @@ data class FoodEntryEntity(
     val saltG: Double?,
     val source: EntrySource,
     val createdAt: Long,
+    /** Vitamine/Mineralstoffe für die eingetragene Menge (siehe [Micro.encode]). */
+    val micros: String? = null,
 ) {
     fun toDomain() = FoodEntry(
         id = id,
@@ -48,6 +51,7 @@ data class FoodEntryEntity(
             sugarG = sugarG,
             fiberG = fiberG,
             saltG = saltG,
+            micros = Micro.decode(micros),
         ),
         source = source,
         createdAt = createdAt,
@@ -71,6 +75,7 @@ data class FoodEntryEntity(
             saltG = e.nutrients.saltG,
             source = e.source,
             createdAt = e.createdAt,
+            micros = Micro.encode(e.nutrients.micros),
         )
     }
 }

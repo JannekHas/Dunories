@@ -47,6 +47,7 @@ import de.kalorienapp.domain.model.Effort
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.domain.model.Recipe
 import de.kalorienapp.domain.model.RecipeIngredient
+import de.kalorienapp.ui.components.MicroList
 import de.kalorienapp.ui.components.NeonPill
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.toInputString
@@ -203,6 +204,14 @@ fun NutritionOverviewCard(recipe: Recipe, modifier: Modifier = Modifier) {
                     NutrientRow(stringResource(R.string.nutrient_fiber), perServing.fiberG, total.fiberG)
                     NutrientRow(stringResource(R.string.protein), perServing.proteinG, total.proteinG, color = MacroColors.Protein)
                     NutrientRow(stringResource(R.string.nutrient_salt), perServing.saltG, total.saltG, decimals = 1)
+                    if (perServing.micros.isNotEmpty()) {
+                        Text(
+                            stringResource(R.string.micros_per_serving),
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                        MicroList(perServing.micros, sex = null)
+                    }
                 }
             }
             TextButton(onClick = { expanded = !expanded }, modifier = Modifier.align(Alignment.End)) {

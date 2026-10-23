@@ -9,6 +9,7 @@ import androidx.room.Relation
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.FavoriteFood
 import de.kalorienapp.domain.model.MealCombo
+import de.kalorienapp.domain.model.Micro
 import de.kalorienapp.domain.model.Nutrients
 
 @Entity(tableName = "meal_combo")
@@ -39,13 +40,15 @@ data class MealComboItemEntity(
     val sugarG: Double?,
     val fiberG: Double?,
     val saltG: Double?,
+    /** Vitamine/Mineralstoffe pro 100 g/ml (siehe [Micro.encode]). */
+    val micros: String? = null,
 ) {
     fun toDomain() = FavoriteFood(
         id = id,
         name = name,
         amount = amount,
         unit = unit,
-        per100 = Nutrients(kcal, proteinG, carbsG, fatG, saturatedFatG, sugarG, fiberG, saltG),
+        per100 = Nutrients(kcal, proteinG, carbsG, fatG, saturatedFatG, sugarG, fiberG, saltG, Micro.decode(micros)),
     )
 
     companion object {
@@ -63,6 +66,7 @@ data class MealComboItemEntity(
             sugarG = f.per100.sugarG,
             fiberG = f.per100.fiberG,
             saltG = f.per100.saltG,
+            micros = Micro.encode(f.per100.micros),
         )
     }
 }

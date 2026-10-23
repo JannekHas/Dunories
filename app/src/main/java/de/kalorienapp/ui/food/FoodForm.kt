@@ -1,6 +1,7 @@
 package de.kalorienapp.ui.food
 
 import de.kalorienapp.domain.model.AmountUnit
+import de.kalorienapp.domain.model.Micro
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.ui.components.parseDecimal
 import de.kalorienapp.ui.components.toInputString
@@ -22,6 +23,8 @@ data class FoodForm(
     val amount: String = "",
     val unit: AmountUnit = AmountUnit.GRAM,
     val per100: Map<NutrientField, String> = emptyMap(),
+    /** Vitamine/Mineralstoffe pro 100 g/ml (optional). */
+    val micros: Map<Micro, String> = emptyMap(),
 ) {
     val amountValue: Double? get() = amount.parseDecimal()?.takeIf { it > 0 }
     val amountError get() = amount.isNotBlank() && amountValue == null
@@ -33,10 +36,19 @@ data class FoodForm(
         return text.isNotBlank() && text.parseDecimal() == null
     }
 
+    fun microValue(micro: Micro): String = micros[micro].orEmpty()
+
+    fun isMicroError(micro: Micro): Boolean {
+        val text = microValue(micro)
+        return text.isNotBlank() && text.parseDecimal()?.takeIf { it >= 0 } == null
+    }
+
+    fun withMicro(micro: Micro, text: String) = copy(micros = micros + (micro to text))
+
     val isValid: Boolean
         get() = name.isNotBlank() && amountValue != null &&
             value(NutrientField.KCAL).parseDecimal() != null &&
-            NutrientField.entries.none(::isError)
+            NutrientField.entries.none(::isError) && Micro.entries.none(::isMicroError)
 
     fun withNutrient(field: NutrientField, text: String) = copy(per100 = per100 + (field to text))
 
@@ -50,6 +62,7 @@ data class FoodForm(
         sugarG = number(NutrientField.SUGAR),
         fiberG = number(NutrientField.FIBER),
         saltG = number(NutrientField.SALT),
+        micros = micros.mapNotNull { (micro, text) -> text.parseDecimal()?.takeIf { it >= 0 }?.let { micro to it } }.toMap(),
     )
 
     /** Werte für die eingegebene Menge, oder null solange die Menge fehlt. */
@@ -72,6 +85,7 @@ data class FoodForm(
                 put(NutrientField.PROTEIN, per100.proteinG.toInputString())
                 per100.saltG?.let { put(NutrientField.SALT, it.toInputString(2)) }
             },
+            micros = per100.micros.mapValues { (_, v) -> v.toInputString(if (v < 10) 2 else 0) },
         )
     }
 }

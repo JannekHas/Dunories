@@ -51,6 +51,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.PeriodStats
+import de.kalorienapp.domain.model.Sex
+import de.kalorienapp.ui.components.MicroList
 import de.kalorienapp.domain.TrendPoint
 import de.kalorienapp.domain.WeightTrend
 import de.kalorienapp.domain.model.WeightEntry
@@ -147,7 +149,7 @@ fun StatsScreen(
                     Text(stringResource(R.string.stats_no_data), style = MaterialTheme.typography.bodyMedium)
                 } else {
                     SummaryPills(stats)
-                    AverageCard(stats, state.targets)
+                    AverageCard(stats, state.targets, state.sex)
                 }
             }
             WeightSection(
@@ -196,7 +198,7 @@ private fun SummaryPills(stats: PeriodStats) {
 
 /** Durchschnitt pro erfasstem Tag – Nährwerte in derselben Struktur wie in der Tagesübersicht. */
 @Composable
-private fun AverageCard(stats: PeriodStats, targets: DailyTargets?) {
+private fun AverageCard(stats: PeriodStats, targets: DailyTargets?, sex: Sex?) {
     val avg = stats.averageEaten ?: return
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -216,6 +218,11 @@ private fun AverageCard(stats: PeriodStats, targets: DailyTargets?) {
             AvgRow(stringResource(R.string.nutrient_salt), avg.saltG, null, Neon.TextSecondary)
             if (stats.averageActivityKcal > 0) {
                 AvgRow(stringResource(R.string.summary_activity), stats.averageActivityKcal.toDouble(), null, Neon.Violet, unit = R.string.unit_kcal)
+            }
+            if (avg.micros.isNotEmpty()) {
+                Text(stringResource(R.string.micros_title), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 6.dp))
+                MicroList(avg.micros, sex)
+                Text(stringResource(R.string.micros_stats_hint), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
             }
         }
     }

@@ -10,6 +10,8 @@ import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.GoalPlan
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.domain.model.MeasureType
+import de.kalorienapp.domain.model.Micro
+import de.kalorienapp.domain.model.MicroUnit
 import de.kalorienapp.domain.model.Profile
 import de.kalorienapp.domain.model.WeightEntry
 import de.kalorienapp.domain.model.WeightGoal
@@ -112,6 +114,17 @@ object WeeklyInputBuilder {
             val late = entries.filter { it.createdAt.localHour(zone) >= 21 }.sumOf { it.nutrients.kcal }
             if (late > 0) appendLine("Nach 21 Uhr eingetragen: insgesamt ${late.roundToInt()} kcal")
         }
+        val withMicros = input.days.filter { it.hasEntries && it.eaten.micros.isNotEmpty() }
+        if (withMicros.isNotEmpty()) {
+            appendLine("VITAMINE/MINERALSTOFFE (Ø pro Tag an ${withMicros.size} Tagen mit Angaben; nur Lebensmittel mit Angaben zählen, echte Zufuhr meist höher):")
+            Micro.entries.forEach { micro ->
+                val values = withMicros.mapNotNull { it.eaten.micros[micro] }
+                if (values.isEmpty()) return@forEach
+                val unit = if (micro.unit == MicroUnit.MICROGRAM) "µg" else "mg"
+                appendLine("- ${micro.german()}: ${values.average().r()} $unit (Referenz ${micro.reference(p.sex).r()} $unit)")
+            }
+            appendLine()
+        }
         val weights = input.weights.sortedBy { it.measuredAt }
         val fromInstant = input.from.atStartOfDay(zone).toInstant()
         val before = weights.lastOrNull { it.measuredAt.isBefore(fromInstant) }
@@ -148,6 +161,19 @@ object WeeklyInputBuilder {
         Goal.LOSE -> "Abnehmen"
         Goal.MAINTAIN -> "Gewicht halten"
         Goal.GAIN -> "Zunehmen"
+    }
+
+    private fun Micro.german() = when (this) {
+        Micro.VITAMIN_A -> "Vitamin A"
+        Micro.VITAMIN_C -> "Vitamin C"
+        Micro.VITAMIN_D -> "Vitamin D"
+        Micro.VITAMIN_B12 -> "Vitamin B12"
+        Micro.FOLATE -> "Folsäure"
+        Micro.CALCIUM -> "Calcium"
+        Micro.IRON -> "Eisen"
+        Micro.MAGNESIUM -> "Magnesium"
+        Micro.ZINC -> "Zink"
+        Micro.POTASSIUM -> "Kalium"
     }
 
     private fun MeasureType.german() = when (this) {

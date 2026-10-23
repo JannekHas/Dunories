@@ -2,6 +2,7 @@ package de.kalorienapp.data.remote.gemini
 
 import de.kalorienapp.data.remote.asObject
 import de.kalorienapp.data.remote.gemini.GeminiResponseParser.nonNegative
+import de.kalorienapp.data.remote.MicroFields
 import de.kalorienapp.data.remote.lenientJson
 import de.kalorienapp.data.remote.number
 import de.kalorienapp.data.remote.string
@@ -108,6 +109,7 @@ Regeln:
   (z. B. Ei Größe M ≈ 55 g), bei „nach Geschmack“/Prise null. Wasser zählt mit 0 kcal; „Wasser + Brühe“ als zwei Zutaten.
   Nährwerte PRO 100 g bzw. PRO 100 ml im genannten Zustand (roh/tiefgekühlt wie gekauft) mit typischen Werten
   aus deutschen Nährwerttabellen. Unbekannte optionale Werte null.
+  ${MicroFields.PROMPT_RULE}
 - Im Beitrag genannte Kalorien/Makros nur zur Plausibilitätsprüfung; maßgeblich sind die Zutaten.
 - steps: alle Zubereitungsschritte vollständig (mit allen Mengen/Zahlen wie „14 Klößchen“, Zeiten, Hitze), ohne Nummerierung.
   Nur wenn das Rezept bloß gesprochen/gezeigt wird, selbst klare Schritte formulieren.
@@ -120,7 +122,8 @@ Gib ausschließlich JSON gemäß Schema zurück.
     private companion object {
         const val MAX_TEXT = 12_000
 
-        private val NUTRIENTS = listOf("kcal", "fat", "saturated_fat", "carbs", "sugar", "fiber", "protein", "salt")
+        private val NUTRIENTS = listOf("kcal", "fat", "saturated_fat", "carbs", "sugar", "fiber", "protein", "salt") +
+            MicroFields.KEYS.values
         private val REQUIRED_NUTRIENTS = setOf("kcal", "fat", "carbs", "protein")
 
         private fun JsonObjectBuilder.type(type: String, nullable: Boolean = false) {
@@ -237,6 +240,7 @@ internal object GeminiRecipeParser {
                     fiberG = item.nonNegative("fiber"),
                     proteinG = item.nonNegative("protein") ?: 0.0,
                     saltG = item.nonNegative("salt"),
+                    micros = MicroFields.read(item),
                 ),
                 note = note,
             )

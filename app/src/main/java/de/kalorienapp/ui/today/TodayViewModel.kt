@@ -16,6 +16,7 @@ import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.domain.model.Nutrients
+import de.kalorienapp.domain.model.Sex
 import de.kalorienapp.domain.model.WeightGoal
 import de.kalorienapp.domain.model.sum
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,6 +48,8 @@ data class TodayUiState(
     val activities: List<ActivityEntry> = emptyList(),
     /** Namen der Favoriten (klein geschrieben) – für „Als Favorit speichern / entfernen“. */
     val favoriteNames: Set<String> = emptySet(),
+    /** Für die Vitamin-Tageswerte (DGE je nach Geschlecht). */
+    val sex: Sex? = null,
     /** false → Hinweis „Kein aktives Gewichtsziel“. */
     val hasGoal: Boolean = true,
 ) {
@@ -97,6 +100,7 @@ class TodayViewModel(
                     activities = activities,
                     favoriteNames = favorites.map { it.name.lowercase() }.toSet(),
                     hasGoal = goalState == null || goalState.goal != null,
+                    sex = goalState?.profile?.sex,
                 )
             }
         }

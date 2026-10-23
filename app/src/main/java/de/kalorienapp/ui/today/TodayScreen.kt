@@ -80,7 +80,9 @@ import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.ui.AppViewModelProvider
+import de.kalorienapp.domain.model.Sex
 import de.kalorienapp.ui.components.ConcentricRings
+import de.kalorienapp.ui.components.MicroList
 import de.kalorienapp.ui.components.NeonPill
 import de.kalorienapp.ui.components.RingSpec
 import de.kalorienapp.ui.components.format
@@ -246,6 +248,7 @@ fun TodayScreen(
                 item(key = "summary") {
                     SummaryCard(
                         summary = summary,
+                        sex = state.sex,
                         onActivityClick = { showActivityList = true },
                         onAddActivity = { showActivityList = true },
                     )
@@ -305,6 +308,7 @@ private fun DateTitle(date: LocalDate, onClick: () -> Unit) {
 @Composable
 private fun SummaryCard(
     summary: DaySummary,
+    sex: Sex?,
     onActivityClick: () -> Unit,
     onAddActivity: () -> Unit,
 ) {
@@ -377,7 +381,7 @@ private fun SummaryCard(
             }
         }
 
-        NutrientLegend(summary)
+        NutrientLegend(summary, sex)
     }
 }
 
@@ -396,7 +400,7 @@ private object MacroColors {
  * gesättigte Fettsäuren → Fett), danach Ballaststoffe und Salz.
  */
 @Composable
-private fun NutrientLegend(summary: DaySummary) {
+private fun NutrientLegend(summary: DaySummary, sex: Sex?) {
     var detailed by rememberSaveable { mutableStateOf(false) }
     val eaten = summary.eaten
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -413,6 +417,12 @@ private fun NutrientLegend(summary: DaySummary) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 OtherNutrientRow(stringResource(R.string.nutrient_fiber), eaten.fiberG)
                 OtherNutrientRow(stringResource(R.string.nutrient_salt), eaten.saltG)
+                Text(
+                    stringResource(R.string.micros_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+                MicroList(eaten.micros, sex, showMissing = true)
                 Text(
                     stringResource(R.string.extra_nutrients_hint),
                     style = MaterialTheme.typography.bodySmall,

@@ -501,4 +501,21 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="quick_combos">Meine Kombis</string>
     <string name="quick_combo_summary">%1$s · %2$s kcal</string>
     <string name="quick_remove_combo">Kombi löschen</string>
+    <!-- Vitamine & Mineralstoffe -->
+    <string name="micros_title">Vitamine &amp; Mineralstoffe</string>
+    <string name="micros_section">Vitamine &amp; Mineralstoffe pro 100 %1$s (optional)</string>
+    <string name="micros_per_serving">Vitamine &amp; Mineralstoffe pro Portion</string>
+    <string name="micros_stats_hint">Balken: Anteil am DGE-Tageswert. Es zählen nur Lebensmittel mit Angaben (KI, Barcode oder selbst eingetragen) – die echte Zufuhr ist meist etwas höher.</string>
+    <string name="micro_vitamin_a">Vitamin A</string>
+    <string name="micro_vitamin_c">Vitamin C</string>
+    <string name="micro_vitamin_d">Vitamin D</string>
+    <string name="micro_vitamin_b12">Vitamin B12</string>
+    <string name="micro_folate">Folsäure</string>
+    <string name="micro_calcium">Calcium</string>
+    <string name="micro_iron">Eisen</string>
+    <string name="micro_magnesium">Magnesium</string>
+    <string name="micro_zinc">Zink</string>
+    <string name="micro_potassium">Kalium</string>
+    <string name="unit_mg">mg</string>
+    <string name="unit_ug">µg</string>
 </resources>

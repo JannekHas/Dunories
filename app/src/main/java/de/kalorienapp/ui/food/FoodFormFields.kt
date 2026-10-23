@@ -1,5 +1,16 @@
 package de.kalorienapp.ui.food
 
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import de.kalorienapp.domain.model.Micro
+import de.kalorienapp.ui.components.unitRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -93,6 +104,7 @@ fun FoodFormFields(
                     .padding(start = if (field.subItem) 24.dp else 0.dp),
             )
         }
+        MicroFields(form, onChange, unitLabel)
         TotalCard(form.amountValue, unitLabel, form.totalNutrients())
     }
 }
@@ -143,3 +155,35 @@ private val NutrientField.labelRes: Int
         NutrientField.PROTEIN -> R.string.nutrient_protein
         NutrientField.SALT -> R.string.nutrient_salt
     }
+
+/** Aufklappbar: Vitamine/Mineralstoffe pro 100 g/ml – offen, wenn schon Werte da sind (KI/Barcode). */
+@Composable
+private fun MicroFields(form: FoodForm, onChange: (FoodForm) -> Unit, unitLabel: String) {
+    var open by rememberSaveable { mutableStateOf(form.micros.values.any { it.isNotBlank() }) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().clickable { open = !open }.padding(vertical = 4.dp),
+        ) {
+            Text(
+                stringResource(R.string.micros_section, unitLabel),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(if (open) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown, contentDescription = null)
+        }
+        if (open) {
+            Micro.entries.forEach { micro ->
+                NumberField(
+                    value = form.microValue(micro),
+                    onValueChange = { onChange(form.withMicro(micro, it)) },
+                    label = stringResource(micro.labelRes),
+                    suffix = stringResource(micro.unitRes),
+                    isError = form.isMicroError(micro),
+                    errorText = stringResource(R.string.error_number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}

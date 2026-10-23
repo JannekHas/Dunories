@@ -9,6 +9,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Relation
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.Effort
+import de.kalorienapp.domain.model.Micro
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.domain.model.Recipe
 import de.kalorienapp.domain.model.RecipeCategory
@@ -53,6 +54,8 @@ data class RecipeIngredientEntity(
     val fiberG: Double?,
     val saltG: Double?,
     val note: String?,
+    /** Vitamine/Mineralstoffe pro 100 g/ml (siehe [Micro.encode]). */
+    val micros: String? = null,
 ) {
     fun toDomain() = RecipeIngredient(
         id = id,
@@ -61,7 +64,7 @@ data class RecipeIngredientEntity(
         quantityUnit = quantityUnit,
         amount = amount,
         unit = unit,
-        per100 = Nutrients(kcal, proteinG, carbsG, fatG, saturatedFatG, sugarG, fiberG, saltG),
+        per100 = Nutrients(kcal, proteinG, carbsG, fatG, saturatedFatG, sugarG, fiberG, saltG, Micro.decode(micros)),
         note = note,
     )
 
@@ -83,6 +86,7 @@ data class RecipeIngredientEntity(
             fiberG = i.per100.fiberG,
             saltG = i.per100.saltG,
             note = i.note,
+            micros = Micro.encode(i.per100.micros),
         )
     }
 }

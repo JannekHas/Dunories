@@ -3,6 +3,7 @@ package de.kalorienapp.data.remote.gemini
 import java.util.Base64
 import de.kalorienapp.data.remote.Http
 import de.kalorienapp.data.remote.HttpStatusException
+import de.kalorienapp.data.remote.MicroFields
 import de.kalorienapp.data.remote.asObject
 import de.kalorienapp.data.remote.lenientJson
 import de.kalorienapp.data.remote.number
@@ -138,6 +139,7 @@ class GeminiClient(private val apiKey: String) {
 Für jede Komponente: kurzer deutscher Name, Menge (g bei festen, ml bei flüssigen Lebensmitteln)
 und typische Nährwerte PRO 100 g bzw. PRO 100 ml – NICHT für die Gesamtmenge.
 Nutze typische Werte aus deutschen Nährwerttabellen. Unbekannte optionale Werte als null.
+${MicroFields.PROMPT_RULE}
 Gib ausschließlich JSON gemäß Schema zurück."""
 
         private const val PHOTO_PROMPT = """Analysiere dieses Foto einer Mahlzeit.
@@ -152,7 +154,7 @@ Beschreibung: """
         private val FIELD_ORDER = listOf(
             "name", "amount", "unit",
             "kcal", "fat", "saturated_fat", "carbs", "sugar", "fiber", "protein", "salt",
-        )
+        ) + MicroFields.KEYS.values
         private val REQUIRED = listOf("name", "amount", "unit", "kcal", "fat", "carbs", "protein")
 
         private val RESPONSE_SCHEMA: JsonObject = buildJsonObject {
@@ -228,6 +230,7 @@ internal object GeminiResponseParser {
                     fiberG = item.nonNegative("fiber"),
                     proteinG = item.nonNegative("protein") ?: 0.0,
                     saltG = item.nonNegative("salt"),
+                    micros = MicroFields.read(item),
                 ),
                 source = source,
             )

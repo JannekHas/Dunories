@@ -1,5 +1,6 @@
 package de.kalorienapp.domain
 
+import de.kalorienapp.domain.model.Micro
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.domain.model.sum
 import org.junit.Assert.assertEquals
@@ -36,5 +37,25 @@ class NutrientsTest {
         assertEquals(150.0, total.kcal, 0.001)
         assertEquals(5.0, total.sugarG!!, 0.001)
         assertNull(total.fiberG)
+    }
+
+    @Test
+    fun `vitamine summieren und skalieren, fehlende bleiben weg`() {
+        val milk = Nutrients(kcal = 47.0, micros = mapOf(Micro.CALCIUM to 120.0, Micro.VITAMIN_B12 to 0.4))
+        val oj = Nutrients(kcal = 45.0, micros = mapOf(Micro.VITAMIN_C to 40.0))
+        val total = listOf(milk.per100ToAmount(200.0), oj.per100ToAmount(250.0)).sum()
+        assertEquals(240.0, total.micros[Micro.CALCIUM]!!, 0.001)
+        assertEquals(100.0, total.micros[Micro.VITAMIN_C]!!, 0.001)
+        assertNull(total.micros[Micro.IRON])
+    }
+
+    @Test
+    fun `vitamine speichern und lesen`() {
+        val values = mapOf(Micro.IRON to 3.25, Micro.FOLATE to 120.0)
+        assertEquals(values, Micro.decode(Micro.encode(values)))
+        assertNull(Micro.encode(emptyMap()))
+        // Unbekanntes/Kaputtes wird ignoriert
+        assertEquals(mapOf(Micro.ZINC to 1.0), Micro.decode("ZINC=1.0;JOD=5;IRON=abc;;"))
+        assertEquals(emptyMap<Micro, Double>(), Micro.decode(null))
     }
 }

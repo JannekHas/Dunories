@@ -1,6 +1,7 @@
 package de.kalorienapp.data.remote.openfoodfacts
 
 import de.kalorienapp.data.remote.Http
+import de.kalorienapp.data.remote.MicroFields
 import de.kalorienapp.data.remote.HttpStatusException
 import de.kalorienapp.data.remote.asObject
 import de.kalorienapp.data.remote.lenientJson
@@ -71,6 +72,7 @@ internal object OpenFoodFactsParser {
                 fiberG = n.number("fiber_100g"),
                 proteinG = n.number("proteins_100g") ?: 0.0,
                 saltG = n.number("salt_100g"),
+                micros = MicroFields.readOpenFoodFacts(n),
             ),
             source = EntrySource.BARCODE,
         )

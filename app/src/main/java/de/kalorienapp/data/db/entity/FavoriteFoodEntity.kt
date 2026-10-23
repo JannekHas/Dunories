@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.FavoriteFood
+import de.kalorienapp.domain.model.Micro
 import de.kalorienapp.domain.model.Nutrients
 
 /** Gespeicherter Favorit. Nährwertspalten gelten pro 100 g/ml, [amount] ist die übliche Portion. */
@@ -22,6 +23,8 @@ data class FavoriteFoodEntity(
     val fiberG: Double?,
     val saltG: Double?,
     val createdAt: Long,
+    /** Vitamine/Mineralstoffe pro 100 g/ml (siehe [Micro.encode]). */
+    val micros: String? = null,
 ) {
     fun toDomain() = FavoriteFood(
         id = id,
@@ -37,6 +40,7 @@ data class FavoriteFoodEntity(
             sugarG = sugarG,
             fiberG = fiberG,
             saltG = saltG,
+            micros = Micro.decode(micros),
         ),
     )
 
@@ -55,6 +59,7 @@ data class FavoriteFoodEntity(
             fiberG = f.per100.fiberG,
             saltG = f.per100.saltG,
             createdAt = createdAt,
+            micros = Micro.encode(f.per100.micros),
         )
     }
 }
