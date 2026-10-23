@@ -2,6 +2,7 @@ package de.kalorienapp.ui.stats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.remote.gemini.GeminiError
 import de.kalorienapp.data.remote.gemini.GeminiException
 import de.kalorienapp.data.repository.GoalRepository
@@ -9,6 +10,8 @@ import de.kalorienapp.data.repository.NotEnoughDataException
 import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.data.repository.StatsRepository
 import de.kalorienapp.data.repository.WeightRepository
+import de.kalorienapp.domain.Fasting
+import de.kalorienapp.domain.FastingStats
 import de.kalorienapp.domain.StatsCalculator
 import de.kalorienapp.domain.TrendPoint
 import de.kalorienapp.domain.WeightTrend
@@ -60,6 +63,7 @@ enum class ReportError { NOT_ENOUGH_DATA, NO_API_KEY, QUOTA, OVERLOADED, NETWORK
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StatsViewModel(
+    settings: AppSettings,
     statsRepository: StatsRepository,
     private val weightRepository: WeightRepository,
     private val goalRepository: GoalRepository,
@@ -95,6 +99,31 @@ class StatsViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StatsUiState())
+
+    /** Fasten-Auswertung im gewählten Zeitraum; null = Intervallfasten aus. */
+    val fastingStats: StateFlow<FastingStats?> = period
+        .flatMapLatest { p ->
+            val today = LocalDate.now()
+            val from = today.minusDays(p.days - 1L)
+            combine(
+                settings.fastingEnabled,
+                settings.fastingConfig,
+                // Vortag mitladen – für die Fastenpause vor dem ersten Tag.
+                statsRepository.entryTimes(from.minusDays(1), today),
+                statsRepository.days(from, today),
+                goalRepository.current,
+            ) { on, config, times, days, state ->
+                if (!on) return@combine null
+                Fasting.stats(
+                    config = config,
+                    days = days.map { it.date },
+                    entryTimes = times,
+                    kcalByDay = days.associate { it.date to it.eaten.kcal },
+                    sex = state?.profile?.sex ?: de.kalorienapp.domain.model.Sex.MALE,
+                )
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun selectPeriod(value: StatsPeriod) {
         period.value = value

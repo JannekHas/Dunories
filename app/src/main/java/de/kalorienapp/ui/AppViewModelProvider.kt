@@ -9,6 +9,7 @@ import de.kalorienapp.KalorienApplication
 import de.kalorienapp.ui.calendar.CalendarViewModel
 import de.kalorienapp.ui.capture.CaptureViewModel
 import de.kalorienapp.ui.entry.EntryEditViewModel
+import de.kalorienapp.ui.fasting.FastingSettingsViewModel
 import de.kalorienapp.ui.goal.GoalViewModel
 import de.kalorienapp.ui.profile.BackupViewModel
 import de.kalorienapp.ui.profile.NotificationSettingsViewModel
@@ -45,6 +46,7 @@ object AppViewModelProvider {
         }
         initializer {
             StatsViewModel(
+                container().settings,
                 container().statsRepository,
                 container().weightRepository,
                 container().goalRepository,
@@ -56,6 +58,9 @@ object AppViewModelProvider {
         }
         initializer {
             WeeklyReportViewModel(createSavedStateHandle(), container().weeklyReportRepository)
+        }
+        initializer {
+            FastingSettingsViewModel(container().settings, container().workScheduler)
         }
         initializer {
             BackupViewModel(container().backupManager)

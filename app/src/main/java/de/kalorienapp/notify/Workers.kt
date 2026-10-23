@@ -22,6 +22,7 @@ import de.kalorienapp.data.remote.gemini.GeminiError
 import de.kalorienapp.data.remote.gemini.GeminiException
 import de.kalorienapp.data.repository.NotEnoughDataException
 import de.kalorienapp.data.repository.WeeklyReportRepository
+import de.kalorienapp.domain.Fasting
 import de.kalorienapp.domain.ReminderPlanner
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -46,9 +47,20 @@ class WorkScheduler(
     private val work get() = WorkManager.getInstance(context)
 
     suspend fun scheduleAll() {
+        scheduleFasting()
         scheduleMidnight()
         scheduleWeightReminder()
         scheduleWeekly()
+    }
+
+    /** Intervallfasten: Benachrichtigung zum nächsten Beginn/Ende des Essensfensters. */
+    fun scheduleFasting() {
+        val next = if (settings.fastingEnabled.value) Fasting.nextTransition(settings.fastingConfig.value, LocalDateTime.now()) else null
+        if (next == null) {
+            work.cancelUniqueWork(NAME_FASTING)
+            return
+        }
+        enqueue<FastingWorker>(NAME_FASTING, next.first)
     }
 
     /** Kurz nach Mitternacht: Kalorien-Benachrichtigung auf den neuen Tag umstellen. */
@@ -112,6 +124,7 @@ class WorkScheduler(
 
     companion object {
         private const val NAME_MIDNIGHT = "midnight"
+        private const val NAME_FASTING = "fasting"
         private const val NAME_WEIGH = "weight_reminder"
         private const val NAME_WEEKLY = "weekly_report"
         private val WEEKLY_TIME: LocalTime = LocalTime.of(7, 0)
@@ -125,6 +138,34 @@ class MidnightWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val c = applicationContext.container
         c.calorieNotifier.refresh()
         c.workScheduler.scheduleMidnight()
+        return Result.success()
+    }
+}
+
+/** Meldet Beginn bzw. Ende des Essensfensters und plant den nächsten Wechsel. */
+class FastingWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    @SuppressLint("MissingPermission") // canPost prüft die Erlaubnis
+    override suspend fun doWork(): Result {
+        val c = applicationContext.container
+        val config = c.settings.fastingConfig.value
+        if (c.settings.fastingEnabled.value && config.isDaily && Notifications.canPost(applicationContext)) {
+            // Kurz nach dem geplanten Zeitpunkt: Fenster jetzt offen → es hat gerade begonnen.
+            val opened = Fasting.isInEatingWindow(config, LocalTime.now())
+            val (title, text) = if (opened) {
+                R.string.notif_fasting_eat_title to applicationContext.getString(R.string.notif_fasting_eat_text, config.windowEnd.toString())
+            } else {
+                R.string.notif_fasting_fast_title to applicationContext.getString(R.string.notif_fasting_fast_text, config.windowStart.toString())
+            }
+            val notification = NotificationCompat.Builder(applicationContext, Notifications.CHANNEL_REMINDERS)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(applicationContext.getString(title))
+                .setContentText(text)
+                .setAutoCancel(true)
+                .setContentIntent(Notifications.openAppIntent(applicationContext, Notifications.ID_FASTING))
+                .build()
+            NotificationManagerCompat.from(applicationContext).notify(Notifications.ID_FASTING, notification)
+        }
+        c.workScheduler.scheduleFasting()
         return Result.success()
     }
 }

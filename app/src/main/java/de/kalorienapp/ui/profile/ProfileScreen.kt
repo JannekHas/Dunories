@@ -21,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.ui.AppViewModelProvider
+import de.kalorienapp.ui.fasting.FastingSettingsSection
 import de.kalorienapp.ui.goal.GoalCard
 
 /** Profil & Ziele – jede gültige Änderung wird sofort gespeichert (kein Speichern-Knopf). */
@@ -58,6 +59,9 @@ fun ProfileScreen(
             HorizontalDivider()
             SectionTitle(stringResource(R.string.section_targets))
             TargetAdjustmentsSection(state, viewModel::update)
+            HorizontalDivider()
+            SectionTitle(stringResource(R.string.section_fasting))
+            FastingSettingsSection()
             HorizontalDivider()
             SectionTitle(stringResource(R.string.section_notifications))
             NotificationSettingsSection()

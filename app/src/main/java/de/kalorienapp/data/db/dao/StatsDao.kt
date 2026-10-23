@@ -20,6 +20,8 @@ data class DailyNutritionRow(
 
 data class DailyActivityRow(val dateEpochDay: Long, val kcal: Int)
 
+data class EntryTimeRow(val dateEpochDay: Long, val createdAt: Long)
+
 /** Vitamin-Angaben einzelner Einträge (werden in Kotlin je Tag summiert). */
 data class MicroRow(val dateEpochDay: Long, val micros: String)
 
@@ -49,6 +51,9 @@ interface StatsDao {
         """,
     )
     fun observeDailyActivity(fromEpochDay: Long, toEpochDay: Long): Flow<List<DailyActivityRow>>
+
+    @Query("SELECT dateEpochDay, createdAt FROM food_entry WHERE dateEpochDay BETWEEN :fromEpochDay AND :toEpochDay")
+    fun observeEntryTimes(fromEpochDay: Long, toEpochDay: Long): Flow<List<EntryTimeRow>>
 
     @Query("SELECT dateEpochDay, micros FROM food_entry WHERE micros IS NOT NULL AND dateEpochDay BETWEEN :fromEpochDay AND :toEpochDay")
     fun observeMicros(fromEpochDay: Long, toEpochDay: Long): Flow<List<MicroRow>>

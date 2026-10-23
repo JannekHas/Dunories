@@ -1,9 +1,13 @@
 package de.kalorienapp.data
 
 import android.content.Context
+import de.kalorienapp.domain.FastingConfig
+import de.kalorienapp.domain.FastingPlan
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.time.DayOfWeek
+import java.time.LocalTime
 
 /** Einstellungen für Benachrichtigungen (klein, kein Teil des Profils → SharedPreferences statt Room). */
 class AppSettings(context: Context) {
@@ -32,6 +36,40 @@ class AppSettings(context: Context) {
         _waterGoalMl.value = ml
     }
 
+    private val _fastingEnabled = MutableStateFlow(prefs.getBoolean(KEY_FASTING, false))
+    /** Intervallfasten: Timer auf „Heute“, Benachrichtigungen, Auswertung. */
+    val fastingEnabled: StateFlow<Boolean> = _fastingEnabled.asStateFlow()
+
+    private val _fastingConfig = MutableStateFlow(readFastingConfig())
+    val fastingConfig: StateFlow<FastingConfig> = _fastingConfig.asStateFlow()
+
+    fun setFastingEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_FASTING, enabled).apply()
+        _fastingEnabled.value = enabled
+    }
+
+    fun setFastingConfig(config: FastingConfig) {
+        prefs.edit()
+            .putString(KEY_FASTING_PLAN, config.plan.name)
+            .putInt(KEY_FASTING_START, config.windowStart.toSecondOfDay() / 60)
+            .putInt(KEY_FASTING_HOURS, config.customFastHours)
+            .putString(KEY_FASTING_DAYS, config.fastDays.joinToString(",") { it.name })
+            .apply()
+        _fastingConfig.value = config
+    }
+
+    private fun readFastingConfig(): FastingConfig {
+        val defaults = FastingConfig()
+        return FastingConfig(
+            plan = FastingPlan.entries.find { it.name == prefs.getString(KEY_FASTING_PLAN, null) } ?: defaults.plan,
+            windowStart = prefs.getInt(KEY_FASTING_START, -1).takeIf { it in 0 until 24 * 60 }
+                ?.let { LocalTime.of(it / 60, it % 60) } ?: defaults.windowStart,
+            customFastHours = prefs.getInt(KEY_FASTING_HOURS, defaults.customFastHours),
+            fastDays = prefs.getString(KEY_FASTING_DAYS, null)?.split(',')
+                ?.mapNotNull { name -> DayOfWeek.entries.find { it.name == name } }?.toSet() ?: defaults.fastDays,
+        )
+    }
+
     fun setCaloriesNotification(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_CALORIES, enabled).apply()
         _caloriesNotification.value = enabled
@@ -58,6 +96,11 @@ class AppSettings(context: Context) {
         private const val KEY_WEIGHT_DAYS = "weight_reminder_days"
         private const val KEY_WEEKLY = "weekly_report"
         private const val KEY_WATER_GOAL = "water_goal_ml"
+        private const val KEY_FASTING = "fasting_enabled"
+        private const val KEY_FASTING_PLAN = "fasting_plan"
+        private const val KEY_FASTING_START = "fasting_window_start_min"
+        private const val KEY_FASTING_HOURS = "fasting_custom_hours"
+        private const val KEY_FASTING_DAYS = "fasting_days"
         private const val KEY_PERMISSION_ASKED = "notification_permission_asked"
     }
 }

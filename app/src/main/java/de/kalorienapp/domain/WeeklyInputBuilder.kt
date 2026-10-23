@@ -39,6 +39,9 @@ data class WeeklyInput(
     /** Getrunkenes Wasser je Tag (ml) und Tagesziel. */
     val waterByDay: Map<LocalDate, Int> = emptyMap(),
     val waterGoalMl: Int? = null,
+    /** Intervallfasten (null = aus) und Auswertung des Zeitraums. */
+    val fasting: FastingConfig? = null,
+    val fastingStats: FastingStats? = null,
 )
 
 /**
@@ -113,6 +116,16 @@ object WeeklyInputBuilder {
             // Wann eingetragen wird (Hinweis auf Essenszeiten, z. B. spätes Snacken).
             val late = entries.filter { it.createdAt.localHour(zone) >= 21 }.sumOf { it.nutrients.kcal }
             if (late > 0) appendLine("Nach 21 Uhr eingetragen: insgesamt ${late.roundToInt()} kcal")
+        }
+        input.fasting?.let { f ->
+            val plan = if (f.isDaily) "${f.fastHours}:${f.windowHours} (Essensfenster ${f.windowStart}–${f.windowEnd})" else "5:2 (Fastentage: ${f.fastDays.joinToString { it.name.lowercase() }})"
+            append("INTERVALLFASTEN: $plan")
+            input.fastingStats?.let { s ->
+                append(" – eingehalten an ${s.keptDays} von ${s.evaluatedDays} Tagen")
+                s.averageFastHours?.let { append(", Ø Fastenpause ${"%.1f".format(Locale.GERMANY, it)} h") }
+            }
+            appendLine(" (Eintragszeit ≈ Essenszeit)")
+            appendLine()
         }
         val withMicros = input.days.filter { it.hasEntries && it.eaten.micros.isNotEmpty() }
         if (withMicros.isNotEmpty()) {

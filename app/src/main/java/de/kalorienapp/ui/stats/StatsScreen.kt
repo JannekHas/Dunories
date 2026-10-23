@@ -64,6 +64,7 @@ import de.kalorienapp.ui.components.NumberField
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.parseDecimal
 import de.kalorienapp.ui.components.toInputString
+import de.kalorienapp.ui.fasting.FastingStatsCard
 import de.kalorienapp.ui.goal.GoalHistoryItem
 import de.kalorienapp.ui.theme.Neon
 import java.time.ZoneId
@@ -84,6 +85,7 @@ fun StatsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val generation by viewModel.reportGeneration.collectAsStateWithLifecycle()
+    val fastingStats by viewModel.fastingStats.collectAsStateWithLifecycle()
     var showWeightDialog by remember { mutableStateOf(false) }
     LaunchedEffect(openWeighDialog) {
         if (openWeighDialog) {
@@ -150,6 +152,7 @@ fun StatsScreen(
                 } else {
                     SummaryPills(stats)
                     AverageCard(stats, state.targets, state.sex)
+                    fastingStats?.let { FastingStatsCard(it) }
                 }
             }
             WeightSection(

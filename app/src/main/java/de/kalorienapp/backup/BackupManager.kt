@@ -56,6 +56,11 @@ class BackupManager(
                 weightReminderDays = settings.weightReminderDays.value,
                 weeklyReport = settings.weeklyReport.value,
                 waterGoalMl = settings.waterGoalMl.value,
+                fastingEnabled = settings.fastingEnabled.value,
+                fasting = settings.fastingConfig.value.let { c ->
+                    listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
+                        .joinToString(";")
+                },
             ),
         )
         ZipOutputStream(file.outputStream().buffered()).use { zip ->
@@ -133,6 +138,19 @@ class BackupManager(
         settings.setWeightReminderDays(manifest.settings.weightReminderDays)
         settings.setWeeklyReport(manifest.settings.weeklyReport)
         settings.setWaterGoalMl(manifest.settings.waterGoalMl)
+        settings.setFastingEnabled(manifest.settings.fastingEnabled)
+        manifest.settings.fasting?.split(';')?.takeIf { it.size == 4 }?.let { (plan, start, hours, days) ->
+            val defaults = de.kalorienapp.domain.FastingConfig()
+            settings.setFastingConfig(
+                de.kalorienapp.domain.FastingConfig(
+                    plan = de.kalorienapp.domain.FastingPlan.entries.find { it.name == plan } ?: defaults.plan,
+                    windowStart = start.toIntOrNull()?.takeIf { it in 0 until 1440 }?.let { java.time.LocalTime.of(it / 60, it % 60) }
+                        ?: defaults.windowStart,
+                    customFastHours = hours.toIntOrNull() ?: defaults.customFastHours,
+                    fastDays = days.split(',').mapNotNull { d -> java.time.DayOfWeek.entries.find { it.name == d } }.toSet(),
+                ),
+            )
+        }
         staging.deleteRecursively()
     }
 

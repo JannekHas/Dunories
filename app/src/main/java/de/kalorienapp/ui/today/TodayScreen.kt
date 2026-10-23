@@ -87,6 +87,8 @@ import de.kalorienapp.ui.components.NeonPill
 import de.kalorienapp.ui.components.RingSpec
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
+import de.kalorienapp.domain.Fasting
+import de.kalorienapp.ui.fasting.FastingCard
 import de.kalorienapp.ui.goal.GoalResultDialog
 import de.kalorienapp.ui.theme.Neon
 import kotlinx.coroutines.launch
@@ -109,6 +111,7 @@ fun TodayScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val endedGoal by viewModel.endedGoal.collectAsStateWithLifecycle()
     val water by viewModel.water.collectAsStateWithLifecycle()
+    val fasting by viewModel.fasting.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var comboToSave by remember { mutableStateOf<MealGroup?>(null) }
@@ -252,6 +255,17 @@ fun TodayScreen(
                         onActivityClick = { showActivityList = true },
                         onAddActivity = { showActivityList = true },
                     )
+                }
+            }
+            fasting?.takeIf { state.isToday }?.let { config ->
+                item(key = "fasting") {
+                    val zone = java.time.ZoneId.systemDefault()
+                    // Nur am selben Tag erfasste Einträge zählen als „gegessen um“.
+                    val outside = if (!config.isDaily) 0 else state.meals.flatMap { it.entries }.count { entry ->
+                        val created = java.time.Instant.ofEpochMilli(entry.createdAt).atZone(zone)
+                        created.toLocalDate() == state.date && !Fasting.isInEatingWindow(config, created.toLocalTime())
+                    }
+                    FastingCard(config, state.sex, state.summary?.eaten?.kcal ?: 0.0, outside)
                 }
             }
             item(key = "water") {

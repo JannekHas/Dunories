@@ -34,6 +34,9 @@ object BackupFormat {
         val weightReminderDays: Int? = 3,
         val weeklyReport: Boolean = true,
         val waterGoalMl: Int? = null,
+        val fastingEnabled: Boolean = false,
+        /** Plan;Beginn in Minuten;eigene Stunden;Fastentage – siehe BackupManager. */
+        val fasting: String? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

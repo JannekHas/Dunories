@@ -9,7 +9,11 @@ import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.domain.model.sum
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 
 /**
  * Tageswerte für Kalender und Statistik. Ziele werden mit dem **aktuellen** Profil und Zielplan
@@ -39,6 +43,19 @@ class StatsRepository(
             targetsFor = { date -> state.targetsFor(date.year) },
         )
     }
+
+    /**
+     * Uhrzeiten der Einträge je Tag – nur am selben Tag erfasste (nachgetragene verfälschen die Essenszeit).
+     * Für die Fasten-Auswertung.
+     */
+    fun entryTimes(from: LocalDate, to: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Flow<Map<LocalDate, List<LocalTime>>> =
+        dao.observeEntryTimes(from.toEpochDay(), to.toEpochDay()).map { rows ->
+            rows.mapNotNull { row ->
+                val created = Instant.ofEpochMilli(row.createdAt).atZone(zone)
+                val day = LocalDate.ofEpochDay(row.dateEpochDay)
+                if (created.toLocalDate() == day) day to created.toLocalTime() else null
+            }.groupBy({ it.first }, { it.second })
+        }
 
     private fun DailyNutritionRow.toNutrients() = Nutrients(
         kcal = kcal,

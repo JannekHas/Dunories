@@ -9,6 +9,7 @@ import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.repository.GoalRepository
 import de.kalorienapp.data.repository.WaterRepository
+import de.kalorienapp.domain.FastingConfig
 import de.kalorienapp.domain.Water
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.model.ActivityEntry
@@ -124,6 +125,11 @@ class TodayViewModel(
     fun dismissEndedGoal() {
         _endedGoal.value = null
     }
+
+    /** Intervallfasten (null = aus); nur für heute sinnvoll. */
+    val fasting: StateFlow<FastingConfig?> = combine(settings.fastingEnabled, settings.fastingConfig) { on, config ->
+        config.takeIf { on }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** Wasser des angezeigten Tages mit Ziel (eigenes oder aus dem Gewicht). */
     val water: StateFlow<WaterState> = date

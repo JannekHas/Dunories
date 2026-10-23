@@ -22,6 +22,7 @@ object Notifications {
     const val ID_CALORIES = 1
     const val ID_WEIGH = 2
     const val ID_REPORT = 3
+    const val ID_FASTING = 4
 
     /** Extra im Öffnen-Intent: was die App anzeigen soll. */
     const val EXTRA_OPEN = "de.kalorienapp.OPEN"

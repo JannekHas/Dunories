@@ -528,4 +528,41 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="speech_button">Sprechen</string>
     <string name="speech_prompt">Was hast du gegessen?</string>
     <string name="speech_unavailable">Auf diesem Gerät ist keine Spracherkennung verfügbar. Du kannst das Mikrofon der Tastatur nutzen.</string>
+    <!-- Intervallfasten -->
+    <string name="section_fasting">Intervallfasten</string>
+    <string name="fasting_enable">Intervallfasten</string>
+    <string name="fasting_enable_text">Timer auf „Heute“, Benachrichtigung bei Beginn und Ende des Essensfensters, Auswertung in der Statistik.</string>
+    <string name="fasting_plan_16_8">16:8</string>
+    <string name="fasting_plan_18_6">18:6</string>
+    <string name="fasting_plan_20_4">20:4</string>
+    <string name="fasting_plan_custom">Eigener</string>
+    <string name="fasting_plan_5_2">5:2</string>
+    <string name="fasting_custom_hours">Fasten / Essen</string>
+    <string name="fasting_hours_value">%1$d h / %2$d h</string>
+    <string name="fasting_window_start">Beginn des Essensfensters</string>
+    <string name="fasting_window_value">Essensfenster %1$s – %2$s · ändern</string>
+    <string name="fasting_daily_hint">Getränke ohne Kalorien (Wasser, Tee, schwarzer Kaffee) sind in der Fastenzeit erlaubt.</string>
+    <string name="fasting_days_title">Fastentage (zwei pro Woche)</string>
+    <string name="fasting_5_2_hint">An Fastentagen höchstens 500 kcal (Frauen) bzw. 600 kcal (Männer), an den übrigen Tagen normal essen. Dein Tagesziel ändert sich dadurch nicht.</string>
+    <string name="fasting_phase_fasting">Fastenzeit</string>
+    <string name="fasting_phase_eating">Essensfenster</string>
+    <string name="fasting_phase_fast_day">Fastentag</string>
+    <string name="fasting_phase_normal_day">Normaler Tag</string>
+    <string name="fasting_until_eat">Noch %1$s h · Essensfenster ab %2$s</string>
+    <string name="fasting_until_fast">Noch %1$s h · Fastenzeit ab %2$s</string>
+    <string name="fasting_fast_day_text">Heute %1$s von höchstens %2$d kcal</string>
+    <string name="fasting_normal_day_text">Heute ganz normal essen.</string>
+    <plurals name="fasting_entries_outside">
+        <item quantity="one">%d Eintrag in der Fastenzeit</item>
+        <item quantity="other">%d Einträge in der Fastenzeit</item>
+    </plurals>
+    <string name="fasting_stats_title">Intervallfasten</string>
+    <string name="fasting_stats_empty">Noch keine Einträge im Zeitraum.</string>
+    <string name="fasting_stats_kept">An %1$d von %2$d Tagen eingehalten</string>
+    <string name="fasting_stats_average">Ø Fastenpause: %1$s Stunden</string>
+    <string name="fasting_stats_hint">Grundlage sind die Uhrzeiten, zu denen du einträgst – nachgetragene Mahlzeiten zählen nicht.</string>
+    <string name="notif_fasting_eat_title">Essensfenster offen</string>
+    <string name="notif_fasting_eat_text">Guten Appetit – du kannst bis %1$s essen.</string>
+    <string name="notif_fasting_fast_title">Fastenzeit beginnt</string>
+    <string name="notif_fasting_fast_text">Das Essensfenster ist zu – weiter geht es um %1$s.</string>
 </resources>
