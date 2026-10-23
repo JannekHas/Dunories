@@ -44,6 +44,13 @@ class FoodAnalyzer(
     suspend fun analyzePhotoWithAi(uri: Uri, onStage: (AnalysisStage) -> Unit): List<FoodDraft> =
         analyzeWithAi(ImageLoader.load(context, uri, maxSide = AI_MAX_SIDE), onStage)
 
+    /** Nährwerttabelle ablesen – höhere Auflösung, damit die kleine Schrift lesbar bleibt. */
+    suspend fun analyzeLabel(uri: Uri, onStage: (AnalysisStage) -> Unit): List<FoodDraft> {
+        onStage(AnalysisStage.AI)
+        val bitmap = ImageLoader.load(context, uri, maxSide = LABEL_MAX_SIDE)
+        return gemini.analyzeLabel(ImageLoader.toJpeg(bitmap, quality = 90))
+    }
+
     suspend fun analyzeText(description: String, onStage: (AnalysisStage) -> Unit): List<FoodDraft> {
         onStage(AnalysisStage.AI)
         return gemini.analyzeText(description)
@@ -59,5 +66,6 @@ class FoodAnalyzer(
     private companion object {
         const val BARCODE_MAX_SIDE = 2048
         const val AI_MAX_SIDE = 1024
+        const val LABEL_MAX_SIDE = 1800
     }
 }

@@ -51,6 +51,20 @@ class GeminiClient(private val apiKey: String) {
         }
     }
 
+    /** Foto einer Nährwerttabelle exakt ablesen (keine Schätzung). */
+    suspend fun analyzeLabel(jpeg: ByteArray): List<FoodDraft> {
+        val image = Base64.getEncoder().encodeToString(jpeg)
+        return generate(EntrySource.LABEL) {
+            addJsonObject { put("text", LABEL_PROMPT) }
+            addJsonObject {
+                putJsonObject("inline_data") {
+                    put("mime_type", "image/jpeg")
+                    put("data", image)
+                }
+            }
+        }
+    }
+
     suspend fun analyzeText(description: String): List<FoodDraft> =
         generate(EntrySource.AI_TEXT) {
             addJsonObject { put("text", TEXT_PROMPT + description.trim()) }
@@ -145,6 +159,16 @@ Gib ausschließlich JSON gemäß Schema zurück."""
         private const val PHOTO_PROMPT = """Analysiere dieses Foto einer Mahlzeit.
 Erkenne alle sichtbaren Lebensmittel und Getränke als einzelne Komponenten und schätze die Menge auf dem Foto.
 Wenn kein Essen oder Getränk zu sehen ist, gib eine leere Liste zurück.$COMMON_RULES"""
+
+        private const val LABEL_PROMPT = """Auf dem Foto ist eine Nährwerttabelle (Etikett einer Verpackung).
+Lies die Werte GENAU so ab, wie sie gedruckt sind – nichts schätzen. Gib genau EIN Element zurück:
+name = Produktname, falls auf dem Foto lesbar, sonst „Produkt (Etikett)“.
+Werte immer PRO 100 g bzw. PRO 100 ml (Spalte „pro 100 g/ml“; gibt es nur „pro Portion“, rechne mit der angegebenen
+Portionsgröße auf 100 um). unit = ml bei Getränken („100 ml“), sonst g. amount = angegebene Portionsgröße, sonst 100.
+Energie in kcal (nicht kJ). Salz in g. Steht ein Wert nicht auf dem Etikett: null (Hauptwerte dann 0).
+Vitamine und Mineralstoffe nur, wenn sie auf dem Etikett stehen (umgerechnet in die Einheit aus dem Feldnamen), sonst null.
+Ist keine Nährwerttabelle zu sehen, gib eine leere Liste zurück.
+Gib ausschließlich JSON gemäß Schema zurück."""
 
         private const val TEXT_PROMPT = """Zerlege die beschriebene Mahlzeit in einzelne Lebensmittel-Komponenten.
 Fehlt eine Mengenangabe, schätze eine übliche Portion.$COMMON_RULES

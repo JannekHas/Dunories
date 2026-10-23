@@ -57,6 +57,8 @@ data class CaptureUiState(
     val step: CaptureStep = CaptureStep.Camera,
     val mealType: MealType,
     val description: String = "",
+    /** Kamera/Galerie lesen eine Nährwerttabelle ab statt Essen zu schätzen. */
+    val labelMode: Boolean = false,
 )
 
 class CaptureViewModel(
@@ -90,13 +92,22 @@ class CaptureViewModel(
     private sealed interface Input {
         data class Photo(val uri: Uri, val skipBarcode: Boolean = false) : Input
         data class Text(val description: String) : Input
+        data class Label(val uri: Uri) : Input
     }
 
     private var lastInput: Input? = null
     private var analysisJob: Job? = null
     private var nextItemId = 1L
 
-    fun onPhoto(uri: Uri) = analyze(Input.Photo(uri))
+    fun onPhoto(uri: Uri) = analyze(if (_state.value.labelMode) Input.Label(uri) else Input.Photo(uri))
+
+    fun setLabelMode(enabled: Boolean) = _state.update { it.copy(labelMode = enabled) }
+
+    /** Unbekannter Barcode → zurück zur Kamera im Etikett-Modus. */
+    fun photographLabel() {
+        setLabelMode(true)
+        backToCamera()
+    }
 
     /** Kamera konnte kein Foto speichern. */
     fun onCaptureFailed() = setStep(CaptureStep.Failed(CaptureError.IMAGE))
@@ -208,6 +219,7 @@ class CaptureViewModel(
             try {
                 val step = when (input) {
                     is Input.Text -> proposalOf(analyzer.analyzeText(input.description, onStage))
+                    is Input.Label -> proposalOf(analyzer.analyzeLabel(input.uri, onStage))
                     is Input.Photo -> if (input.skipBarcode) {
                         proposalOf(analyzer.analyzePhotoWithAi(input.uri, onStage))
                     } else {

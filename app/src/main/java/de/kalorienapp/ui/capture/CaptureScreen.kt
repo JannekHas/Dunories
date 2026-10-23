@@ -30,6 +30,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import de.kalorienapp.ui.components.neonChipColors
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
@@ -99,7 +101,13 @@ fun CaptureScreen(
             .fillMaxSize()
             .padding(padding)
         when (step) {
-            CaptureStep.Camera -> CameraContent(viewModel, { onManualEntry(state.mealType) }, contentModifier)
+            CaptureStep.Camera -> CameraContent(
+                viewModel,
+                { onManualEntry(state.mealType) },
+                contentModifier,
+                labelMode = state.labelMode,
+                onLabelMode = viewModel::setLabelMode,
+            )
             CaptureStep.TextInput -> TextInputContent(
                 description = state.description,
                 onChange = viewModel::onDescriptionChange,
@@ -126,8 +134,10 @@ fun CaptureScreen(
             is CaptureStep.UnknownBarcode -> MessageContent(
                 title = stringResource(R.string.capture_unknown_barcode_title),
                 message = stringResource(R.string.capture_unknown_barcode_text, step.barcode),
-                primaryLabel = stringResource(R.string.capture_analyze_with_ai),
-                onPrimary = viewModel::analyzeLastPhotoWithAi,
+                primaryLabel = stringResource(R.string.capture_photograph_label),
+                onPrimary = viewModel::photographLabel,
+                secondaryLabel = stringResource(R.string.capture_analyze_with_ai),
+                onSecondary = viewModel::analyzeLastPhotoWithAi,
                 onManual = { onManualEntry(state.mealType) },
                 onNewPhoto = viewModel::backToCamera,
                 modifier = contentModifier,
@@ -153,7 +163,13 @@ fun CaptureScreen(
 }
 
 @Composable
-private fun CameraContent(viewModel: CaptureViewModel, onManualEntry: () -> Unit, modifier: Modifier) {
+private fun CameraContent(
+    viewModel: CaptureViewModel,
+    onManualEntry: () -> Unit,
+    modifier: Modifier,
+    labelMode: Boolean,
+    onLabelMode: (Boolean) -> Unit,
+) {
     val context = LocalContext.current
     val controller = remember { CameraController() }
     var hasPermission by remember {
@@ -194,17 +210,37 @@ private fun CameraContent(viewModel: CaptureViewModel, onManualEntry: () -> Unit
             }
         }
 
-        Text(
-            stringResource(R.string.capture_hint),
-            color = Color.White,
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
+        Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
                 .background(Color.Black.copy(alpha = 0.4f))
                 .padding(12.dp),
-        )
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // Umschalter: Essen schätzen oder Nährwerttabelle exakt ablesen.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = !labelMode,
+                    onClick = { onLabelMode(false) },
+                    label = { Text(stringResource(R.string.capture_mode_food)) },
+                    colors = neonChipColors(),
+                )
+                FilterChip(
+                    selected = labelMode,
+                    onClick = { onLabelMode(true) },
+                    label = { Text(stringResource(R.string.capture_mode_label)) },
+                    colors = neonChipColors(),
+                )
+            }
+            Text(
+                stringResource(if (labelMode) R.string.capture_hint_label else R.string.capture_hint),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
+        }
 
         Row(
             modifier = Modifier
@@ -341,6 +377,8 @@ private fun MessageContent(
     onManual: () -> Unit,
     onNewPhoto: () -> Unit,
     modifier: Modifier,
+    secondaryLabel: String? = null,
+    onSecondary: () -> Unit = {},
 ) {
     Column(
         modifier = modifier.padding(24.dp),
@@ -352,6 +390,9 @@ private fun MessageContent(
         Spacer(Modifier.height(8.dp))
         if (primaryLabel != null) {
             Button(onClick = onPrimary, modifier = Modifier.fillMaxWidth()) { Text(primaryLabel) }
+        }
+        if (secondaryLabel != null) {
+            OutlinedButton(onClick = onSecondary, modifier = Modifier.fillMaxWidth()) { Text(secondaryLabel) }
         }
         OutlinedButton(onClick = onManual, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.capture_enter_manually))

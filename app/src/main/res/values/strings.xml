@@ -518,4 +518,10 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="micro_potassium">Kalium</string>
     <string name="unit_mg">mg</string>
     <string name="unit_ug">µg</string>
+    <!-- Nährwerttabelle abfotografieren -->
+    <string name="capture_mode_food">Essen</string>
+    <string name="capture_mode_label">Nährwerttabelle</string>
+    <string name="capture_hint_label">Fotografiere die Nährwerttabelle gerade und scharf – die Werte werden exakt abgelesen.</string>
+    <string name="capture_photograph_label">Nährwerttabelle fotografieren</string>
+    <string name="source_label">Nährwerttabelle abgelesen</string>
 </resources>
