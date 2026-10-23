@@ -570,4 +570,10 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="notif_setting_meals_text">Wenn Frühstück, Mittag- oder Abendessen eine Stunde nach deiner üblichen Zeit noch fehlt. Die App lernt die Zeiten aus deinen Einträgen (nicht in der Fastenzeit).</string>
     <string name="notif_meal_title">%1$s schon eingetragen?</string>
     <string name="notif_meal_text">Tippen zum Erfassen – dauert nur ein paar Sekunden.</string>
+    <!-- Widget -->
+    <string name="widget_label">Kalorien heute</string>
+    <string name="widget_description">Ringe und verbleibende Kalorien von heute, mit Knopf zum Erfassen.</string>
+    <string name="widget_subtitle">Gegessen %1$s · Budget %2$s kcal</string>
+    <string name="widget_no_profile">Profil anlegen</string>
+    <string name="widget_add">Kalorien-Widget zum Startbildschirm hinzufügen</string>
 </resources>

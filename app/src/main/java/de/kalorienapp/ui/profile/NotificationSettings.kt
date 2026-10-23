@@ -1,6 +1,8 @@
 package de.kalorienapp.ui.profile
 
 import android.Manifest
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
@@ -18,6 +20,7 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -45,6 +48,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.notify.CalorieNotifier
+import de.kalorienapp.notify.CaloriesWidget
 import de.kalorienapp.notify.Notifications
 import de.kalorienapp.notify.WorkScheduler
 import de.kalorienapp.ui.AppViewModelProvider
@@ -167,6 +171,14 @@ fun NotificationSettingsSection(
             checked = weekly,
             onChange = { viewModel.setWeekly(it); if (it) ensurePermission() },
         )
+        // Widget: Android fragt selbst nach, wo es hin soll (falls der Launcher das unterstützt).
+        val widgetManager = remember { AppWidgetManager.getInstance(context) }
+        if (widgetManager.isRequestPinAppWidgetSupported) {
+            OutlinedButton(
+                onClick = { widgetManager.requestPinAppWidget(ComponentName(context, CaloriesWidget::class.java), null, null) },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(stringResource(R.string.widget_add)) }
+        }
     }
 }
 

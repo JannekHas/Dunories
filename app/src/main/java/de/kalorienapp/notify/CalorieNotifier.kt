@@ -63,22 +63,33 @@ class CalorieNotifier(
                     entries.entriesFor(day),
                     activities.entriesFor(day),
                 ) { enabled, state, eaten, acts ->
-                    if (enabled && state != null) summaryOf(state.targetsFor(day.year), eaten, acts) else null
+                    enabled to state?.let { summaryOf(it.targetsFor(day.year), eaten, acts) }
                 }
-            }.collect { summary -> if (summary == null) cancel() else post(summary) }
+            }.collect { (enabled, summary) ->
+                // Widget immer aktualisieren, die Benachrichtigung nur wenn eingeschaltet.
+                CaloriesWidget.update(context, summary)
+                if (enabled && summary != null) post(summary) else cancel()
+            }
         }
     }
 
-    /** Von außen (Worker, Wegwischen, Neustart): Tag prüfen und neu anzeigen. */
+    /** Von außen (Worker, Wegwischen, Neustart, Widget): Tag prüfen und neu anzeigen. */
     suspend fun refresh() {
         today.value = LocalDate.now()
-        val day = today.value
-        val state = goals.current.first()
-        if (!settings.caloriesNotification.value || state == null) {
+        val summary = currentSummary()
+        CaloriesWidget.update(context, summary)
+        if (!settings.caloriesNotification.value || summary == null) {
             cancel()
             return
         }
-        post(summaryOf(state.targetsFor(day.year), entries.entriesFor(day).first(), activities.entriesFor(day).first()))
+        post(summary)
+    }
+
+    /** Heutige Bilanz (null ohne Profil). */
+    suspend fun currentSummary(): DaySummary? {
+        val day = LocalDate.now()
+        val state = goals.current.first() ?: return null
+        return summaryOf(state.targetsFor(day.year), entries.entriesFor(day).first(), activities.entriesFor(day).first())
     }
 
     fun cancel() = NotificationManagerCompat.from(context).cancel(Notifications.ID_CALORIES)
@@ -132,8 +143,8 @@ class CalorieNotifier(
         }
     }
 
-    private companion object {
-        const val SIZE_DP = 64
+    companion object {
+        private const val SIZE_DP = 64
 
         /** Die vier Ringe von „Heute“: außen kcal (Regenbogen), dann Protein, KH, Fett. */
         fun ringBitmap(summary: DaySummary, density: Float): Bitmap {
