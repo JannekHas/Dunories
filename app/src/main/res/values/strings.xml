@@ -404,4 +404,36 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="report_disclaimer">KI-Einschätzung ohne Gewähr – keine medizinische Beratung. Die App ändert dadurch nichts automatisch.</string>
     <string name="report_delete_title">Auswertung löschen?</string>
     <string name="report_error_data">Zu wenig Daten: Trage an mindestens 2 Tagen etwas ein.</string>
+    <!-- Datensicherung -->
+    <string name="section_backup">Datensicherung</string>
+    <string name="backup_text">Sichert alles – Tagebuch, Rezepte mit Bildern, Gewichte, Ziele, Auswertungen, Einkaufsliste und Einstellungen – in eine Datei. Die Datei bleibt bei dir: teilen (z. B. an dich per WhatsApp) oder auf dem Gerät speichern.</string>
+    <string name="backup_share">Sicherung teilen</string>
+    <string name="backup_save">Speichern…</string>
+    <string name="backup_restore">Sicherung einspielen</string>
+    <string name="backup_share_title">Sicherung senden an</string>
+    <string name="backup_working">Einen Moment …</string>
+    <string name="backup_saved">Sicherung gespeichert.</string>
+    <string name="backup_restore_title">Sicherung einspielen?</string>
+    <string name="backup_restore_text">Alle aktuellen Daten in der App werden durch die Sicherung ersetzt. Das lässt sich nicht rückgängig machen. Die App startet danach neu.</string>
+    <string name="backup_restore_confirm">Ersetzen</string>
+    <string name="backup_error_create">Die Sicherung konnte nicht erstellt werden.</string>
+    <string name="backup_error_invalid">Das ist keine gültige KalorienApp-Sicherung.</string>
+    <string name="backup_error_newer">Die Sicherung stammt aus einer neueren App-Version. Bitte erst die App aktualisieren.</string>
+    <!-- Einkaufsliste -->
+    <string name="shopping_title">Einkaufsliste</string>
+    <string name="shopping_short">Einkauf</string>
+    <string name="shopping_add">Hinzufügen</string>
+    <string name="shopping_add_hint">Artikel hinzufügen</string>
+    <string name="shopping_empty">Die Liste ist leer. Füge Zutaten in einem Rezept über „Einkauf“ hinzu oder trage oben selbst etwas ein.</string>
+    <string name="shopping_share">Liste teilen</string>
+    <string name="shopping_remove_checked">Erledigte entfernen</string>
+    <string name="shopping_clear">Liste leeren</string>
+    <string name="shopping_removed">„%1$s“ entfernt</string>
+    <string name="shopping_add_title">Auf die Einkaufsliste</string>
+    <string name="shopping_add_confirm">Hinzufügen</string>
+    <string name="shopping_added">%1$d Zutaten auf der Einkaufsliste</string>
+    <plurals name="shopping_for_servings">
+        <item quantity="one">Mengen für %d Portion – abwählen, was du schon hast.</item>
+        <item quantity="other">Mengen für %d Portionen – abwählen, was du schon hast.</item>
+    </plurals>
 </resources>

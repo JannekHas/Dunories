@@ -1,6 +1,7 @@
 package de.kalorienapp
 
 import android.content.Context
+import de.kalorienapp.backup.BackupManager
 import de.kalorienapp.capture.FoodAnalyzer
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.db.AppDatabase
@@ -16,6 +17,7 @@ import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.data.repository.GoalRepository
 import de.kalorienapp.data.repository.ProfileRepository
 import de.kalorienapp.data.repository.RecipeRepository
+import de.kalorienapp.data.repository.ShoppingRepository
 import de.kalorienapp.data.repository.StatsRepository
 import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.data.repository.WeightRepository
@@ -48,6 +50,7 @@ class AppContainer(context: Context) {
     val statsRepository = StatsRepository(database.statsDao(), goalRepository)
     val recipeImages = RecipeImageStore(context)
     val recipeRepository = RecipeRepository(database.recipeDao(), recipeImages)
+    val shoppingRepository = ShoppingRepository(database.shoppingDao())
     val weightRepository = WeightRepository(database.weightEntryDao(), profileRepository)
 
     private val gemini = GeminiClient(BuildConfig.GEMINI_API_KEY)
@@ -82,6 +85,8 @@ class AppContainer(context: Context) {
 
     val calorieNotifier = CalorieNotifier(context, settings, goalRepository, foodEntryRepository, activityEntryRepository)
     val workScheduler = WorkScheduler(context, settings, foodEntryDao)
+
+    val backupManager = BackupManager(context, database, settings)
 
     /** Ziele aus Benachrichtigungen (Wiegen, Wochenauswertung). */
     val navRequests = NavRequests()

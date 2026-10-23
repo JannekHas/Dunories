@@ -47,6 +47,7 @@ import de.kalorienapp.ui.recipes.RecipeDetailScreen
 import de.kalorienapp.ui.recipes.RecipeEditScreen
 import de.kalorienapp.ui.recipes.RecipeImportScreen
 import de.kalorienapp.ui.recipes.RecipesScreen
+import de.kalorienapp.ui.recipes.ShoppingListScreen
 import de.kalorienapp.ui.stats.StatsScreen
 import de.kalorienapp.ui.theme.Neon
 import de.kalorienapp.ui.today.TodayScreen
@@ -186,7 +187,11 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     onOpen = { navController.navigate(RecipeDetailRoute(it.id)) },
                     onCreate = { navController.navigate(RecipeEditRoute()) },
                     onImportLink = { text -> shareInbox.put(ImportSource.Text(text)) },
+                    onOpenShopping = { navController.navigate(ShoppingListRoute) },
                 )
+            }
+            composable<ShoppingListRoute> {
+                ShoppingListScreen(onBack = { navController.popBackStack() })
             }
             composable<RecipeDetailRoute> {
                 RecipeDetailScreen(

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Nur für Open Food Facts, Gemini und öffentliche TikTok-/Instagram-Beitragsseiten; keine Analytics. -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -52,6 +53,19 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!--
+            ML Kit (Barcode) schickt über Googles „datatransport“ Nutzungsstatistiken. Ohne den
+            Übertragungsweg „cct“ findet die Bibliothek kein Ziel und verwirft die Ereignisse
+            (Regel: keine Analytics). Dienste/Receiver bleiben, sonst könnte das Einplanen abstürzen.
+        -->
+        <service
+            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+            tools:node="merge">
+            <meta-data
+                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+                tools:node="remove" />
+        </service>
 
         <!-- Kamerafotos für Rezeptbilder (nur Cache-Ordner „camera“) -->
         <provider

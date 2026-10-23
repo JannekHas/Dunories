@@ -2,6 +2,12 @@ package de.kalorienapp.ui.recipes
 
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -66,6 +73,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.RecipeRepository
+import de.kalorienapp.data.repository.ShoppingRepository
+import de.kalorienapp.domain.ShoppingList
 import de.kalorienapp.domain.RecipeCalculator
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.domain.model.Recipe
@@ -96,6 +105,7 @@ class RecipeDetailViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: RecipeRepository,
     private val entryRepository: FoodEntryRepository,
+    private val shopping: ShoppingRepository,
 ) : ViewModel() {
     private val id: Long = savedStateHandle["id"] ?: 0L
 
@@ -108,6 +118,18 @@ class RecipeDetailViewModel(
         viewModelScope.launch {
             entryRepository.save(RecipeCalculator.toFoodEntry(recipe, portions, LocalDate.now(), mealType))
             onDone()
+        }
+    }
+
+    /** Ausgewählte Zutaten (umgerechnet auf [servings] Portionen) auf die Einkaufsliste. */
+    fun addToShoppingList(indices: Set<Int>, servings: Int, onDone: (Int) -> Unit) {
+        val recipe = uiState.value.recipe ?: return
+        val factor = RecipeCalculator.scaleFactor(recipe, servings)
+        val items = recipe.ingredients.filterIndexed { i, _ -> i in indices }
+            .map { ShoppingList.fromIngredient(it, factor, recipe.name) }
+        viewModelScope.launch {
+            shopping.add(items)
+            onDone(items.size)
         }
     }
 
@@ -134,6 +156,8 @@ fun RecipeDetailScreen(
     val scope = rememberCoroutineScope()
     var servings by rememberSaveable(recipe?.id, recipe?.servings) { mutableIntStateOf(recipe?.safeServings ?: 1) }
     var showLog by remember { mutableStateOf(false) }
+    var showShopping by remember { mutableStateOf(false) }
+    val shoppingAdded = stringResource(R.string.shopping_added)
     var confirmDelete by remember { mutableStateOf(false) }
     val loggedMessage = stringResource(R.string.recipe_logged)
 
@@ -144,6 +168,17 @@ fun RecipeDetailScreen(
                 viewModel.log(portions, meal) { scope.launch { snackbar.showSnackbar(loggedMessage) } }
             },
             onDismiss = { showLog = false },
+        )
+    }
+    if (showShopping && recipe != null) {
+        AddToShoppingDialog(
+            recipe = recipe,
+            servings = servings,
+            onAdd = { indices ->
+                showShopping = false
+                viewModel.addToShoppingList(indices, servings) { n -> scope.launch { snackbar.showSnackbar(shoppingAdded.format(n)) } }
+            },
+            onDismiss = { showShopping = false },
         )
     }
     if (confirmDelete && recipe != null) {
@@ -176,12 +211,21 @@ fun RecipeDetailScreen(
         bottomBar = {
             if (recipe != null) {
                 Surface(color = Neon.Surface) {
-                    Button(
-                        onClick = { showLog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Neon.Yellow, contentColor = Neon.OnNeon),
+                    Row(
                         modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(stringResource(R.string.recipe_log), fontWeight = FontWeight.Bold)
+                        OutlinedButton(onClick = { showShopping = true }) {
+                            Icon(Icons.Filled.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(stringResource(R.string.shopping_short), modifier = Modifier.padding(start = 6.dp))
+                        }
+                        Button(
+                            onClick = { showLog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Neon.Yellow, contentColor = Neon.OnNeon),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(stringResource(R.string.recipe_log), fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -334,6 +378,50 @@ private fun LogRecipeDialog(onLog: (Double, MealType) -> Unit, onDismiss: () -> 
         },
         confirmButton = {
             TextButton(onClick = { value?.let { onLog(it, meal) } }, enabled = value != null) { Text(stringResource(R.string.recipe_log)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+/** Zutaten für die Einkaufsliste auswählen – alles vorausgewählt, Vorhandenes abwählen. */
+@Composable
+private fun AddToShoppingDialog(recipe: Recipe, servings: Int, onAdd: (Set<Int>) -> Unit, onDismiss: () -> Unit) {
+    var selected by rememberSaveable { mutableStateOf(recipe.ingredients.indices.toList()) }
+    val factor = RecipeCalculator.scaleFactor(recipe, servings)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.shopping_add_title)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    pluralStringResource(R.plurals.shopping_for_servings, servings, servings),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Neon.TextSecondary,
+                )
+                recipe.ingredients.forEachIndexed { index, ingredient ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            selected = if (index in selected) selected - index else selected + index
+                        },
+                    ) {
+                        Checkbox(
+                            checked = index in selected,
+                            onCheckedChange = { selected = if (it) selected + index else selected - index },
+                            colors = CheckboxDefaults.colors(checkedColor = Neon.Cyan, checkmarkColor = Neon.OnNeon),
+                        )
+                        Text(
+                            listOf(ingredient.quantityText(factor), ingredient.name).filter(String::isNotBlank).joinToString(" "),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onAdd(selected.toSet()) }, enabled = selected.isNotEmpty()) {
+                Text(stringResource(R.string.shopping_add_confirm))
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )

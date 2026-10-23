@@ -26,6 +26,8 @@ object Notifications {
     /** Extra im Öffnen-Intent: was die App anzeigen soll. */
     const val EXTRA_OPEN = "de.kalorienapp.OPEN"
     const val EXTRA_REPORT_ID = "de.kalorienapp.REPORT_ID"
+    /** Macht jedes Antippen eindeutig (sonst hält die App eine zweite gleiche Erinnerung für erledigt). */
+    const val EXTRA_POSTED_AT = "de.kalorienapp.POSTED_AT"
     const val OPEN_WEIGH = "weigh"
     const val OPEN_REPORT = "report"
 
@@ -55,6 +57,7 @@ object Notifications {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             open?.let { putExtra(EXTRA_OPEN, it) }
             reportId?.let { putExtra(EXTRA_REPORT_ID, it) }
+            putExtra(EXTRA_POSTED_AT, System.currentTimeMillis())
         }
         return PendingIntent.getActivity(
             context, requestCode, intent,

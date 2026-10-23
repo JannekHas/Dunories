@@ -61,6 +61,9 @@ fun ProfileScreen(
             HorizontalDivider()
             SectionTitle(stringResource(R.string.section_notifications))
             NotificationSettingsSection()
+            HorizontalDivider()
+            SectionTitle(stringResource(R.string.section_backup))
+            BackupSection()
         }
     }
 }

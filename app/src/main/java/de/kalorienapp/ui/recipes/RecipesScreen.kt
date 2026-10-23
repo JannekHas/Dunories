@@ -18,6 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -53,6 +56,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.data.repository.RecipeRepository
+import de.kalorienapp.data.repository.ShoppingRepository
 import de.kalorienapp.domain.model.Recipe
 import de.kalorienapp.domain.model.RecipeCategory
 import de.kalorienapp.ui.AppViewModelProvider
@@ -62,6 +66,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -76,7 +81,14 @@ data class RecipesUiState(
     val hasAnyRecipe: Boolean = false,
 )
 
-class RecipesViewModel(private val repository: RecipeRepository) : ViewModel() {
+class RecipesViewModel(
+    private val repository: RecipeRepository,
+    shopping: ShoppingRepository,
+) : ViewModel() {
+    /** Anzahl offener Artikel auf der Einkaufsliste (Badge). */
+    val openShoppingItems: StateFlow<Int> = shopping.items.map { list -> list.count { !it.checked } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
     private val query = MutableStateFlow("")
     private val categoryId = MutableStateFlow<Long?>(null)
 
@@ -128,9 +140,11 @@ fun RecipesScreen(
     onOpen: (Recipe) -> Unit,
     onCreate: () -> Unit,
     onImportLink: (String) -> Unit,
+    onOpenShopping: () -> Unit,
     viewModel: RecipesViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val openShopping by viewModel.openShoppingItems.collectAsStateWithLifecycle()
     var showMenu by remember { mutableStateOf(false) }
     var showLinkDialog by remember { mutableStateOf(false) }
     var showCategories by remember { mutableStateOf(false) }
@@ -153,6 +167,13 @@ fun RecipesScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.recipes_title)) },
                 actions = {
+                    IconButton(onClick = onOpenShopping) {
+                        BadgedBox(badge = {
+                            if (openShopping > 0) Badge(containerColor = Neon.Yellow, contentColor = Neon.OnNeon) { Text(openShopping.toString()) }
+                        }) {
+                            Icon(Icons.Filled.ShoppingCart, stringResource(R.string.shopping_title))
+                        }
+                    }
                     IconButton(onClick = { showCategories = true }) {
                         Icon(Icons.Filled.Edit, stringResource(R.string.categories_manage))
                     }

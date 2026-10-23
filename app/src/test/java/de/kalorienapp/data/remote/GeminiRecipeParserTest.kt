@@ -61,6 +61,19 @@ class GeminiRecipeParserTest {
     }
 
     @Test
+    fun `nach geschmack ist hinweis statt einheit`() {
+        val draft = GeminiRecipeParser.parse(
+            """{"found":true,"name":"X","servings":1,"steps":[],"ingredients":[
+              {"name":"Salz","quantity":null,"quantity_unit":"nach Geschmack","amount":null,"unit":"g","kcal":0,"fat":0,"carbs":0,"protein":0,"note":null}]}""",
+            RecipeSource.TEXT,
+            null,
+        )!!
+        val salt = draft.recipe.ingredients.single()
+        assertEquals("", salt.quantityUnit)
+        assertEquals("nach Geschmack", salt.note)
+    }
+
+    @Test
     fun `kein rezept erkannt`() {
         val draft = GeminiRecipeParser.parse("""{"found":false,"name":"","servings":1,"ingredients":[],"steps":[]}""", RecipeSource.TIKTOK, null)!!
         assertTrue(draft.recipe.ingredients.isEmpty())

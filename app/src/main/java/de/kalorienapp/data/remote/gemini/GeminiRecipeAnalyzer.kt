@@ -82,19 +82,24 @@ class GeminiRecipeAnalyzer(private val client: GeminiClient) {
 
     private fun prompt(categories: List<String>) = """
 Du bekommst Inhalte eines Social-Media-Beitrags (Beschreibung, gesprochener Text, Bilder und/oder Video).
-Extrahiere daraus genau EIN Kochrezept auf Deutsch (übersetze bei Bedarf). Ist kein Rezept erkennbar: found = false.
+Extrahiere daraus genau EIN Kochrezept. Ist kein Rezept erkennbar: found = false.
+WICHTIG: Alle Texte (Rezeptname, Beschreibung, Zutaten, Hinweise, Schritte) IMMER auf Deutsch. Ist der Beitrag
+englisch oder in einer anderen Sprache, übersetze vollständig (z. B. „chicken breast“ → „Hähnchenbrust“,
+„light cream cheese“ → „Frischkäse light“); Mengen und Zahlen bleiben dabei unverändert.
+Schreibe mit echten Umlauten und ß (ä, ö, ü – nicht ae/oe/ue).
 
 Regeln:
-- Steht das Rezept schriftlich im Beitrag, übernimm Zutaten und Schritte VOLLSTÄNDIG und so wörtlich wie möglich –
+- Steht das Rezept schriftlich im Beitrag, übernimm Zutaten und Schritte VOLLSTÄNDIG und inhaltlich genau (auf Deutsch) –
   nichts weglassen, zusammenfassen oder umformulieren (alle Mengen, Zahlen, Zeiten, Temperaturen behalten).
-- name: Rezeptname wie im Beitrag (ohne Emojis und Hashtags); nur wenn keiner genannt ist, einen kurzen deutschen Namen bilden.
+- name: Rezeptname wie im Beitrag, auf Deutsch übersetzt (ohne Emojis und Hashtags); fehlt einer, einen kurzen deutschen Namen bilden.
 - description: 1–2 Sätze, worum es geht.
 - servings: Portionen laut Rezept, sonst sinnvoll schätzen.
 - total_minutes: Gesamtzeit inkl. Back-/Garzeit (schätzen, falls nicht genannt).
 - effort: easy, medium oder hard.
 - categories: 1–3 passende aus dieser Liste: ${categories.joinToString(", ")}. Nur wenn nichts passt, einen neuen kurzen deutschen Namen.
 - ingredients: ALLE Zutaten, jede einzeln (z. B. „Salz, Pfeffer & Muskat“ → drei Zutaten).
-  name: Zutat mit allen Eigenschaften aus dem Rezept („fettreduziertes Rinderhackfleisch“, „Frischkäse light“).
+  name: deutsche Bezeichnung mit allen Eigenschaften aus dem Rezept („fettreduziertes Rinderhackfleisch“, „Frischkäse light“).
+  quantity_unit ist nur eine Maßeinheit – „nach Geschmack“, „etwas“, „optional“ gehören in note.
   quantity + quantity_unit genau wie im Rezept geschrieben: „6 Möhren (ca. 600 g)“ → quantity 6, quantity_unit "", amount 600.
   Zählbare Zutaten ohne Einheit: „1 Ei“ → quantity 1, quantity_unit "" (NICHT „Stück“).
   Deutsche Einheiten (g, ml, EL, TL, Prise, Dose, Packung, Bund, Zehe, Scheibe); Cups/oz/lb/tbsp/tsp umrechnen.
@@ -200,6 +205,8 @@ Gib ausschließlich JSON gemäß Schema zurück.
 /** Parst die Rezept-Antwort tolerant; null bei unbrauchbarem Format. found = false → leeres Rezept. */
 internal object GeminiRecipeParser {
 
+    private val VAGUE_AMOUNTS = setOf("nach geschmack", "etwas", "optional", "nach belieben", "n. b.", "nb", "zum garnieren")
+
     fun parse(text: String, source: RecipeSource, sourceUrl: String?): RecipeDraft? {
         val obj = runCatching { lenientJson.parseToJsonElement(GeminiResponseParser.cleanJson(text)).asObject() }
             .getOrNull() ?: return null
@@ -210,8 +217,11 @@ internal object GeminiRecipeParser {
             val item = element.asObject() ?: return@mapNotNull null
             val name = item.string("name") ?: return@mapNotNull null
             // „6 Möhren“ kommt manchmal als Einheit „Möhren“ zurück → doppelt in der Anzeige.
-            val unit = item.string("quantity_unit").orEmpty()
-                .takeUnless { it.length > 2 && name.contains(it, ignoreCase = true) }.orEmpty()
+            val rawUnit = item.string("quantity_unit").orEmpty()
+            // „nach Geschmack“ o. Ä. ist keine Einheit, sondern ein Hinweis.
+            val vague = rawUnit.lowercase() in VAGUE_AMOUNTS
+            val unit = rawUnit.takeUnless { vague || (it.length > 2 && name.contains(it, ignoreCase = true)) }.orEmpty()
+            val note = listOfNotNull(item.string("note"), rawUnit.takeIf { vague }).distinct().joinToString(", ").ifEmpty { null }
             RecipeIngredient(
                 name = name,
                 quantity = item.number("quantity")?.takeIf { it > 0 },
@@ -228,7 +238,7 @@ internal object GeminiRecipeParser {
                     proteinG = item.nonNegative("protein") ?: 0.0,
                     saltG = item.nonNegative("salt"),
                 ),
-                note = item.string("note"),
+                note = note,
             )
         }
         val steps = (obj["steps"] as? JsonArray).orEmpty()

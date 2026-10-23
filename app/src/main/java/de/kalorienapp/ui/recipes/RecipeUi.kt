@@ -91,13 +91,13 @@ fun minutesText(minutes: Int): String {
 
 /** „2 Stück“, „200 g“ – mit Faktor für andere Portionszahlen. */
 fun RecipeIngredient.quantityText(factor: Double = 1.0): String {
-    val q = quantity?.let { value ->
-        val scaled = value * factor
-        // Kleine Mengen mit Nachkommastelle, große gerundet.
-        if (scaled >= 20 || abs(scaled - Math.round(scaled)) < 0.05) Math.round(scaled).toString() else scaled.toInputString(1)
-    }
+    val q = quantity?.let { formatQuantity(it * factor) }
     return listOfNotNull(q, quantityUnit.takeIf { it.isNotBlank() }).joinToString(" ")
 }
+
+/** Kleine Mengen mit einer Nachkommastelle, große bzw. fast ganze gerundet („1,5“, „3“, „350“). */
+fun formatQuantity(value: Double): String =
+    if (value >= 20 || abs(value - Math.round(value)) < 0.05) Math.round(value).toString() else value.toInputString(1)
 
 private val imageCache = object : LruCache<String, ImageBitmap>(24) {}
 
