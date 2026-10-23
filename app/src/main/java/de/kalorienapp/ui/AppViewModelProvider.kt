@@ -30,6 +30,8 @@ object AppViewModelProvider {
             TodayViewModel(
                 createSavedStateHandle(),
                 container().goalRepository,
+                container().waterRepository,
+                container().settings,
                 container().foodEntryRepository,
                 container().foodLibraryRepository,
                 container().activityEntryRepository,

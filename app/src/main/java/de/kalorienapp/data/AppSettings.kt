@@ -23,6 +23,15 @@ class AppSettings(context: Context) {
     /** Montags automatisch eine KI-Wochenauswertung erstellen. */
     val weeklyReport: StateFlow<Boolean> = _weeklyReport.asStateFlow()
 
+    private val _waterGoalMl = MutableStateFlow(prefs.getInt(KEY_WATER_GOAL, 0).takeIf { it > 0 })
+    /** Eigenes Wasser-Tagesziel in ml; null = automatisch aus dem Gewicht. */
+    val waterGoalMl: StateFlow<Int?> = _waterGoalMl.asStateFlow()
+
+    fun setWaterGoalMl(ml: Int?) {
+        prefs.edit().putInt(KEY_WATER_GOAL, ml ?: 0).apply()
+        _waterGoalMl.value = ml
+    }
+
     fun setCaloriesNotification(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_CALORIES, enabled).apply()
         _caloriesNotification.value = enabled
@@ -48,6 +57,7 @@ class AppSettings(context: Context) {
         private const val KEY_CALORIES = "calories_notification"
         private const val KEY_WEIGHT_DAYS = "weight_reminder_days"
         private const val KEY_WEEKLY = "weekly_report"
+        private const val KEY_WATER_GOAL = "water_goal_ml"
         private const val KEY_PERMISSION_ASKED = "notification_permission_asked"
     }
 }

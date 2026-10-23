@@ -104,6 +104,7 @@ fun TodayScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val endedGoal by viewModel.endedGoal.collectAsStateWithLifecycle()
+    val water by viewModel.water.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val deletedMessage = stringResource(R.string.entry_deleted)
@@ -234,6 +235,9 @@ fun TodayScreen(
                         onAddActivity = { showActivityList = true },
                     )
                 }
+            }
+            item(key = "water") {
+                WaterCard(water, onAdd = viewModel::addWater, onUndo = viewModel::undoWater, onGoal = viewModel::setWaterGoal)
             }
             items(state.meals, key = { it.mealType.name }) { group ->
                 MealCard(

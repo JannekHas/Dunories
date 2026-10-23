@@ -34,6 +34,9 @@ data class WeeklyInput(
     /** Alle Messungen (die Auswertung nimmt Zeitraum + letzte davor). */
     val weights: List<WeightEntry>,
     val measurements: List<BodyMeasurement> = emptyList(),
+    /** Getrunkenes Wasser je Tag (ml) und Tagesziel. */
+    val waterByDay: Map<LocalDate, Int> = emptyMap(),
+    val waterGoalMl: Int? = null,
 )
 
 /**
@@ -53,6 +56,7 @@ object WeeklyInputBuilder {
         appendLine()
         appendLine("PERSON: ${if (p.sex.name == "MALE") "männlich" else "weiblich"}, ${p.ageIn(year)} Jahre, ${p.heightCm.r()} cm, aktuell ${p.weightKg.r1()} kg")
         appendLine("Grundumsatz (Tagesziel-Basis, ohne Bewegung): ${GoalCalculator.maintenanceKcal(p, year).roundToInt()} kcal. Bewegung wird als Aktivität extra eingetragen und erhöht das Budget.")
+        input.waterGoalMl?.let { appendLine("WASSERZIEL: $it ml pro Tag") }
         appendLine("TAGESZIEL: ${input.targets.kcal} kcal, Protein ${input.targets.proteinG} g, KH ${input.targets.carbsG} g, Fett ${input.targets.fatG} g")
         val goal = input.goal
         if (goal == null) {
@@ -81,6 +85,7 @@ object WeeklyInputBuilder {
             e.sugarG?.let { append(", Zucker ${it.roundToInt()} g") }
             e.fiberG?.let { append(", Ballaststoffe ${it.roundToInt()} g") }
             e.saltG?.let { append(", Salz ${it.r1()} g") }
+            input.waterByDay[d.date]?.let { append(", Wasser ${it} ml") }
             activityByDay[d.date]?.let { acts ->
                 append(", Aktivität: " + acts.joinToString { a -> "${a.name.ifBlank { "Aktivität" }} ${a.kcal} kcal" })
             }

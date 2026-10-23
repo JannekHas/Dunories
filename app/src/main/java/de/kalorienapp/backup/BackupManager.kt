@@ -55,6 +55,7 @@ class BackupManager(
                 caloriesNotification = settings.caloriesNotification.value,
                 weightReminderDays = settings.weightReminderDays.value,
                 weeklyReport = settings.weeklyReport.value,
+                waterGoalMl = settings.waterGoalMl.value,
             ),
         )
         ZipOutputStream(file.outputStream().buffered()).use { zip ->
@@ -131,6 +132,7 @@ class BackupManager(
         settings.setCaloriesNotification(manifest.settings.caloriesNotification)
         settings.setWeightReminderDays(manifest.settings.weightReminderDays)
         settings.setWeeklyReport(manifest.settings.weeklyReport)
+        settings.setWaterGoalMl(manifest.settings.waterGoalMl)
         staging.deleteRecursively()
     }
 

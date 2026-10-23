@@ -6,7 +6,10 @@ import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.repository.ActivityEntryRepository
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.FoodLibraryRepository
+import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.repository.GoalRepository
+import de.kalorienapp.data.repository.WaterRepository
+import de.kalorienapp.domain.Water
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DaySummary
@@ -56,6 +59,8 @@ data class TodayUiState(
 class TodayViewModel(
     savedStateHandle: SavedStateHandle,
     private val goalRepository: GoalRepository,
+    private val waterRepository: WaterRepository,
+    private val settings: AppSettings,
     private val entryRepository: FoodEntryRepository,
     private val library: FoodLibraryRepository,
     private val activityRepository: ActivityEntryRepository,
@@ -115,6 +120,25 @@ class TodayViewModel(
     fun dismissEndedGoal() {
         _endedGoal.value = null
     }
+
+    /** Wasser des angezeigten Tages mit Ziel (eigenes oder aus dem Gewicht). */
+    val water: StateFlow<WaterState> = date
+        .flatMapLatest { day ->
+            combine(waterRepository.totalFor(day), settings.waterGoalMl, goalRepository.current) { ml, custom, state ->
+                WaterState(ml = ml, goalMl = Water.goalMl(custom, state?.profile?.weightKg ?: 70.0), customGoal = custom != null)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WaterState())
+
+    fun addWater(ml: Int) {
+        viewModelScope.launch { waterRepository.add(date.value, ml) }
+    }
+
+    fun undoWater() {
+        viewModelScope.launch { waterRepository.undo(date.value) }
+    }
+
+    fun setWaterGoal(ml: Int?) = settings.setWaterGoalMl(ml)
 
     fun previousDay() = date.update { it.minusDays(1) }
 

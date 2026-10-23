@@ -480,4 +480,16 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="measure_thigh">Oberschenkel</string>
     <string name="measure_body_fat">Körperfett</string>
     <string name="unit_percent">%</string>
+    <!-- Wasser -->
+    <string name="water_title">Wasser</string>
+    <string name="water_value">%1$s / %2$s l</string>
+    <string name="water_glass">+ 250 ml</string>
+    <string name="water_bottle">+ 500 ml</string>
+    <string name="water_undo">Letzten Eintrag zurücknehmen</string>
+    <string name="water_goal_auto">Ziel %1$s l (automatisch) · ändern</string>
+    <string name="water_goal_custom">Ziel %1$s l · ändern</string>
+    <string name="water_goal_title">Wasser-Tagesziel</string>
+    <string name="water_goal_hint">Leer lassen = automatisch 35 ml pro kg Körpergewicht.</string>
+    <string name="water_goal_label">Tagesziel</string>
+    <string name="unit_liter">l</string>
 </resources>

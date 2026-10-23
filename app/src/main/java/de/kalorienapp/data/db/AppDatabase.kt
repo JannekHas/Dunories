@@ -14,6 +14,7 @@ import de.kalorienapp.data.db.dao.ProfileDao
 import de.kalorienapp.data.db.dao.RecipeDao
 import de.kalorienapp.data.db.dao.ShoppingDao
 import de.kalorienapp.data.db.dao.StatsDao
+import de.kalorienapp.data.db.dao.WaterDao
 import de.kalorienapp.data.db.dao.WeeklyReportDao
 import de.kalorienapp.data.db.dao.WeightEntryDao
 import de.kalorienapp.data.db.dao.WeightGoalDao
@@ -28,6 +29,7 @@ import de.kalorienapp.data.db.entity.RecipeEntity
 import de.kalorienapp.data.db.entity.RecipeIngredientEntity
 import de.kalorienapp.data.db.entity.RecipeStepEntity
 import de.kalorienapp.data.db.entity.ShoppingItemEntity
+import de.kalorienapp.data.db.entity.WaterEntryEntity
 import de.kalorienapp.data.db.entity.WeeklyReportEntity
 import de.kalorienapp.data.db.entity.WeightEntryEntity
 import de.kalorienapp.data.db.entity.WeightGoalEntity
@@ -49,8 +51,9 @@ import de.kalorienapp.data.db.entity.WeightGoalEntity
         WeeklyReportEntity::class,
         ShoppingItemEntity::class,
         BodyMeasurementEntity::class,
+        WaterEntryEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -65,6 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun weeklyReportDao(): WeeklyReportDao
     abstract fun shoppingDao(): ShoppingDao
     abstract fun bodyMeasurementDao(): BodyMeasurementDao
+    abstract fun waterDao(): WaterDao
 
     companion object {
         /** v2: Mengeneinheit (g/ml) und optionale Zusatznährwerte. */
@@ -377,6 +381,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v15: Wasser-Tracker. */
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `water_entry` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`dateEpochDay` INTEGER NOT NULL, `ml` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_water_entry_dateEpochDay` ON `water_entry` (`dateEpochDay`)")
+            }
+        }
+
         /** Aus dem exportierten Schema (app/schemas/…/11.json) übernommen. */
         private val RECIPE_TABLES_SQL = listOf(
             "CREATE TABLE IF NOT EXISTS `recipe` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `servings` INTEGER NOT NULL, `totalMinutes` INTEGER, `effort` TEXT, `imagePath` TEXT, `sourceUrl` TEXT, `source` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)",
@@ -396,7 +411,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) = insertDefaultCategories(db)
                 })
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
                 .build()
     }
 }

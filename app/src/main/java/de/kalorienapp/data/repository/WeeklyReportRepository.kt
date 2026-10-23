@@ -1,10 +1,12 @@
 package de.kalorienapp.data.repository
 
+import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.db.dao.ActivityEntryDao
 import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.db.dao.WeeklyReportDao
 import de.kalorienapp.data.db.entity.WeeklyReportEntity
 import de.kalorienapp.data.remote.gemini.GeminiWeeklyAnalyzer
+import de.kalorienapp.domain.Water
 import de.kalorienapp.domain.WeeklyInput
 import de.kalorienapp.domain.WeeklyInputBuilder
 import de.kalorienapp.domain.model.WeeklyReport
@@ -27,6 +29,8 @@ class WeeklyReportRepository(
     private val goalRepository: GoalRepository,
     private val weightRepository: WeightRepository,
     private val measurementRepository: BodyMeasurementRepository,
+    private val waterRepository: WaterRepository,
+    private val settings: AppSettings,
     private val analyzer: GeminiWeeklyAnalyzer,
 ) {
     val reports: Flow<List<WeeklyReport>> = dao.observeAll().map { list -> list.map { it.toDomain() } }
@@ -56,6 +60,8 @@ class WeeklyReportRepository(
             activities = activityDao.between(from.toEpochDay(), to.toEpochDay()).map { it.toDomain() },
             weights = weightRepository.entries.first(),
             measurements = measurementRepository.all.first(),
+            waterByDay = waterRepository.dailyTotals(from, to),
+            waterGoalMl = Water.goalMl(settings.waterGoalMl.value, state.profile.weightKg),
         )
         val logged = WeeklyInputBuilder.loggedDays(input)
         if (logged < WeeklyInputBuilder.MIN_LOGGED_DAYS) throw NotEnoughDataException(logged)

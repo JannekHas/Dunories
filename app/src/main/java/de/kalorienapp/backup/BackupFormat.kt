@@ -33,6 +33,7 @@ object BackupFormat {
         val caloriesNotification: Boolean = false,
         val weightReminderDays: Int? = 3,
         val weeklyReport: Boolean = true,
+        val waterGoalMl: Int? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

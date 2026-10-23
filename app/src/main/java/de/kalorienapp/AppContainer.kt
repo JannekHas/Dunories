@@ -20,6 +20,7 @@ import de.kalorienapp.data.repository.ProfileRepository
 import de.kalorienapp.data.repository.RecipeRepository
 import de.kalorienapp.data.repository.ShoppingRepository
 import de.kalorienapp.data.repository.StatsRepository
+import de.kalorienapp.data.repository.WaterRepository
 import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.data.repository.WeightRepository
 import de.kalorienapp.notify.CalorieNotifier
@@ -52,6 +53,7 @@ class AppContainer(context: Context) {
     val recipeImages = RecipeImageStore(context)
     val recipeRepository = RecipeRepository(database.recipeDao(), recipeImages)
     val bodyMeasurementRepository = BodyMeasurementRepository(database.bodyMeasurementDao())
+    val waterRepository = WaterRepository(database.waterDao())
     val shoppingRepository = ShoppingRepository(database.shoppingDao())
     val weightRepository = WeightRepository(database.weightEntryDao(), profileRepository)
 
@@ -83,6 +85,8 @@ class AppContainer(context: Context) {
         goalRepository = goalRepository,
         weightRepository = weightRepository,
         measurementRepository = bodyMeasurementRepository,
+        waterRepository = waterRepository,
+        settings = settings,
         analyzer = GeminiWeeklyAnalyzer(gemini),
     )
 
