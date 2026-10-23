@@ -18,6 +18,7 @@ import de.kalorienapp.ui.recipes.RecipeEditViewModel
 import de.kalorienapp.ui.recipes.RecipeImportViewModel
 import de.kalorienapp.ui.recipes.RecipesViewModel
 import de.kalorienapp.ui.recipes.ShoppingListViewModel
+import de.kalorienapp.ui.stats.BodyMeasurementViewModel
 import de.kalorienapp.ui.stats.StatsViewModel
 import de.kalorienapp.ui.stats.WeeklyReportViewModel
 import de.kalorienapp.ui.today.TodayViewModel
@@ -47,6 +48,9 @@ object AppViewModelProvider {
                 container().goalRepository,
                 container().weeklyReportRepository,
             )
+        }
+        initializer {
+            BodyMeasurementViewModel(container().bodyMeasurementRepository)
         }
         initializer {
             WeeklyReportViewModel(createSavedStateHandle(), container().weeklyReportRepository)

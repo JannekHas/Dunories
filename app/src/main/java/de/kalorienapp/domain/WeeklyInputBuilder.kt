@@ -1,6 +1,7 @@
 package de.kalorienapp.domain
 
 import de.kalorienapp.domain.model.ActivityEntry
+import de.kalorienapp.domain.model.BodyMeasurement
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.DayStats
 import de.kalorienapp.domain.model.DayStatus
@@ -8,6 +9,7 @@ import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.GoalPlan
 import de.kalorienapp.domain.model.MealType
+import de.kalorienapp.domain.model.MeasureType
 import de.kalorienapp.domain.model.Profile
 import de.kalorienapp.domain.model.WeightEntry
 import de.kalorienapp.domain.model.WeightGoal
@@ -31,6 +33,7 @@ data class WeeklyInput(
     val activities: List<ActivityEntry>,
     /** Alle Messungen (die Auswertung nimmt Zeitraum + letzte davor). */
     val weights: List<WeightEntry>,
+    val measurements: List<BodyMeasurement> = emptyList(),
 )
 
 /**
@@ -115,6 +118,18 @@ object WeeklyInputBuilder {
             before?.let { appendLine("- letzte Messung davor: ${it.weightKg.r1()} kg am ${it.measuredAt.atZone(zone).toLocalDate()}") }
             inPeriod.forEach { appendLine("- ${it.measuredAt.atZone(zone).toLocalDate()}: ${it.weightKg.r1()} kg") }
         }
+        if (input.measurements.isNotEmpty()) {
+            appendLine("KÖRPERMASSE (erste und letzte Messung):")
+            input.measurements.groupBy { it.type }.forEach { (type, list) ->
+                val sorted = list.sortedBy { it.measuredAt }
+                val unit = if (type.isPercent) "%" else "cm"
+                val first = sorted.first()
+                val last = sorted.last()
+                append("- ${type.german()}: ${last.value.r1()} $unit am ${last.measuredAt.atZone(zone).toLocalDate()}")
+                if (sorted.size > 1) append(" (vorher ${first.value.r1()} $unit am ${first.measuredAt.atZone(zone).toLocalDate()})")
+                appendLine()
+            }
+        }
     }.trimEnd()
 
     private const val TOP_FOODS = 12
@@ -128,6 +143,15 @@ object WeeklyInputBuilder {
         Goal.LOSE -> "Abnehmen"
         Goal.MAINTAIN -> "Gewicht halten"
         Goal.GAIN -> "Zunehmen"
+    }
+
+    private fun MeasureType.german() = when (this) {
+        MeasureType.WAIST -> "Taille"
+        MeasureType.HIP -> "Hüfte"
+        MeasureType.CHEST -> "Brust"
+        MeasureType.UPPER_ARM -> "Oberarm"
+        MeasureType.THIGH -> "Oberschenkel"
+        MeasureType.BODY_FAT -> "Körperfett"
     }
 
     private fun DayStatus.german() = when (this) {

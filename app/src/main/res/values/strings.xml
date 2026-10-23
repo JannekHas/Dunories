@@ -439,4 +439,16 @@ Veränderung: %4$s kg in %5$s</string>
         <item quantity="one">Mengen für %d Portion – abwählen, was du schon hast.</item>
         <item quantity="other">Mengen für %d Portionen – abwählen, was du schon hast.</item>
     </plurals>
+    <!-- Körpermaße -->
+    <string name="measure_title">Körpermaße</string>
+    <string name="measure_empty">Noch keine Maße eingetragen. Umfänge zeigen Fortschritt oft früher als die Waage – z. B. wenn du Muskeln aufbaust.</string>
+    <string name="measure_add_title">Körpermaße eintragen</string>
+    <string name="measure_add_hint">Trag ein, was du gerade gemessen hast – leere Felder werden übersprungen. Umfänge am besten morgens und immer an derselben Stelle messen.</string>
+    <string name="measure_waist">Taille</string>
+    <string name="measure_hip">Hüfte</string>
+    <string name="measure_chest">Brust</string>
+    <string name="measure_upper_arm">Oberarm</string>
+    <string name="measure_thigh">Oberschenkel</string>
+    <string name="measure_body_fat">Körperfett</string>
+    <string name="unit_percent">%</string>
 </resources>

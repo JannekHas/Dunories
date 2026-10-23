@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import de.kalorienapp.data.db.dao.ActivityEntryDao
+import de.kalorienapp.data.db.dao.BodyMeasurementDao
 import de.kalorienapp.data.db.dao.FavoriteFoodDao
 import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.db.dao.ProfileDao
@@ -17,6 +18,7 @@ import de.kalorienapp.data.db.dao.WeeklyReportDao
 import de.kalorienapp.data.db.dao.WeightEntryDao
 import de.kalorienapp.data.db.dao.WeightGoalDao
 import de.kalorienapp.data.db.entity.ActivityEntryEntity
+import de.kalorienapp.data.db.entity.BodyMeasurementEntity
 import de.kalorienapp.data.db.entity.FavoriteFoodEntity
 import de.kalorienapp.data.db.entity.FoodEntryEntity
 import de.kalorienapp.data.db.entity.ProfileEntity
@@ -46,8 +48,9 @@ import de.kalorienapp.data.db.entity.WeightGoalEntity
         RecipeCategoryRefEntity::class,
         WeeklyReportEntity::class,
         ShoppingItemEntity::class,
+        BodyMeasurementEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -61,6 +64,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun recipeDao(): RecipeDao
     abstract fun weeklyReportDao(): WeeklyReportDao
     abstract fun shoppingDao(): ShoppingDao
+    abstract fun bodyMeasurementDao(): BodyMeasurementDao
 
     companion object {
         /** v2: Mengeneinheit (g/ml) und optionale Zusatznährwerte. */
@@ -362,6 +366,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v14: Körpermaße. */
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `body_measurement` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`type` TEXT NOT NULL, `value` REAL NOT NULL, `measuredAt` INTEGER NOT NULL)",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_body_measurement_measuredAt` ON `body_measurement` (`measuredAt`)")
+            }
+        }
+
         /** Aus dem exportierten Schema (app/schemas/…/11.json) übernommen. */
         private val RECIPE_TABLES_SQL = listOf(
             "CREATE TABLE IF NOT EXISTS `recipe` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `servings` INTEGER NOT NULL, `totalMinutes` INTEGER, `effort` TEXT, `imagePath` TEXT, `sourceUrl` TEXT, `source` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)",
@@ -381,7 +396,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) = insertDefaultCategories(db)
                 })
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                 .build()
     }
 }

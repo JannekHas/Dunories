@@ -26,6 +26,7 @@ class WeeklyReportRepository(
     private val statsRepository: StatsRepository,
     private val goalRepository: GoalRepository,
     private val weightRepository: WeightRepository,
+    private val measurementRepository: BodyMeasurementRepository,
     private val analyzer: GeminiWeeklyAnalyzer,
 ) {
     val reports: Flow<List<WeeklyReport>> = dao.observeAll().map { list -> list.map { it.toDomain() } }
@@ -54,6 +55,7 @@ class WeeklyReportRepository(
             entries = foodDao.between(from.toEpochDay(), to.toEpochDay()).map { it.toDomain() },
             activities = activityDao.between(from.toEpochDay(), to.toEpochDay()).map { it.toDomain() },
             weights = weightRepository.entries.first(),
+            measurements = measurementRepository.all.first(),
         )
         val logged = WeeklyInputBuilder.loggedDays(input)
         if (logged < WeeklyInputBuilder.MIN_LOGGED_DAYS) throw NotEnoughDataException(logged)

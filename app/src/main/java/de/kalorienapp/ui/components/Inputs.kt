@@ -31,6 +31,8 @@ fun NumberField(
     suffix: String? = null,
     /** Automatisch berechneter Wert, der gilt solange das Feld leer ist. */
     autoValue: String? = null,
+    /** Nur grauer Platzhalter (ohne „automatisch“-Hinweis). */
+    placeholder: String? = null,
     isError: Boolean = false,
     errorText: String? = null,
     decimal: Boolean = true,
@@ -44,7 +46,7 @@ fun NumberField(
         singleLine = true,
         isError = isError,
         suffix = suffix?.let { { Text(it) } },
-        placeholder = autoValue?.let { { Text(it) } },
+        placeholder = (autoValue ?: placeholder)?.let { { Text(it) } },
         supportingText = when {
             isError && errorText != null -> ({ Text(errorText) })
             value.isBlank() && autoValue != null -> ({ Text(stringResource(R.string.auto_value, autoValue)) })

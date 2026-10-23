@@ -156,6 +156,7 @@ fun StatsScreen(
                 onAdd = { showWeightDialog = true },
                 onDelete = viewModel::deleteWeight,
             )
+            BodyMeasurementsSection()
             if (state.reachedGoals.isNotEmpty()) {
                 HorizontalDivider()
                 Text(stringResource(R.string.goal_history_title), style = MaterialTheme.typography.titleLarge)
