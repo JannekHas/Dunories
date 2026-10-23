@@ -107,7 +107,7 @@ private val imageCache = object : LruCache<String, ImageBitmap>(24) {}
 fun rememberRecipeImage(path: String?, maxSide: Int = 1280): ImageBitmap? {
     val key = path?.let { "$it@$maxSide" }
     val state by produceState(initialValue = key?.let { imageCache.get(it) }, key) {
-        if (key == null || path == null) {
+        if (key == null) {
             value = null
             return@produceState
         }
