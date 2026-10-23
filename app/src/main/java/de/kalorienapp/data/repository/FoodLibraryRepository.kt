@@ -2,10 +2,14 @@ package de.kalorienapp.data.repository
 
 import de.kalorienapp.data.db.dao.FavoriteFoodDao
 import de.kalorienapp.data.db.dao.FoodEntryDao
+import de.kalorienapp.data.db.dao.MealComboDao
 import de.kalorienapp.data.db.entity.FavoriteFoodEntity
+import de.kalorienapp.data.db.entity.MealComboEntity
+import de.kalorienapp.data.db.entity.MealComboItemEntity
 import de.kalorienapp.domain.model.FavoriteFood
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.FrequentFood
+import de.kalorienapp.domain.model.MealCombo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -13,7 +17,25 @@ import kotlinx.coroutines.flow.map
 class FoodLibraryRepository(
     private val favoriteDao: FavoriteFoodDao,
     private val entryDao: FoodEntryDao,
+    private val comboDao: MealComboDao,
 ) {
+    /** Eigene Mahlzeiten-Kombis. */
+    val combos: Flow<List<MealCombo>> = comboDao.observeAll().map { list -> list.map { it.toDomain() } }
+
+    /** Einträge (z. B. ein ganzes Frühstück) als Kombi speichern; Einträge ohne Menge werden übersprungen. */
+    suspend fun saveCombo(name: String, entries: List<FoodEntry>) {
+        val items = entries.mapNotNull { entry ->
+            val amount = entry.amount?.takeIf { it > 0 } ?: return@mapNotNull null
+            FavoriteFood(name = entry.name, amount = amount, unit = entry.unit, per100 = entry.nutrients.amountToPer100(amount))
+        }
+        if (items.isEmpty()) return
+        comboDao.save(MealComboEntity(name = name.trim(), createdAt = System.currentTimeMillis())) { id ->
+            items.mapIndexed { index, item -> MealComboItemEntity.fromDomain(id, index, item) }
+        }
+    }
+
+    suspend fun deleteCombo(id: Long) = comboDao.delete(id)
+
     val favorites: Flow<List<FavoriteFood>> = favoriteDao.observeAll().map { list -> list.map { it.toDomain() } }
 
     fun frequent(limit: Int = 30): Flow<List<FrequentFood>> =

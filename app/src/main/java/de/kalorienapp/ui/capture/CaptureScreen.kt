@@ -107,9 +107,12 @@ fun CaptureScreen(
                 modifier = contentModifier,
             )
             is CaptureStep.QuickPick -> {
+                val combos by viewModel.combos.collectAsStateWithLifecycle()
                 val favorites by viewModel.favorites.collectAsStateWithLifecycle()
                 val frequent by viewModel.frequent.collectAsStateWithLifecycle()
                 QuickPickContent(
+                    combos = combos,
+                    onRemoveCombo = viewModel::removeCombo,
                     favorites = favorites,
                     frequent = frequent,
                     selected = step.selected,

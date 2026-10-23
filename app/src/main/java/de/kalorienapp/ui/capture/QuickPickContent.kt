@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.FavoriteFood
+import de.kalorienapp.domain.model.MealCombo
 import de.kalorienapp.domain.model.FrequentFood
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.ui.components.format
@@ -33,6 +34,8 @@ import de.kalorienapp.ui.food.trimDecimalZero
 /** Favoriten und häufig Gegessenes auswählen (Mehrfachauswahl) → bearbeitbarer Vorschlag. */
 @Composable
 fun QuickPickContent(
+    combos: List<MealCombo>,
+    onRemoveCombo: (Long) -> Unit,
     favorites: List<FavoriteFood>,
     frequent: List<FrequentFood>,
     selected: Set<String>,
@@ -46,7 +49,29 @@ fun QuickPickContent(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            if (favorites.isEmpty() && frequent.isEmpty()) {
+            if (combos.isNotEmpty()) {
+                item(key = "comboHeader") { SectionHeader(stringResource(R.string.quick_combos)) }
+                items(combos, key = { CaptureViewModel.comboKey(it) }) { combo ->
+                    val key = CaptureViewModel.comboKey(combo)
+                    ListItem(
+                        modifier = Modifier.clickable { onToggle(key) },
+                        leadingContent = { Checkbox(checked = key in selected, onCheckedChange = { onToggle(key) }) },
+                        headlineContent = { Text(combo.name) },
+                        supportingContent = {
+                            Text(
+                                stringResource(R.string.quick_combo_summary, combo.items.joinToString(", ") { it.name }, combo.totalKcal.format()),
+                                maxLines = 2,
+                            )
+                        },
+                        trailingContent = {
+                            IconButton(onClick = { onRemoveCombo(combo.id) }) {
+                                Icon(Icons.Filled.Delete, stringResource(R.string.quick_remove_combo))
+                            }
+                        },
+                    )
+                }
+            }
+            if (favorites.isEmpty() && frequent.isEmpty() && combos.isEmpty()) {
                 item(key = "empty") {
                     Text(
                         stringResource(R.string.quick_empty),

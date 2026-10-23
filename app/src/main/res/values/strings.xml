@@ -492,4 +492,13 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="water_goal_hint">Leer lassen = automatisch 35 ml pro kg Körpergewicht.</string>
     <string name="water_goal_label">Tagesziel</string>
     <string name="unit_liter">l</string>
+    <!-- Mahlzeiten-Kombis -->
+    <string name="combo_save">Als Kombi speichern</string>
+    <string name="combo_save_hint">Alle Einträge dieser Mahlzeit werden als Kombi gespeichert. Beim Erfassen findest du sie unter „Favoriten“ ganz oben und trägst sie mit einem Tipp ein.</string>
+    <string name="combo_name">Name</string>
+    <string name="combo_default_name">%1$s-Kombi</string>
+    <string name="combo_saved">Kombi „%1$s“ gespeichert</string>
+    <string name="quick_combos">Meine Kombis</string>
+    <string name="quick_combo_summary">%1$s · %2$s kcal</string>
+    <string name="quick_remove_combo">Kombi löschen</string>
 </resources>

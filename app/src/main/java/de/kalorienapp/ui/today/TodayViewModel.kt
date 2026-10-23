@@ -140,6 +140,10 @@ class TodayViewModel(
 
     fun setWaterGoal(ml: Int?) = settings.setWaterGoalMl(ml)
 
+    fun saveCombo(name: String, entries: List<FoodEntry>) {
+        viewModelScope.launch { library.saveCombo(name, entries) }
+    }
+
     fun previousDay() = date.update { it.minusDays(1) }
 
     fun nextDay() = date.update { it.plusDays(1) }

@@ -10,6 +10,7 @@ import de.kalorienapp.data.db.dao.ActivityEntryDao
 import de.kalorienapp.data.db.dao.BodyMeasurementDao
 import de.kalorienapp.data.db.dao.FavoriteFoodDao
 import de.kalorienapp.data.db.dao.FoodEntryDao
+import de.kalorienapp.data.db.dao.MealComboDao
 import de.kalorienapp.data.db.dao.ProfileDao
 import de.kalorienapp.data.db.dao.RecipeDao
 import de.kalorienapp.data.db.dao.ShoppingDao
@@ -22,6 +23,8 @@ import de.kalorienapp.data.db.entity.ActivityEntryEntity
 import de.kalorienapp.data.db.entity.BodyMeasurementEntity
 import de.kalorienapp.data.db.entity.FavoriteFoodEntity
 import de.kalorienapp.data.db.entity.FoodEntryEntity
+import de.kalorienapp.data.db.entity.MealComboEntity
+import de.kalorienapp.data.db.entity.MealComboItemEntity
 import de.kalorienapp.data.db.entity.ProfileEntity
 import de.kalorienapp.data.db.entity.RecipeCategoryEntity
 import de.kalorienapp.data.db.entity.RecipeCategoryRefEntity
@@ -52,8 +55,10 @@ import de.kalorienapp.data.db.entity.WeightGoalEntity
         ShoppingItemEntity::class,
         BodyMeasurementEntity::class,
         WaterEntryEntity::class,
+        MealComboEntity::class,
+        MealComboItemEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -69,6 +74,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun shoppingDao(): ShoppingDao
     abstract fun bodyMeasurementDao(): BodyMeasurementDao
     abstract fun waterDao(): WaterDao
+    abstract fun mealComboDao(): MealComboDao
 
     companion object {
         /** v2: Mengeneinheit (g/ml) und optionale Zusatznährwerte. */
@@ -392,6 +398,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v16: eigene Mahlzeiten-Kombis. SQL aus dem exportierten Schema (16.json). */
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                COMBO_TABLES_SQL.forEach(db::execSQL)
+            }
+        }
+
+        private val COMBO_TABLES_SQL = listOf(
+            "CREATE TABLE IF NOT EXISTS `meal_combo` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS `meal_combo_item` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `comboId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `name` TEXT NOT NULL, `amount` REAL NOT NULL, `unit` TEXT NOT NULL, `kcal` REAL NOT NULL, `proteinG` REAL NOT NULL, `carbsG` REAL NOT NULL, `fatG` REAL NOT NULL, `saturatedFatG` REAL, `sugarG` REAL, `fiberG` REAL, `saltG` REAL, FOREIGN KEY(`comboId`) REFERENCES `meal_combo`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            "CREATE INDEX IF NOT EXISTS `index_meal_combo_item_comboId` ON `meal_combo_item` (`comboId`)",
+        )
+
         /** Aus dem exportierten Schema (app/schemas/…/11.json) übernommen. */
         private val RECIPE_TABLES_SQL = listOf(
             "CREATE TABLE IF NOT EXISTS `recipe` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `servings` INTEGER NOT NULL, `totalMinutes` INTEGER, `effort` TEXT, `imagePath` TEXT, `sourceUrl` TEXT, `source` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)",
@@ -411,7 +430,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) = insertDefaultCategories(db)
                 })
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
                 .build()
     }
 }

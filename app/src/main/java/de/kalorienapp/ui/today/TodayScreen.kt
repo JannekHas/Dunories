@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -107,6 +109,19 @@ fun TodayScreen(
     val water by viewModel.water.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var comboToSave by remember { mutableStateOf<MealGroup?>(null) }
+    val comboSaved = stringResource(R.string.combo_saved)
+    comboToSave?.let { group ->
+        ComboNameDialog(
+            initial = stringResource(R.string.combo_default_name, stringResource(group.mealType.labelRes)),
+            onSave = { name ->
+                viewModel.saveCombo(name, group.entries)
+                comboToSave = null
+                scope.launch { snackbarHostState.showSnackbar(comboSaved.format(name)) }
+            },
+            onDismiss = { comboToSave = null },
+        )
+    }
     val deletedMessage = stringResource(R.string.entry_deleted)
     val undoLabel = stringResource(R.string.undo)
     val favoriteAdded = stringResource(R.string.favorite_added)
@@ -247,6 +262,7 @@ fun TodayScreen(
                     onEdit = onEditEntry,
                     onDelete = ::deleteWithUndo,
                     onToggleFavorite = ::toggleFavorite,
+                    onSaveCombo = { comboToSave = group },
                 )
             }
         }
@@ -495,7 +511,9 @@ private fun MealCard(
     onEdit: (FoodEntry) -> Unit,
     onDelete: (FoodEntry) -> Unit,
     onToggleFavorite: (FoodEntry) -> Unit,
+    onSaveCombo: () -> Unit,
 ) {
+    var menu by remember { mutableStateOf(false) }
     Card(modifier = Modifier.fillMaxWidth()) {
         Surface(color = group.mealType.neonColor, contentColor = Neon.OnNeon, shape = RoundedCornerShape(12.dp)) {
             Row(
@@ -514,6 +532,19 @@ private fun MealCard(
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                     )
+                }
+                if (group.entries.isNotEmpty()) {
+                    Box {
+                        IconButton(onClick = { menu = true }) {
+                            Icon(Icons.Filled.MoreVert, stringResource(R.string.more_options))
+                        }
+                        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.combo_save)) },
+                                onClick = { menu = false; onSaveCombo() },
+                            )
+                        }
+                    }
                 }
                 IconButton(onClick = onAdd) {
                     Icon(Icons.Filled.Add, stringResource(R.string.add_short))
@@ -605,3 +636,26 @@ private val MealType.neonColor: Color
         MealType.DINNER -> Neon.Blue
         MealType.SNACK -> Neon.Magenta
     }
+
+@Composable
+private fun ComboNameDialog(initial: String, onSave: (String) -> Unit, onDismiss: () -> Unit) {
+    var name by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.combo_save)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.combo_save_hint), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.combo_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(name.trim()) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}

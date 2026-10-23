@@ -46,7 +46,7 @@ class AppContainer(context: Context) {
     val foodEntryDao = database.foodEntryDao()
     val profileRepository = ProfileRepository(database.profileDao())
     val foodEntryRepository = FoodEntryRepository(foodEntryDao)
-    val foodLibraryRepository = FoodLibraryRepository(database.favoriteFoodDao(), foodEntryDao)
+    val foodLibraryRepository = FoodLibraryRepository(database.favoriteFoodDao(), foodEntryDao, database.mealComboDao())
     val activityEntryRepository = ActivityEntryRepository(database.activityEntryDao())
     val goalRepository = GoalRepository(database.weightGoalDao(), profileRepository)
     val statsRepository = StatsRepository(database.statsDao(), goalRepository)

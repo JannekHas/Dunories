@@ -15,6 +15,7 @@ import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.domain.model.EntrySource
 import de.kalorienapp.domain.model.FavoriteFood
+import de.kalorienapp.domain.model.MealCombo
 import de.kalorienapp.domain.model.FrequentFood
 import de.kalorienapp.domain.model.FoodDraft
 import de.kalorienapp.domain.model.FoodEntry
@@ -72,6 +73,9 @@ class CaptureViewModel(
     )
     val state: StateFlow<CaptureUiState> = _state.asStateFlow()
 
+    val combos: StateFlow<List<MealCombo>> =
+        library.combos.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val favorites: StateFlow<List<FavoriteFood>> =
         library.favorites.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -114,13 +118,20 @@ class CaptureViewModel(
         s.copy(step = step.copy(selected = selected))
     }
 
+    fun removeCombo(id: Long) {
+        viewModelScope.launch { library.deleteCombo(id) }
+    }
+
     fun removeFavorite(id: Long) {
         viewModelScope.launch { library.removeFavorite(id) }
     }
 
     fun confirmQuickPick() {
         val step = _state.value.step as? CaptureStep.QuickPick ?: return
-        val drafts = favorites.value.filter { favoriteKey(it) in step.selected }.map {
+        // Kombis zuerst (ganze Mahlzeit), dann einzelne Favoriten/Häufiges.
+        val drafts = combos.value.filter { comboKey(it) in step.selected }.flatMap { combo ->
+            combo.items.map { FoodDraft(it.name, it.amount, it.unit, it.per100, EntrySource.MANUAL) }
+        } + favorites.value.filter { favoriteKey(it) in step.selected }.map {
             FoodDraft(it.name, it.amount, it.unit, it.per100, EntrySource.MANUAL)
         } + frequent.value.filter { frequentKey(it) in step.selected }.map {
             FoodDraft(it.name, it.amount, it.unit, it.per100, EntrySource.MANUAL)
@@ -224,6 +235,7 @@ class CaptureViewModel(
     }
 
     companion object {
+        fun comboKey(c: MealCombo) = "combo:${c.id}"
         fun favoriteKey(f: FavoriteFood) = "fav:${f.id}"
         fun frequentKey(f: FrequentFood) = "freq:${f.name.lowercase()}|${f.unit}"
     }
