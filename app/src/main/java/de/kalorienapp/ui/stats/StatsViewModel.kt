@@ -10,6 +10,8 @@ import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.data.repository.StatsRepository
 import de.kalorienapp.data.repository.WeightRepository
 import de.kalorienapp.domain.StatsCalculator
+import de.kalorienapp.domain.TrendPoint
+import de.kalorienapp.domain.WeightTrend
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.PeriodStats
 import de.kalorienapp.domain.model.WeightEntry
@@ -35,6 +37,8 @@ data class StatsUiState(
     val stats: PeriodStats? = null,
     val targets: DailyTargets? = null,
     val weights: List<WeightEntry> = emptyList(),
+    /** Geglätteter Gewichtsverlauf (siehe [WeightTrend]). */
+    val weightTrend: List<TrendPoint> = emptyList(),
     /** Aktuelles Profilgewicht – Vorbelegung, solange noch kein Eintrag existiert. */
     val profileWeightKg: Double? = null,
     /** Erreichte Gewichtsziele, neueste zuerst. */
@@ -80,6 +84,7 @@ class StatsViewModel(
                     stats = StatsCalculator.period(days),
                     targets = goalState?.targets,
                     weights = weights,
+                    weightTrend = WeightTrend.compute(weights),
                     profileWeightKg = goalState?.profile?.weightKg,
                     reachedGoals = reached,
                     reports = reports,

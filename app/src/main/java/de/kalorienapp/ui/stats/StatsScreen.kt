@@ -51,6 +51,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.PeriodStats
+import de.kalorienapp.domain.TrendPoint
+import de.kalorienapp.domain.WeightTrend
 import de.kalorienapp.domain.model.WeightEntry
 import de.kalorienapp.domain.model.WeightGoal
 import de.kalorienapp.ui.AppViewModelProvider
@@ -150,6 +152,7 @@ fun StatsScreen(
             }
             WeightSection(
                 entries = state.weights,
+                trend = state.weightTrend,
                 onAdd = { showWeightDialog = true },
                 onDelete = viewModel::deleteWeight,
             )
@@ -257,7 +260,7 @@ private fun AvgSubRow(label: String, value: Double?, parentColor: Color) {
 }
 
 @Composable
-private fun WeightSection(entries: List<WeightEntry>, onAdd: () -> Unit, onDelete: (WeightEntry) -> Unit) {
+private fun WeightSection(entries: List<WeightEntry>, trend: List<TrendPoint>, onAdd: () -> Unit, onDelete: (WeightEntry) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         HorizontalDivider()
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -295,7 +298,22 @@ private fun WeightSection(entries: List<WeightEntry>, onAdd: () -> Unit, onDelet
                 )
             }
         }
-        WeightLineChart(entries, Modifier.fillMaxWidth())
+        trend.lastOrNull()?.let { last ->
+            val perWeek = WeightTrend.weeklyChange(trend)
+            Text(
+                if (perWeek == null) {
+                    stringResource(R.string.weight_trend, last.weightKg.format(1))
+                } else {
+                    stringResource(R.string.weight_trend_change, last.weightKg.format(1), (if (perWeek > 0) "+" else "") + perWeek.format(2))
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = Neon.Violet,
+            )
+        }
+        WeightLineChart(entries, trend, Modifier.fillMaxWidth())
+        if (entries.size >= 2) {
+            Text(stringResource(R.string.weight_trend_caption), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+        }
         entries.takeLast(10).reversed().forEach { entry ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(

@@ -210,6 +210,9 @@
     <string name="weight_add_title">Gewicht eintragen</string>
     <string name="weight_empty">Noch kein Gewicht eingetragen. Der jüngste Eintrag wird automatisch ins Profil übernommen.</string>
     <string name="weight_value">%1$s kg</string>
+    <string name="weight_trend">Trend: %1$s kg</string>
+    <string name="weight_trend_change">Trend: %1$s kg · %2$s kg pro Woche</string>
+    <string name="weight_trend_caption">Punkte: Messungen · violette Linie: Trend (glättet Wasserschwankungen)</string>
     <string name="weight_change">%1$s kg seit dem ersten Eintrag</string>
     <string name="ok">OK</string>
     <plurals name="days">
