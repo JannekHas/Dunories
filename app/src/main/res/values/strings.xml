@@ -524,4 +524,8 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="capture_hint_label">Fotografiere die Nährwerttabelle gerade und scharf – die Werte werden exakt abgelesen.</string>
     <string name="capture_photograph_label">Nährwerttabelle fotografieren</string>
     <string name="source_label">Nährwerttabelle abgelesen</string>
+    <!-- Spracheingabe -->
+    <string name="speech_button">Sprechen</string>
+    <string name="speech_prompt">Was hast du gegessen?</string>
+    <string name="speech_unavailable">Auf diesem Gerät ist keine Spracherkennung verfügbar. Du kannst das Mikrofon der Tastatur nutzen.</string>
 </resources>

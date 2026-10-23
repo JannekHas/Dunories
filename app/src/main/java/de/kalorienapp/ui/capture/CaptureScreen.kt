@@ -1,6 +1,9 @@
 package de.kalorienapp.ui.capture
 
 import android.Manifest
+import android.speech.RecognizerIntent
+import android.content.Intent
+import android.content.ActivityNotFoundException
 import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -26,6 +29,8 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
+import de.kalorienapp.ui.theme.Neon
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
@@ -326,6 +331,7 @@ private fun TextInputContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(stringResource(R.string.capture_describe_intro), style = MaterialTheme.typography.bodyLarge)
+        SpeechButton(onText = { spoken -> onChange(listOf(description.trim(), spoken).filter(String::isNotBlank).joinToString(", ")) })
         OutlinedTextField(
             value = description,
             onValueChange = onChange,
@@ -426,3 +432,43 @@ private val CaptureError.messageRes: Int
         CaptureError.IMAGE -> R.string.error_image
         CaptureError.UNKNOWN -> R.string.error_unknown
     }
+
+/**
+ * Spracheingabe über die Android-Spracherkennung (wie das Mikrofon der Tastatur; bevorzugt auf dem Gerät).
+ * Der erkannte Text landet im Beschreiben-Feld und kann vor dem Schätzen korrigiert werden.
+ */
+@Composable
+private fun SpeechButton(onText: (String) -> Unit) {
+    val context = LocalContext.current
+    var unavailable by remember { mutableStateOf(false) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            ?.takeIf { it.isNotBlank() }?.let(onText)
+    }
+    val prompt = stringResource(R.string.speech_prompt)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Button(
+            onClick = {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "de-DE")
+                    putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+                    putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
+                }
+                try {
+                    launcher.launch(intent)
+                } catch (e: ActivityNotFoundException) {
+                    unavailable = true
+                }
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Neon.Violet, contentColor = Neon.OnNeon),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(painterResource(R.drawable.ic_mic), contentDescription = null)
+            Text(stringResource(R.string.speech_button), modifier = Modifier.padding(start = 8.dp))
+        }
+        if (unavailable) {
+            Text(stringResource(R.string.speech_unavailable), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
+        }
+    }
+}
