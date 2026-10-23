@@ -92,6 +92,7 @@ class MainActivity : ComponentActivity() {
             open,
             intent.getLongExtra(Notifications.EXTRA_REPORT_ID, 0L).toString(),
             intent.getLongExtra(Notifications.EXTRA_POSTED_AT, 0L).toString(),
+            intent.getStringExtra(Notifications.EXTRA_MEAL),
         ).joinToString("|")
     }
 

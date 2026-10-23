@@ -59,6 +59,12 @@ class NotificationSettingsViewModel(
     val calories = settings.caloriesNotification
     val weightDays = settings.weightReminderDays
     val weekly = settings.weeklyReport
+    val mealReminders = settings.mealReminders
+
+    fun setMealReminders(enabled: Boolean) {
+        settings.setMealReminders(enabled)
+        viewModelScope.launch { scheduler.scheduleMealReminder() }
+    }
 
     fun setCalories(enabled: Boolean) {
         settings.setCaloriesNotification(enabled)
@@ -90,6 +96,7 @@ fun NotificationSettingsSection(
     val calories by viewModel.calories.collectAsStateWithLifecycle()
     val weightDays by viewModel.weightDays.collectAsStateWithLifecycle()
     val weekly by viewModel.weekly.collectAsStateWithLifecycle()
+    val mealReminders by viewModel.mealReminders.collectAsStateWithLifecycle()
     var canPost by remember { mutableStateOf(Notifications.canPost(context)) }
 
     // Nach Rückkehr aus den System-Einstellungen neu prüfen.
@@ -148,6 +155,12 @@ fun NotificationSettingsSection(
                 }
             }
         }
+        SwitchRow(
+            title = stringResource(R.string.notif_setting_meals),
+            text = stringResource(R.string.notif_setting_meals_text),
+            checked = mealReminders,
+            onChange = { viewModel.setMealReminders(it); if (it) ensurePermission() },
+        )
         SwitchRow(
             title = stringResource(R.string.notif_setting_report),
             text = stringResource(R.string.notif_setting_report_text),

@@ -57,6 +57,7 @@ class BackupManager(
                 weeklyReport = settings.weeklyReport.value,
                 waterGoalMl = settings.waterGoalMl.value,
                 fastingEnabled = settings.fastingEnabled.value,
+                mealReminders = settings.mealReminders.value,
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
                         .joinToString(";")
@@ -139,6 +140,7 @@ class BackupManager(
         settings.setWeeklyReport(manifest.settings.weeklyReport)
         settings.setWaterGoalMl(manifest.settings.waterGoalMl)
         settings.setFastingEnabled(manifest.settings.fastingEnabled)
+        settings.setMealReminders(manifest.settings.mealReminders)
         manifest.settings.fasting?.split(';')?.takeIf { it.size == 4 }?.let { (plan, start, hours, days) ->
             val defaults = de.kalorienapp.domain.FastingConfig()
             settings.setFastingConfig(

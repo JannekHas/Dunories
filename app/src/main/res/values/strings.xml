@@ -565,4 +565,9 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="notif_fasting_eat_text">Guten Appetit – du kannst bis %1$s essen.</string>
     <string name="notif_fasting_fast_title">Fastenzeit beginnt</string>
     <string name="notif_fasting_fast_text">Das Essensfenster ist zu – weiter geht es um %1$s.</string>
+    <!-- Eintrage-Erinnerung -->
+    <string name="notif_setting_meals">Eintrage-Erinnerung</string>
+    <string name="notif_setting_meals_text">Wenn Frühstück, Mittag- oder Abendessen eine Stunde nach deiner üblichen Zeit noch fehlt. Die App lernt die Zeiten aus deinen Einträgen (nicht in der Fastenzeit).</string>
+    <string name="notif_meal_title">%1$s schon eingetragen?</string>
+    <string name="notif_meal_text">Tippen zum Erfassen – dauert nur ein paar Sekunden.</string>
 </resources>

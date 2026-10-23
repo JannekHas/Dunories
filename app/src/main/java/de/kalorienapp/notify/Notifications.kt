@@ -23,6 +23,7 @@ object Notifications {
     const val ID_WEIGH = 2
     const val ID_REPORT = 3
     const val ID_FASTING = 4
+    const val ID_MEAL = 5
 
     /** Extra im Öffnen-Intent: was die App anzeigen soll. */
     const val EXTRA_OPEN = "de.kalorienapp.OPEN"
@@ -31,6 +32,8 @@ object Notifications {
     const val EXTRA_POSTED_AT = "de.kalorienapp.POSTED_AT"
     const val OPEN_WEIGH = "weigh"
     const val OPEN_REPORT = "report"
+    const val OPEN_CAPTURE = "capture"
+    const val EXTRA_MEAL = "de.kalorienapp.MEAL"
 
     fun createChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -53,11 +56,18 @@ object Notifications {
     }
 
     /** Öffnet die App (laufende Instanz, singleTask) – optional mit Ziel. */
-    fun openAppIntent(context: Context, requestCode: Int, open: String? = null, reportId: Long? = null): PendingIntent {
+    fun openAppIntent(
+        context: Context,
+        requestCode: Int,
+        open: String? = null,
+        reportId: Long? = null,
+        meal: String? = null,
+    ): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             open?.let { putExtra(EXTRA_OPEN, it) }
             reportId?.let { putExtra(EXTRA_REPORT_ID, it) }
+            meal?.let { putExtra(EXTRA_MEAL, it) }
             putExtra(EXTRA_POSTED_AT, System.currentTimeMillis())
         }
         return PendingIntent.getActivity(

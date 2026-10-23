@@ -23,7 +23,9 @@ import de.kalorienapp.data.remote.gemini.GeminiException
 import de.kalorienapp.data.repository.NotEnoughDataException
 import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.domain.Fasting
+import de.kalorienapp.domain.MealReminderPlanner
 import de.kalorienapp.domain.ReminderPlanner
+import de.kalorienapp.domain.model.MealType
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.Duration
@@ -47,10 +49,33 @@ class WorkScheduler(
     private val work get() = WorkManager.getInstance(context)
 
     suspend fun scheduleAll() {
+        scheduleMealReminder()
         scheduleFasting()
         scheduleMidnight()
         scheduleWeightReminder()
         scheduleWeekly()
+    }
+
+    /** Eintrage-Erinnerung: zur nächsten gelernten Erinnerungszeit (siehe [MealReminderPlanner]). */
+    suspend fun scheduleMealReminder() {
+        val next = if (settings.mealReminders.value) MealReminderPlanner.next(mealReminderTimes(), LocalDateTime.now()) else null
+        if (next == null) {
+            work.cancelUniqueWork(NAME_MEAL)
+            return
+        }
+        enqueue<MealReminderWorker>(NAME_MEAL, next.first)
+    }
+
+    /** Erinnerungszeiten aus den Einträgen der letzten 3 Wochen. */
+    suspend fun mealReminderTimes(): Map<MealType, LocalTime> {
+        val zone = ZoneId.systemDefault()
+        val rows = foodDao.mealTimes(LocalDate.now().minusDays(21).toEpochDay()).mapNotNull { row ->
+            val created = Instant.ofEpochMilli(row.createdAt).atZone(zone)
+            val day = LocalDate.ofEpochDay(row.dateEpochDay)
+            // Nachgetragene Mahlzeiten verraten nichts über die übliche Zeit.
+            if (created.toLocalDate() == day) Triple(day, row.mealType, created.toLocalTime()) else null
+        }
+        return MealReminderPlanner.reminderTimes(MealReminderPlanner.typicalTimes(MealReminderPlanner.samples(rows)))
     }
 
     /** Intervallfasten: Benachrichtigung zum nächsten Beginn/Ende des Essensfensters. */
@@ -125,6 +150,7 @@ class WorkScheduler(
     companion object {
         private const val NAME_MIDNIGHT = "midnight"
         private const val NAME_FASTING = "fasting"
+        private const val NAME_MEAL = "meal_reminder"
         private const val NAME_WEIGH = "weight_reminder"
         private const val NAME_WEEKLY = "weekly_report"
         private val WEEKLY_TIME: LocalTime = LocalTime.of(7, 0)
@@ -138,6 +164,49 @@ class MidnightWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val c = applicationContext.container
         c.calorieNotifier.refresh()
         c.workScheduler.scheduleMidnight()
+        return Result.success()
+    }
+}
+
+/** Erinnert an eine fehlende Hauptmahlzeit (nicht in der Fastenzeit) und plant die nächste. */
+class MealReminderWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    @SuppressLint("MissingPermission") // canPost prüft die Erlaubnis
+    override suspend fun doWork(): Result {
+        val c = applicationContext.container
+        val now = LocalDateTime.now()
+        val reminders = c.workScheduler.mealReminderTimes()
+        // Die Mahlzeit, deren Erinnerungszeit gerade erreicht ist (WorkManager startet manchmal etwas später).
+        val meal = reminders.entries
+            .filter { (_, time) -> !time.isAfter(now.toLocalTime()) && time.isAfter(now.toLocalTime().minusMinutes(90)) }
+            .maxByOrNull { it.value }?.key
+        val fasting = c.settings.fastingConfig.value.takeIf { c.settings.fastingEnabled.value && it.isDaily }
+        val inFastingTime = fasting != null && !Fasting.isInEatingWindow(fasting, now.toLocalTime())
+        if (meal != null && c.settings.mealReminders.value && !inFastingTime && Notifications.canPost(applicationContext) &&
+            c.profileRepository.get() != null
+        ) {
+            val logged = c.foodEntryDao.mealsForDay(LocalDate.now().toEpochDay()).toSet()
+            if (MealReminderPlanner.isDue(meal, logged)) {
+                val mealName = applicationContext.getString(
+                    when (meal) {
+                        MealType.BREAKFAST -> R.string.meal_breakfast
+                        MealType.LUNCH -> R.string.meal_lunch
+                        MealType.DINNER -> R.string.meal_dinner
+                        MealType.SNACK -> R.string.meal_snack
+                    },
+                )
+                val notification = NotificationCompat.Builder(applicationContext, Notifications.CHANNEL_REMINDERS)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle(applicationContext.getString(R.string.notif_meal_title, mealName))
+                    .setContentText(applicationContext.getString(R.string.notif_meal_text))
+                    .setAutoCancel(true)
+                    .setContentIntent(
+                        Notifications.openAppIntent(applicationContext, Notifications.ID_MEAL, open = Notifications.OPEN_CAPTURE, meal = meal.name),
+                    )
+                    .build()
+                NotificationManagerCompat.from(applicationContext).notify(Notifications.ID_MEAL, notification)
+            }
+        }
+        c.workScheduler.scheduleMealReminder()
         return Result.success()
     }
 }

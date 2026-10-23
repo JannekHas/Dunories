@@ -36,6 +36,15 @@ class AppSettings(context: Context) {
         _waterGoalMl.value = ml
     }
 
+    private val _mealReminders = MutableStateFlow(prefs.getBoolean(KEY_MEAL_REMINDERS, true))
+    /** Erinnerung, wenn eine Hauptmahlzeit zur üblichen Zeit noch fehlt. */
+    val mealReminders: StateFlow<Boolean> = _mealReminders.asStateFlow()
+
+    fun setMealReminders(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_MEAL_REMINDERS, enabled).apply()
+        _mealReminders.value = enabled
+    }
+
     private val _fastingEnabled = MutableStateFlow(prefs.getBoolean(KEY_FASTING, false))
     /** Intervallfasten: Timer auf „Heute“, Benachrichtigungen, Auswertung. */
     val fastingEnabled: StateFlow<Boolean> = _fastingEnabled.asStateFlow()
@@ -97,6 +106,7 @@ class AppSettings(context: Context) {
         private const val KEY_WEEKLY = "weekly_report"
         private const val KEY_WATER_GOAL = "water_goal_ml"
         private const val KEY_FASTING = "fasting_enabled"
+        private const val KEY_MEAL_REMINDERS = "meal_reminders"
         private const val KEY_FASTING_PLAN = "fasting_plan"
         private const val KEY_FASTING_START = "fasting_window_start_min"
         private const val KEY_FASTING_HOURS = "fasting_custom_hours"

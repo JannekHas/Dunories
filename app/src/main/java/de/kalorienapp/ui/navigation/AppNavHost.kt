@@ -116,6 +116,9 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
             when (val request = container.navRequests.take()) {
                 NavRequest.Weigh -> navController.navigateTopLevel(StatsRoute)
                 is NavRequest.Report -> navController.navigate(WeeklyReportRoute(request.id))
+                is NavRequest.Capture -> navController.navigate(
+                    CaptureRoute(epochDay = java.time.LocalDate.now().toEpochDay(), mealType = request.mealType),
+                )
                 null -> Unit
             }
         }

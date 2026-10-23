@@ -5,6 +5,7 @@ import androidx.room.Embedded
 import androidx.room.Query
 import androidx.room.Upsert
 import de.kalorienapp.data.db.entity.FoodEntryEntity
+import de.kalorienapp.domain.model.MealType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -20,6 +21,12 @@ interface FoodEntryDao {
 
     @Query("SELECT * FROM food_entry WHERE dateEpochDay BETWEEN :fromEpochDay AND :toEpochDay ORDER BY dateEpochDay, createdAt")
     suspend fun between(fromEpochDay: Long, toEpochDay: Long): List<FoodEntryEntity>
+
+    @Query("SELECT dateEpochDay, mealType, createdAt FROM food_entry WHERE dateEpochDay >= :fromEpochDay")
+    suspend fun mealTimes(fromEpochDay: Long): List<MealTimeRow>
+
+    @Query("SELECT DISTINCT mealType FROM food_entry WHERE dateEpochDay = :epochDay")
+    suspend fun mealsForDay(epochDay: Long): List<MealType>
 
     @Query("SELECT COUNT(*) FROM food_entry WHERE dateEpochDay = :epochDay")
     suspend fun countForDay(epochDay: Long): Int
@@ -46,6 +53,8 @@ interface FoodEntryDao {
     )
     fun observeFrequent(limit: Int): Flow<List<FrequentEntryRow>>
 }
+
+data class MealTimeRow(val dateEpochDay: Long, val mealType: MealType, val createdAt: Long)
 
 data class FirstEntryRow(val dateEpochDay: Long, val firstCreatedAt: Long)
 

@@ -35,6 +35,7 @@ object BackupFormat {
         val weeklyReport: Boolean = true,
         val waterGoalMl: Int? = null,
         val fastingEnabled: Boolean = false,
+        val mealReminders: Boolean = true,
         /** Plan;Beginn in Minuten;eigene Stunden;Fastentage – siehe BackupManager. */
         val fasting: String? = null,
     )
