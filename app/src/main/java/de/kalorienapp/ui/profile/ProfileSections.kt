@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
+import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.Sex
 import de.kalorienapp.ui.components.ChoiceChips
@@ -73,7 +74,7 @@ fun BodyDataSection(form: ProfileFormState, onUpdate: FormUpdate) {
 
 /** Übersicht der effektiven Tagesziele. */
 @Composable
-fun TargetsCard(targets: DailyTargets?, modifier: Modifier = Modifier) {
+fun TargetsCard(targets: DailyTargets?, modifier: Modifier = Modifier, atMinimum: Boolean = false) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(stringResource(R.string.targets_title), style = MaterialTheme.typography.titleMedium)
@@ -89,6 +90,14 @@ fun TargetsCard(targets: DailyTargets?, modifier: Modifier = Modifier) {
                     stringResource(R.string.targets_macros, targets.proteinG, targets.carbsG, targets.fatG),
                     style = MaterialTheme.typography.bodyMedium,
                 )
+                // Ziel rechnerisch unter 1.200 kcal → gedeckelt; sonst wundert man sich über sehr wenig KH.
+                if (atMinimum) {
+                    Text(
+                        stringResource(R.string.targets_at_minimum, GoalCalculator.MIN_KCAL_TARGET.format()),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Neon.Yellow,
+                    )
+                }
             }
         }
     }

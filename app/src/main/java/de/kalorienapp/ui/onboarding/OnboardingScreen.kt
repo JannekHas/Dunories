@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.goal.GoalInputs
 import de.kalorienapp.ui.goal.GoalPreviewCard
@@ -123,7 +124,7 @@ fun OnboardingScreen(
                 }
                 else -> {
                     StepIntro(stringResource(R.string.onboarding_targets_intro))
-                    TargetsCard(state.targets)
+                    TargetsCard(state.targets, atMinimum = state.form.kcalOverride.isBlank() && state.targets?.kcal == GoalCalculator.MIN_KCAL_TARGET)
                     TargetAdjustmentsSection(state, viewModel::update)
                 }
             }

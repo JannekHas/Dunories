@@ -62,6 +62,7 @@
 
     <!-- Ziele -->
     <string name="targets_title">Dein Tagesziel</string>
+    <string name="targets_at_minimum">Untergrenze von %1$s kcal erreicht – rechnerisch bräuchte dein Ziel noch weniger. Ein späteres Zieldatum macht es entspannter (Profil → Ziel).</string>
     <string name="targets_incomplete">Bitte Körperdaten vollständig ausfüllen.</string>
     <string name="targets_macros">Protein %1$d g · KH %2$d g · Fett %3$d g</string>
     <string name="targets_override_hint">Leere Felder werden automatisch berechnet. Trage einen Wert ein, um ihn festzulegen.</string>

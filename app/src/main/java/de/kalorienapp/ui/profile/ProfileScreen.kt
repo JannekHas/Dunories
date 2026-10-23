@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.fasting.FastingSettingsSection
 import de.kalorienapp.ui.goal.GoalCard
@@ -50,7 +51,7 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            TargetsCard(state.targets)
+            TargetsCard(state.targets, atMinimum = state.form.kcalOverride.isBlank() && state.targets?.kcal == GoalCalculator.MIN_KCAL_TARGET)
             SectionTitle(stringResource(R.string.section_body))
             BodyDataSection(state.form, viewModel::update)
             HorizontalDivider()
