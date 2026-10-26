@@ -1,5 +1,7 @@
 package de.kalorienapp.data.remote.gemini
 
+import android.util.Log
+import de.kalorienapp.BuildConfig
 import java.util.Base64
 import de.kalorienapp.data.remote.Http
 import de.kalorienapp.data.remote.HttpStatusException
@@ -23,7 +25,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -91,9 +92,12 @@ class GeminiClient(private val apiKey: String) {
      * Ein Aufruf mit festem JSON-Schema. @return Antworttext (JSON) ohne „Gedanken“-Teile.
      * Fehler werden als [GeminiException] geworfen.
      *
-     * Die Antwortzeit im kostenlosen Kontingent schwankt stark (2 s bis über eine Minute). Deshalb
-     * ein Rennen: erst [MODEL]; kommt nach [HEDGE_DELAY_MS] nichts oder scheitert es, zusätzlich
-     * [FALLBACK_MODEL] – die erste gültige Antwort gewinnt, die andere Anfrage wird abgebrochen.
+     * Die Antwortzeit im kostenlosen Kontingent schwankt stark (1 s bis über eine Minute, ab und
+     * zu „überlastet“). Deshalb zwei Spuren im Rennen, die erste gültige Antwort gewinnt:
+     * - Spur 1 sofort: wechselt bei Fehlern zwischen den schnellen Modellen ([FAST_MODELS]).
+     * - Spur 2 nach [HEDGE_DELAY_MS] (oder wenn Spur 1 aufgibt): neue schnelle Anfrage – eine
+     *   hängende Anfrage läuft beim zweiten Versuch meist sofort durch –, zuletzt [FALLBACK_MODEL].
+     * Die unterlegene Anfrage wird abgebrochen.
      */
     internal suspend fun generateJson(
         schema: JsonObject,
@@ -112,16 +116,17 @@ class GeminiClient(private val apiKey: String) {
             }
         }.toString()
         return coroutineScope {
-            val stumbled = CompletableDeferred<Unit>()
-            val primary = async { runCatching { callWithRetries(MODEL, request, timeoutMs) { stumbled.complete(Unit) } } }
-            withTimeoutOrNull(HEDGE_DELAY_MS) { select { primary.onAwait {}; stumbled.onAwait {} } }
-            val first = if (primary.isCompleted) primary.await() else null
-            first?.getOrNull()?.let { return@coroutineScope it }
-            // Ungültiger Key gilt für beide Modelle.
-            (first?.exceptionOrNull() as? GeminiException)?.takeIf { it.error == GeminiError.REJECTED }?.let { throw it }
-            val fallback = async { runCatching { callWithRetries(FALLBACK_MODEL, request, timeoutMs) {} } }
-            val pending = (if (first == null) listOf(primary, fallback) else listOf(fallback)).toMutableList()
-            var lastError = first?.exceptionOrNull()
+            val first = async { runCatching { callModels(FAST_MODELS + FAST_MODELS, request, timeoutMs) } }
+            withTimeoutOrNull(HEDGE_DELAY_MS) { first.join() }
+            if (first.isCompleted) {
+                val result = first.await()
+                result.getOrNull()?.let { return@coroutineScope it }
+                // Ungültiger Key gilt für alle Modelle.
+                (result.exceptionOrNull() as? GeminiException)?.takeIf { !it.retryable }?.let { throw it }
+            }
+            val second = async { runCatching { callModels(FAST_MODELS.reversed() + FALLBACK_MODEL, request, timeoutMs) } }
+            val pending = listOf(first, second).filter { !it.isCompleted }.toMutableList()
+            var lastError = first.takeIf { it.isCompleted }?.await()?.exceptionOrNull()
             while (pending.isNotEmpty()) {
                 val (done, result) = select<Pair<Deferred<Result<String>>, Result<String>>> {
                     pending.forEach { lane -> lane.onAwait { lane to it } }
@@ -137,11 +142,22 @@ class GeminiClient(private val apiKey: String) {
         }
     }
 
-    /** Ein Modell; bei Überlastung (5xx) oder Netzwerkfehler bis zu [MAX_ATTEMPTS] Versuche. */
-    private suspend fun callWithRetries(model: String, request: String, timeoutMs: Int, onFailure: () -> Unit): String {
-        var attempt = 0
-        while (true) {
-            attempt++
+    /** Lohnt ein anderes Modell? Kontingente gelten je Modell, also auch bei 429. */
+    private val GeminiException.retryable
+        get() = error == GeminiError.OVERLOADED || error == GeminiError.NETWORK || error == GeminiError.QUOTA
+
+    /**
+     * Modelle der Reihe nach versuchen; weiter nur bei Überlastung (5xx), unbekanntem Modell (404)
+     * oder Netzwerkfehler. Kurze Pause dazwischen, damit ein kurzer Engpass vorbeigeht.
+     */
+    private suspend fun callModels(models: List<String>, request: String, timeoutMs: Int): String {
+        var lastError: GeminiException? = null
+        for ((index, model) in models.withIndex()) {
+            if (index > 0) delay(RETRY_DELAY_MS)
+            val started = System.currentTimeMillis()
+            fun log(result: String) {
+                if (BuildConfig.DEBUG) Log.d("Gemini", "$model: $result nach ${System.currentTimeMillis() - started} ms")
+            }
             val error = try {
                 val body = Http.postJson(
                     url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent",
@@ -149,20 +165,22 @@ class GeminiClient(private val apiKey: String) {
                     headers = mapOf("x-goog-api-key" to apiKey),
                     timeoutMs = timeoutMs,
                 )
+                log("ok")
                 return GeminiResponseParser.answerText(body) ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
             } catch (e: HttpStatusException) {
-                GeminiException(errorFor(e.code), e)
+                log("HTTP ${e.code}")
+                GeminiException(if (e.code == 404) GeminiError.OVERLOADED else errorFor(e.code), e)
             } catch (e: SocketTimeoutException) {
                 // Nach langem Warten nicht noch einmal minutenlang warten lassen.
                 throw GeminiException(GeminiError.NETWORK, e)
             } catch (e: IOException) {
+                log("abgebrochen/Netzwerk")
                 GeminiException(GeminiError.NETWORK, e)
             }
-            onFailure()
-            val retryable = error.error == GeminiError.OVERLOADED || error.error == GeminiError.NETWORK
-            if (!retryable || attempt >= MAX_ATTEMPTS) throw error
-            delay(RETRY_DELAY_MS * attempt)
+            lastError = error
+            if (!error.retryable) throw error
         }
+        throw lastError ?: GeminiException(GeminiError.NETWORK)
     }
 
     internal val key: String get() = apiKey
@@ -176,17 +194,18 @@ class GeminiClient(private val apiKey: String) {
             else -> GeminiError.NETWORK
         }
 
-        private const val MAX_ATTEMPTS = 3
-        private const val RETRY_DELAY_MS = 2_500L
+        private const val RETRY_DELAY_MS = 600L
 
         /**
          * Im kostenlosen Kontingent gemessen (Okt. 2026): 3.1-Flash-Lite meist 2–13 s,
          * „flash-lite-latest“ (3.5) 30–60 s, große Flash-Modelle oft überlastet oder 90–160 s.
          */
         const val MODEL = "gemini-3.1-flash-lite"
-        /** Springt ein, wenn [MODEL] hängt oder überlastet ist. */
+        /** Gleich schnell, eigenes Kontingent – springt ein, wenn [MODEL] überlastet ist. */
+        private val FAST_MODELS = listOf(MODEL, "gemini-3.1-flash-lite-preview")
+        /** Langsam (30–60 s), aber verlässlich – nur als letzter Versuch. */
         const val FALLBACK_MODEL = "gemini-flash-lite-latest"
-        private const val HEDGE_DELAY_MS = 12_000L
+        private const val HEDGE_DELAY_MS = 8_000L
 
         private const val COMMON_RULES = """
 Für jede Komponente: kurzer deutscher Name, Menge (g bei festen, ml bei flüssigen Lebensmitteln)

@@ -22,7 +22,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -52,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.AiWaitProgress
 import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.domain.model.WeeklyReport
 import de.kalorienapp.ui.AppViewModelProvider
@@ -111,9 +111,9 @@ fun WeeklyReportSection(
                 }
             }
             when (generation) {
-                ReportGeneration.Running -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(20.dp), color = Neon.Violet, strokeWidth = 2.dp)
-                    Text(stringResource(R.string.report_running), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 10.dp))
+                ReportGeneration.Running -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.report_running), style = MaterialTheme.typography.bodyMedium)
+                    AiWaitProgress(expectedSeconds = 20, color = Neon.Violet)
                 }
                 else -> Button(
                     onClick = onGenerate,

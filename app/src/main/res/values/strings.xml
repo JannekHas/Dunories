@@ -359,7 +359,6 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="recipe_import_nothing">Es wurde nichts zum Importieren geteilt.</string>
     <string name="recipe_import_source_images">%1$d Bild(er)</string>
     <string name="recipe_import_source_video">Video-Datei</string>
-    <string name="recipe_import_wait">Das kann je nach Beitrag 20–60 Sekunden dauern.</string>
     <string name="import_stage_link">Beitrag wird gelesen</string>
     <string name="import_stage_video">Video wird hochgeladen</string>
     <string name="import_stage_ai">KI erkennt das Rezept</string>
@@ -404,7 +403,7 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="report_title">KI-Wochenauswertung</string>
     <string name="report_empty">Die KI analysiert Ernährung, Bewegung und Gewicht und gibt dir konkrete Tipps für dein Ziel.</string>
     <string name="report_generate">Letzte 7 Tage auswerten</string>
-    <string name="report_running">KI wertet aus … (bis zu einer Minute)</string>
+    <string name="report_running">KI wertet deine Woche aus …</string>
     <string name="report_auto_hint">Montags kommt automatisch die Auswertung der Vorwoche (abschaltbar im Profil).</string>
     <string name="report_older">Frühere Auswertungen</string>
     <string name="report_range">%1$s – %2$s</string>
@@ -582,4 +581,9 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="widget_subtitle">Gegessen %1$s · Budget %2$s kcal</string>
     <string name="widget_no_profile">Profil anlegen</string>
     <string name="widget_add">Kalorien-Widget zum Startbildschirm hinzufügen</string>
+    <!-- Warteanzeige für KI-Aufrufe -->
+    <string name="ai_wait_percent">ca. %1$d %%</string>
+    <string name="ai_wait_seconds">läuft seit %1$d s</string>
+    <string name="ai_wait_slow">Dauert länger als sonst – der KI-Server ist gerade ausgelastet. Es läuft noch, bitte kurz warten.</string>
+    <string name="ai_wait_very_slow">Immer noch dabei – die App fragt automatisch zusätzlich bei einem anderen KI-Modell nach.</string>
 </resources>

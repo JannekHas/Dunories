@@ -66,6 +66,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.AiWaitProgress
 import de.kalorienapp.capture.AnalysisStage
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.ui.AppViewModelProvider
@@ -358,6 +359,16 @@ private fun AnalyzingContent(stage: AnalysisStage, modifier: Modifier) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (stage == AnalysisStage.AI) {
+            Text(
+                stringResource(R.string.capture_stage_ai),
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(20.dp))
+            AiWaitProgress(expectedSeconds = 8)
+            return@Column
+        }
         CircularProgressIndicator()
         Spacer(Modifier.height(24.dp))
         Text(

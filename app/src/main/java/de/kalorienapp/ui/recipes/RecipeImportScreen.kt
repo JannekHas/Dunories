@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.AiWaitProgress
 import de.kalorienapp.data.remote.social.SocialPageParser
 import de.kalorienapp.data.remote.social.SocialPlatform
 import de.kalorienapp.data.repository.RecipeRepository
@@ -188,7 +189,17 @@ private fun Progress(source: ImportSource, current: ImportStage?) {
                     )
                 }
             }
-            Text(stringResource(R.string.recipe_import_wait), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+            // Ein Balken je Schritt; die KI-Analyse dauert am längsten.
+            current?.let { stage ->
+                AiWaitProgress(
+                    expectedSeconds = when (stage) {
+                        ImportStage.ANALYZING -> 20
+                        ImportStage.UPLOADING_VIDEO -> 30
+                        else -> 5
+                    },
+                    key = stage,
+                )
+            }
         }
     }
 }
