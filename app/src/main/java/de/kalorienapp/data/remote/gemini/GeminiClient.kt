@@ -23,7 +23,13 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.net.SocketTimeoutException
 
@@ -84,6 +90,10 @@ class GeminiClient(private val apiKey: String) {
     /**
      * Ein Aufruf mit festem JSON-Schema. @return Antworttext (JSON) ohne „Gedanken“-Teile.
      * Fehler werden als [GeminiException] geworfen.
+     *
+     * Die Antwortzeit im kostenlosen Kontingent schwankt stark (2 s bis über eine Minute). Deshalb
+     * ein Rennen: erst [MODEL]; kommt nach [HEDGE_DELAY_MS] nichts oder scheitert es, zusätzlich
+     * [FALLBACK_MODEL] – die erste gültige Antwort gewinnt, die andere Anfrage wird abgebrochen.
      */
     internal suspend fun generateJson(
         schema: JsonObject,
@@ -97,21 +107,49 @@ class GeminiClient(private val apiKey: String) {
                 put("responseMimeType", "application/json")
                 put("responseSchema", schema)
                 put("temperature", 0.2)
+                // Kein langes „Nachdenken“ – Schätzen und Ablesen brauchen das nicht.
+                putJsonObject("thinkingConfig") { put("thinkingLevel", "minimal") }
             }
+        }.toString()
+        return coroutineScope {
+            val stumbled = CompletableDeferred<Unit>()
+            val primary = async { runCatching { callWithRetries(MODEL, request, timeoutMs) { stumbled.complete(Unit) } } }
+            withTimeoutOrNull(HEDGE_DELAY_MS) { select { primary.onAwait {}; stumbled.onAwait {} } }
+            val first = if (primary.isCompleted) primary.await() else null
+            first?.getOrNull()?.let { return@coroutineScope it }
+            // Ungültiger Key gilt für beide Modelle.
+            (first?.exceptionOrNull() as? GeminiException)?.takeIf { it.error == GeminiError.REJECTED }?.let { throw it }
+            val fallback = async { runCatching { callWithRetries(FALLBACK_MODEL, request, timeoutMs) {} } }
+            val pending = (if (first == null) listOf(primary, fallback) else listOf(fallback)).toMutableList()
+            var lastError = first?.exceptionOrNull()
+            while (pending.isNotEmpty()) {
+                val (done, result) = select<Pair<Deferred<Result<String>>, Result<String>>> {
+                    pending.forEach { lane -> lane.onAwait { lane to it } }
+                }
+                pending.remove(done)
+                result.getOrNull()?.let { text ->
+                    pending.forEach { it.cancel() }
+                    return@coroutineScope text
+                }
+                lastError = result.exceptionOrNull()
+            }
+            throw lastError ?: GeminiException(GeminiError.NETWORK)
         }
-        // Das kostenlose Kontingent ist zeitweise überlastet (503) → automatisch erneut versuchen.
+    }
+
+    /** Ein Modell; bei Überlastung (5xx) oder Netzwerkfehler bis zu [MAX_ATTEMPTS] Versuche. */
+    private suspend fun callWithRetries(model: String, request: String, timeoutMs: Int, onFailure: () -> Unit): String {
         var attempt = 0
-        var body: String? = null
-        while (body == null) {
+        while (true) {
             attempt++
             val error = try {
-                body = Http.postJson(
-                    url = "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent",
-                    body = request.toString(),
+                val body = Http.postJson(
+                    url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent",
+                    body = request,
                     headers = mapOf("x-goog-api-key" to apiKey),
                     timeoutMs = timeoutMs,
                 )
-                null
+                return GeminiResponseParser.answerText(body) ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
             } catch (e: HttpStatusException) {
                 GeminiException(errorFor(e.code), e)
             } catch (e: SocketTimeoutException) {
@@ -120,13 +158,11 @@ class GeminiClient(private val apiKey: String) {
             } catch (e: IOException) {
                 GeminiException(GeminiError.NETWORK, e)
             }
-            if (error != null) {
-                val retryable = error.error == GeminiError.OVERLOADED || error.error == GeminiError.NETWORK
-                if (!retryable || attempt >= MAX_ATTEMPTS) throw error
-                delay(RETRY_DELAY_MS * attempt)
-            }
+            onFailure()
+            val retryable = error.error == GeminiError.OVERLOADED || error.error == GeminiError.NETWORK
+            if (!retryable || attempt >= MAX_ATTEMPTS) throw error
+            delay(RETRY_DELAY_MS * attempt)
         }
-        return GeminiResponseParser.answerText(body) ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
     }
 
     internal val key: String get() = apiKey
@@ -144,10 +180,13 @@ class GeminiClient(private val apiKey: String) {
         private const val RETRY_DELAY_MS = 2_500L
 
         /**
-         * Flash-Lite: im kostenlosen Kontingent schnell (wenige Sekunden). Das große Flash-Modell
-         * brauchte im Test 90–160 s pro Anfrage und ist für die Erfassung zu langsam.
+         * Im kostenlosen Kontingent gemessen (Okt. 2026): 3.1-Flash-Lite meist 2–13 s,
+         * „flash-lite-latest“ (3.5) 30–60 s, große Flash-Modelle oft überlastet oder 90–160 s.
          */
-        const val MODEL = "gemini-flash-lite-latest"
+        const val MODEL = "gemini-3.1-flash-lite"
+        /** Springt ein, wenn [MODEL] hängt oder überlastet ist. */
+        const val FALLBACK_MODEL = "gemini-flash-lite-latest"
+        private const val HEDGE_DELAY_MS = 12_000L
 
         private const val COMMON_RULES = """
 Für jede Komponente: kurzer deutscher Name, Menge (g bei festen, ml bei flüssigen Lebensmitteln)

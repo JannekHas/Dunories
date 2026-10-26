@@ -1,6 +1,9 @@
 package de.kalorienapp.data.remote
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -77,6 +80,25 @@ internal object Http {
         timeoutMs: Int,
     ): String = withContext(Dispatchers.IO) {
         val connection = URL(url).openConnection() as HttpURLConnection
+        // Blockierendes Lesen reagiert nicht auf Abbruch → bei Abbruch die Verbindung trennen
+        // (z. B. wenn beim KI-Rennen die andere Anfrage schneller war).
+        coroutineScope {
+            val abort = launch { try { awaitCancellation() } finally { connection.disconnect() } }
+            try {
+                blockingRequest(connection, method, body, headers, timeoutMs)
+            } finally {
+                abort.cancel()
+            }
+        }
+    }
+
+    private fun blockingRequest(
+        connection: HttpURLConnection,
+        method: String,
+        body: String?,
+        headers: Map<String, String>,
+        timeoutMs: Int,
+    ): String {
         try {
             connection.requestMethod = method
             connection.connectTimeout = 15_000
@@ -92,7 +114,7 @@ internal object Http {
             val stream = if (code in 200..299) connection.inputStream else connection.errorStream
             val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
             if (code !in 200..299) throw HttpStatusException(code, "HTTP $code")
-            text
+            return text
         } finally {
             connection.disconnect()
         }

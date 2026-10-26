@@ -18,6 +18,9 @@ import de.kalorienapp.domain.RecipeCalculator
 import de.kalorienapp.domain.model.RecipeDraft
 import de.kalorienapp.domain.model.RecipeSource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
@@ -95,8 +98,11 @@ class RecipeImporter(
             return ImportResult.Failure(ImportFailure.LINK_UNREADABLE, platform)
         }
         val imageUrls = (listOfNotNull(post.coverUrl) + post.imageUrls).distinct().take(MAX_IMAGES)
-        val bitmaps = imageUrls.mapNotNull { imageUrl ->
-            runCatching { decode(social.downloadImage(imageUrl)) }.getOrNull()
+        // Gleichzeitig laden – nacheinander dauerte das bei 6 Bildern spürbar.
+        val bitmaps = coroutineScope {
+            imageUrls.map { imageUrl ->
+                async { runCatching { decode(social.downloadImage(imageUrl)) }.getOrNull() }
+            }.awaitAll().filterNotNull()
         }
         val source = when (post.platform) {
             SocialPlatform.TIKTOK -> RecipeSource.TIKTOK
