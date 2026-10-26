@@ -1,6 +1,8 @@
 package de.kalorienapp.ui.today
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -57,50 +59,50 @@ fun WaterCard(
         WaterGoalDialog(state, onSave = { onGoal(it); editGoal = false }, onDismiss = { editGoal = false })
     }
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(painterResource(R.drawable.ic_water_drop), contentDescription = null, tint = Neon.Blue, modifier = Modifier.size(22.dp))
-                Text(
-                    stringResource(R.string.water_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 8.dp).weight(1f),
-                )
-                Text(
-                    stringResource(R.string.water_value, liters(state.ml), liters(state.goalMl)),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (state.ml >= state.goalMl) Neon.Green else Neon.TextPrimary,
-                )
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Eine Zeile: Titel + Stand (antippen = Ziel ändern), zwei Schnellknöpfe, Rückgängig.
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClickLabel = stringResource(R.string.water_goal_title)) { editGoal = true },
+                ) {
+                    Icon(painterResource(R.drawable.ic_water_drop), contentDescription = null, tint = Neon.Blue, modifier = Modifier.size(20.dp))
+                    Column(Modifier.padding(start = 6.dp)) {
+                        Text(stringResource(R.string.water_title), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                        Text(
+                            stringResource(R.string.water_value, liters(state.ml), liters(state.goalMl)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (state.ml >= state.goalMl) Neon.Green else Neon.TextSecondary,
+                        )
+                    }
+                }
+                val padding = PaddingValues(horizontal = 10.dp)
+                Button(
+                    onClick = { onAdd(Water.GLASS_ML) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Neon.Blue, contentColor = Neon.OnNeon),
+                    contentPadding = padding,
+                    modifier = Modifier.height(36.dp),
+                ) { Text(stringResource(R.string.water_glass), style = MaterialTheme.typography.labelMedium) }
+                Button(
+                    onClick = { onAdd(Water.BOTTLE_ML) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
+                    contentPadding = padding,
+                    modifier = Modifier.height(36.dp),
+                ) { Text(stringResource(R.string.water_bottle), style = MaterialTheme.typography.labelMedium) }
+                IconButton(onClick = onUndo, enabled = state.ml > 0, modifier = Modifier.size(36.dp)) {
+                    Icon(painterResource(R.drawable.ic_undo), stringResource(R.string.water_undo), tint = Neon.TextSecondary)
+                }
             }
             LinearProgressIndicator(
                 progress = { (state.ml.toFloat() / state.goalMl).coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(50)),
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)),
                 color = Neon.Blue,
                 trackColor = Neon.Track,
                 drawStopIndicator = {},
             )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = { onAdd(Water.GLASS_ML) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Neon.Blue, contentColor = Neon.OnNeon),
-                    modifier = Modifier.weight(1f),
-                ) { Text(stringResource(R.string.water_glass)) }
-                Button(
-                    onClick = { onAdd(Water.BOTTLE_ML) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
-                    modifier = Modifier.weight(1f),
-                ) { Text(stringResource(R.string.water_bottle)) }
-                IconButton(onClick = onUndo, enabled = state.ml > 0) {
-                    Icon(painterResource(R.drawable.ic_undo), stringResource(R.string.water_undo), tint = Neon.TextSecondary)
-                }
-            }
-            TextButton(onClick = { editGoal = true }, modifier = Modifier.align(Alignment.End)) {
-                Text(
-                    stringResource(if (state.customGoal) R.string.water_goal_custom else R.string.water_goal_auto, liters(state.goalMl)),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Neon.TextSecondary,
-                )
-            }
         }
     }
 }

@@ -46,6 +46,10 @@
 
     <!-- Profil -->
     <string name="profile_title">Profil &amp; Ziele</string>
+    <string name="profile_tab_goals">Ziele</string>
+    <string name="profile_tab_fasting">Fasten</string>
+    <string name="profile_tab_notifications">Hinweise</string>
+    <string name="profile_tab_data">Daten</string>
     <string name="profile_autosave_hint">Änderungen werden automatisch gespeichert.</string>
     <string name="section_body">Körperdaten</string>
     <string name="section_goal">Ziel</string>
@@ -196,6 +200,9 @@
     <string name="calendar_over">Drüber</string>
     <string name="calendar_no_data">Kein Eintrag</string>
     <string name="stats_title">Statistik</string>
+    <string name="stats_tab_food">Ernährung</string>
+    <string name="stats_tab_body">Körper</string>
+    <string name="stats_tab_ai">KI</string>
     <string name="stats_period_week">7 Tage</string>
     <string name="stats_period_month">30 Tage</string>
     <string name="stats_chart_caption">Balken: gegessen (Farbe = Zielerreichung) · Strich: Budget (Ziel + Aktivitäten)</string>
@@ -487,8 +494,6 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="water_glass">+ 250 ml</string>
     <string name="water_bottle">+ 500 ml</string>
     <string name="water_undo">Letzten Eintrag zurücknehmen</string>
-    <string name="water_goal_auto">Ziel %1$s l (automatisch) · ändern</string>
-    <string name="water_goal_custom">Ziel %1$s l · ändern</string>
     <string name="water_goal_title">Wasser-Tagesziel</string>
     <string name="water_goal_hint">Leer lassen = automatisch 35 ml pro kg Körpergewicht.</string>
     <string name="water_goal_label">Tagesziel</string>

@@ -13,9 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -59,6 +58,7 @@ import de.kalorienapp.domain.model.WeightEntry
 import de.kalorienapp.domain.model.WeightGoal
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.ChoiceChips
+import de.kalorienapp.ui.components.TabbedPages
 import de.kalorienapp.ui.components.NeonPill
 import de.kalorienapp.ui.components.NumberField
 import de.kalorienapp.ui.components.format
@@ -87,8 +87,10 @@ fun StatsScreen(
     val generation by viewModel.reportGeneration.collectAsStateWithLifecycle()
     val fastingStats by viewModel.fastingStats.collectAsStateWithLifecycle()
     var showWeightDialog by remember { mutableStateOf(false) }
+    val pagerState = rememberPagerState { 3 }
     LaunchedEffect(openWeighDialog) {
         if (openWeighDialog) {
+            pagerState.scrollToPage(TAB_BODY)
             showWeightDialog = true
             onWeighDialogShown()
         }
@@ -118,60 +120,69 @@ fun StatsScreen(
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.stats_title)) }) }) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            WeeklyReportSection(
-                reports = state.reports,
-                generation = generation,
-                onGenerate = { viewModel.generateReport(onOpenReport) },
-                onOpen = { onOpenReport(it.id) },
-            )
-            ChoiceChips(
-                options = StatsPeriod.entries,
-                selected = state.period,
-                onSelect = viewModel::selectPeriod,
-                label = { stringResource(if (it == StatsPeriod.WEEK) R.string.stats_period_week else R.string.stats_period_month) },
-            )
-            val stats = state.stats
-            if (stats != null) {
-                KcalBarChart(stats.days, Modifier.fillMaxWidth())
-                Text(
-                    stringResource(R.string.stats_chart_caption),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Neon.TextSecondary,
+        TabbedPages(
+            tabs = listOf(
+                stringResource(R.string.stats_tab_food),
+                stringResource(R.string.stats_tab_body),
+                stringResource(R.string.stats_tab_ai),
+            ),
+            pagerState = pagerState,
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) { page ->
+            when (page) {
+                TAB_FOOD -> {
+                    ChoiceChips(
+                        options = StatsPeriod.entries,
+                        selected = state.period,
+                        onSelect = viewModel::selectPeriod,
+                        label = { stringResource(if (it == StatsPeriod.WEEK) R.string.stats_period_week else R.string.stats_period_month) },
+                    )
+                    val stats = state.stats
+                    if (stats != null) {
+                        KcalBarChart(stats.days, Modifier.fillMaxWidth())
+                        Text(
+                            stringResource(R.string.stats_chart_caption),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Neon.TextSecondary,
+                        )
+                        if (stats.loggedDays == 0) {
+                            Text(stringResource(R.string.stats_no_data), style = MaterialTheme.typography.bodyMedium)
+                        } else {
+                            SummaryPills(stats)
+                            AverageCard(stats, state.targets, state.sex)
+                            fastingStats?.let { FastingStatsCard(it) }
+                        }
+                    }
+                }
+                TAB_BODY -> {
+                    WeightSection(
+                        entries = state.weights,
+                        trend = state.weightTrend,
+                        onAdd = { showWeightDialog = true },
+                        onDelete = viewModel::deleteWeight,
+                    )
+                    BodyMeasurementsSection()
+                    if (state.reachedGoals.isNotEmpty()) {
+                        HorizontalDivider()
+                        Text(stringResource(R.string.goal_history_title), style = MaterialTheme.typography.titleLarge)
+                        state.reachedGoals.forEach { goal ->
+                            GoalHistoryItem(goal, onDelete = { goalToDelete = goal })
+                        }
+                    }
+                }
+                else -> WeeklyReportSection(
+                    reports = state.reports,
+                    generation = generation,
+                    onGenerate = { viewModel.generateReport(onOpenReport) },
+                    onOpen = { onOpenReport(it.id) },
                 )
-                if (stats.loggedDays == 0) {
-                    Text(stringResource(R.string.stats_no_data), style = MaterialTheme.typography.bodyMedium)
-                } else {
-                    SummaryPills(stats)
-                    AverageCard(stats, state.targets, state.sex)
-                    fastingStats?.let { FastingStatsCard(it) }
-                }
-            }
-            WeightSection(
-                entries = state.weights,
-                trend = state.weightTrend,
-                onAdd = { showWeightDialog = true },
-                onDelete = viewModel::deleteWeight,
-            )
-            BodyMeasurementsSection()
-            if (state.reachedGoals.isNotEmpty()) {
-                HorizontalDivider()
-                Text(stringResource(R.string.goal_history_title), style = MaterialTheme.typography.titleLarge)
-                state.reachedGoals.forEach { goal ->
-                    GoalHistoryItem(goal, onDelete = { goalToDelete = goal })
-                }
             }
         }
     }
 }
+
+private const val TAB_FOOD = 0
+private const val TAB_BODY = 1
 
 private fun percent(value: Double?) = value?.let { "${(it * 100).roundToInt()} %" } ?: "–"
 

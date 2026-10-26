@@ -1,11 +1,7 @@
 package de.kalorienapp.ui.profile
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.ui.AppViewModelProvider
+import de.kalorienapp.ui.components.TabbedPages
 import de.kalorienapp.ui.fasting.FastingSettingsSection
 import de.kalorienapp.ui.goal.GoalCard
 
@@ -38,37 +35,36 @@ fun ProfileScreen(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.profile_title)) }) },
     ) { padding ->
         if (state.isLoading) return@Scaffold
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                stringResource(R.string.profile_autosave_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            TargetsCard(state.targets, atMinimum = state.form.kcalOverride.isBlank() && state.targets?.kcal == GoalCalculator.MIN_KCAL_TARGET)
-            SectionTitle(stringResource(R.string.section_body))
-            BodyDataSection(state.form, viewModel::update)
-            HorizontalDivider()
-            SectionTitle(stringResource(R.string.section_goal))
-            GoalCard(state.goalState, onNewGoal)
-            HorizontalDivider()
-            SectionTitle(stringResource(R.string.section_targets))
-            TargetAdjustmentsSection(state, viewModel::update)
-            HorizontalDivider()
-            SectionTitle(stringResource(R.string.section_fasting))
-            FastingSettingsSection()
-            HorizontalDivider()
-            SectionTitle(stringResource(R.string.section_notifications))
-            NotificationSettingsSection()
-            HorizontalDivider()
-            SectionTitle(stringResource(R.string.section_backup))
-            BackupSection()
+        TabbedPages(
+            tabs = listOf(
+                stringResource(R.string.profile_tab_goals),
+                stringResource(R.string.profile_tab_fasting),
+                stringResource(R.string.profile_tab_notifications),
+                stringResource(R.string.profile_tab_data),
+            ),
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) { page ->
+            when (page) {
+                0 -> {
+                    Text(
+                        stringResource(R.string.profile_autosave_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TargetsCard(state.targets, atMinimum = state.form.kcalOverride.isBlank() && state.targets?.kcal == GoalCalculator.MIN_KCAL_TARGET)
+                    SectionTitle(stringResource(R.string.section_goal))
+                    GoalCard(state.goalState, onNewGoal)
+                    HorizontalDivider()
+                    SectionTitle(stringResource(R.string.section_body))
+                    BodyDataSection(state.form, viewModel::update)
+                    HorizontalDivider()
+                    SectionTitle(stringResource(R.string.section_targets))
+                    TargetAdjustmentsSection(state, viewModel::update)
+                }
+                1 -> FastingSettingsSection()
+                2 -> NotificationSettingsSection()
+                else -> BackupSection()
+            }
         }
     }
 }

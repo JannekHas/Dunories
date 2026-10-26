@@ -241,8 +241,8 @@ fun TodayScreen(
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (!state.hasGoal && state.isToday) {
                 item(key = "goal_banner") { GoalBanner(onSetGoal) }
@@ -329,9 +329,9 @@ private fun SummaryCard(
     val over = summary.remainingKcal < 0
     val budget = (summary.targets.kcal + summary.activityKcal).coerceAtLeast(1)
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Außen Kalorien (Regenbogen), innen Protein, Kohlenhydrate, Fett.
         ConcentricRings(
@@ -341,7 +341,8 @@ private fun SummaryCard(
                 RingSpec(ratio(summary.eaten.carbsG, summary.targets.carbsG), listOf(MacroColors.carbs)),
                 RingSpec(ratio(summary.eaten.fatG, summary.targets.fatG), listOf(MacroColors.fat)),
             ),
-            modifier = Modifier.fillMaxWidth(0.82f),
+            // Kleiner als früher (0,82), damit die Mahlzeiten ohne viel Scrollen sichtbar sind.
+            modifier = Modifier.fillMaxWidth(0.62f),
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
