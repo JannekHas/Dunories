@@ -415,6 +415,9 @@ private fun SummaryCard(
             ),
             // Kleiner als früher (0,82), damit die Mahlzeiten ohne viel Scrollen sichtbar sind.
             modifier = Modifier.fillMaxWidth(0.62f),
+            // Schlankere Ringe → mehr Platz in der Mitte für Zahl und „Verbleibend“.
+            strokeWidth = 12.dp,
+            gap = 5.dp,
         ) {
             // Zahl zählt beim Eintragen weich mit, statt zu springen.
             val shownKcal by animateIntAsState(
@@ -431,7 +434,7 @@ private fun SummaryCard(
                 )
                 Text(
                     stringResource(if (over) R.string.kcal_over else R.string.kcal_remaining),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = Neon.TextSecondary,
                 )
             }
