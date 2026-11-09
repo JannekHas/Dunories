@@ -26,6 +26,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -114,6 +117,11 @@ fun OnboardingScreen(
             val form: ProfileFormState = state.form
             when (step) {
                 0 -> {
+                    Image(
+                        painterResource(R.drawable.wordmark_dunories),
+                        contentDescription = stringResource(R.string.app_name),
+                        modifier = Modifier.padding(vertical = 12.dp).fillMaxWidth(0.62f).align(Alignment.CenterHorizontally),
+                    )
                     StepIntro(stringResource(R.string.onboarding_body_intro))
                     BodyDataSection(form, viewModel::update)
                 }

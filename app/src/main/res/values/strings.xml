@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">KalorienApp</string>
+    <string name="app_name">Dunories</string>
 
     <!-- Allgemein -->
     <string name="save">Speichern</string>
@@ -277,7 +277,7 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="recipes_all">Alle</string>
     <string name="recipes_no_match">Keine passenden Rezepte.</string>
     <string name="recipes_empty_title">Noch keine Rezepte</string>
-    <string name="recipes_empty_text">Teile ein Rezept-Video aus TikTok oder Instagram über „Teilen“ an die KalorienApp – die KI erkennt Zutaten, Schritte und Nährwerte. Oder lege mit + selbst ein Rezept an.</string>
+    <string name="recipes_empty_text">Teile ein Rezept-Video aus TikTok oder Instagram über „Teilen“ an Dunories – die KI erkennt Zutaten, Schritte und Nährwerte. Oder lege mit + selbst ein Rezept an.</string>
     <string name="recipe_new">Neues Rezept</string>
     <string name="recipe_edit">Rezept bearbeiten</string>
     <string name="recipe_not_found">Rezept nicht gefunden.</string>
@@ -363,7 +363,7 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="category_delete_title">„%1$s“ löschen?</string>
     <string name="category_delete_text">Die Rezepte bleiben erhalten, nur die Kategorie wird entfernt.</string>
     <string name="recipe_import_link">Link einfügen</string>
-    <string name="recipe_import_link_hint">Füge einen TikTok- oder Instagram-Link ein. Schneller geht es direkt in der App über „Teilen“ → KalorienApp.</string>
+    <string name="recipe_import_link_hint">Füge einen TikTok- oder Instagram-Link ein. Schneller geht es direkt in der App über „Teilen“ → Dunories.</string>
     <string name="recipe_import_link_placeholder">https://www.tiktok.com/…</string>
     <string name="recipe_import_start">Analysieren</string>
     <string name="recipe_import_title">Rezept importieren</string>
@@ -385,8 +385,8 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="import_fail_ai_title">Analyse fehlgeschlagen</string>
     <string name="import_fail_file_title">Datei nicht lesbar</string>
     <string name="import_fail_file_text">Die geteilte Datei konnte nicht geöffnet werden.</string>
-    <string name="import_tip_tiktok">Tipp: Wird das Rezept nur im Video gezeigt, speichere das Video in TikTok („Video speichern“) und teile die Datei an die KalorienApp – oder teile Screenshots.</string>
-    <string name="import_tip_instagram">Tipp: Instagram gibt Beiträge oft nicht frei. Teile stattdessen Screenshots vom Rezept oder eine Bildschirmaufnahme des Reels an die KalorienApp.</string>
+    <string name="import_tip_tiktok">Tipp: Wird das Rezept nur im Video gezeigt, speichere das Video in TikTok („Video speichern“) und teile die Datei an Dunories – oder teile Screenshots.</string>
+    <string name="import_tip_instagram">Tipp: Instagram gibt Beiträge oft nicht frei. Teile stattdessen Screenshots vom Rezept oder eine Bildschirmaufnahme des Reels an Dunories.</string>
     <!-- Benachrichtigungen -->
     <string name="section_notifications">Benachrichtigungen</string>
     <string name="channel_calories">Verbleibende Kalorien</string>
@@ -467,7 +467,7 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="backup_restore_text">Alle aktuellen Daten in der App werden durch die Sicherung ersetzt. Das lässt sich nicht rückgängig machen. Die App startet danach neu.</string>
     <string name="backup_restore_confirm">Ersetzen</string>
     <string name="backup_error_create">Die Sicherung konnte nicht erstellt werden.</string>
-    <string name="backup_error_invalid">Das ist keine gültige KalorienApp-Sicherung.</string>
+    <string name="backup_error_invalid">Das ist keine gültige Dunories-Sicherung.</string>
     <string name="backup_error_newer">Die Sicherung stammt aus einer neueren App-Version. Bitte erst die App aktualisieren.</string>
     <!-- Einkaufsliste -->
     <string name="shopping_title">Einkaufsliste</string>

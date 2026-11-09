@@ -88,6 +88,6 @@ class BackupFormatTest {
 
     @Test
     fun dateiname() {
-        assertEquals("KalorienApp-Sicherung-2026-10-23.zip", BackupFormat.fileName(LocalDate.of(2026, 10, 23)))
+        assertEquals("Dunories-Sicherung-2026-10-23.zip", BackupFormat.fileName(LocalDate.of(2026, 10, 23)))
     }
 }

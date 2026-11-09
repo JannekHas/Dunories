@@ -107,5 +107,5 @@ object BackupFormat {
     fun relocate(oldPath: String, imagesDir: String): String =
         imagesDir.trimEnd('/', '\\') + "/" + oldPath.substringAfterLast('/').substringAfterLast('\\')
 
-    fun fileName(date: java.time.LocalDate) = "KalorienApp-Sicherung-$date.zip"
+    fun fileName(date: java.time.LocalDate) = "Dunories-Sicherung-$date.zip"
 }
