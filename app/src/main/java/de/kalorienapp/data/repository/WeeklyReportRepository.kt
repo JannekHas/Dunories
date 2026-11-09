@@ -7,7 +7,6 @@ import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.db.dao.WeeklyReportDao
 import de.kalorienapp.data.db.entity.WeeklyReportEntity
 import de.kalorienapp.data.remote.gemini.GeminiWeeklyAnalyzer
-import de.kalorienapp.domain.Fasting
 import de.kalorienapp.domain.Water
 import de.kalorienapp.domain.WeeklyInput
 import de.kalorienapp.domain.WeeklyInputBuilder
@@ -69,16 +68,9 @@ class WeeklyReportRepository(
             )
         }
         val fasting = settings.fastingConfig.value.takeIf { settings.fastingEnabled.value }
-        val input = if (fasting == null) baseInput else baseInput.copy(
-            fasting = fasting,
-            fastingStats = Fasting.stats(
-                config = fasting,
-                days = baseInput.days.map { it.date },
-                entryTimes = statsRepository.entryTimes(from.minusDays(1), to).first(),
-                kcalByDay = baseInput.days.associate { it.date to it.eaten.kcal },
-                sex = state.profile.sex,
-            ),
-        )
+        // Nur der Plan, keine „eingehalten“-Auswertung: nachträglich erfasste Einträge sähen wie
+        // Essen in der Fastenzeit aus – das wäre falsch und demotivierend (Wunsch des Nutzers).
+        val input = if (fasting == null) baseInput else baseInput.copy(fasting = fasting)
         val logged = WeeklyInputBuilder.loggedDays(input)
         if (logged < WeeklyInputBuilder.MIN_LOGGED_DAYS) throw NotEnoughDataException(logged)
         val report = analyzer.analyze(WeeklyInputBuilder.build(input), from, to)

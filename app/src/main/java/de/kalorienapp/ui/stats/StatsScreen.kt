@@ -46,7 +46,6 @@ import de.kalorienapp.ui.components.ChoiceChips
 import de.kalorienapp.ui.components.TabbedPages
 import de.kalorienapp.ui.components.NeonPill
 import de.kalorienapp.ui.components.format
-import de.kalorienapp.ui.fasting.FastingStatsCard
 import de.kalorienapp.ui.theme.Neon
 import java.time.LocalDate
 import kotlin.math.roundToInt
@@ -61,7 +60,6 @@ fun StatsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val generation by viewModel.reportGeneration.collectAsStateWithLifecycle()
-    val fastingStats by viewModel.fastingStats.collectAsStateWithLifecycle()
 
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.stats_title)) }) }) { padding ->
         TabbedPages(
@@ -98,7 +96,6 @@ fun StatsScreen(
                         )
                         SummaryPills(stats)
                         AverageCard(stats, state.targets, state.sex)
-                        fastingStats?.let { FastingStatsCard(it) }
                     }
                 }
                 TAB_CALENDAR -> CalendarSection(onDayClick = onDayClick)
