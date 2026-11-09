@@ -184,10 +184,14 @@ class CaptureViewModel(
 
     fun toggleExpanded(id: Long) = updateProposal { p -> p.copy(expandedId = if (p.expandedId == id) null else id) }
 
+    /** Schutz gegen Doppeltippen: sonst würde dasselbe Essen zweimal gespeichert. */
+    private var saving = false
+
     fun saveAll(onDone: () -> Unit) {
         val current = _state.value
         val proposal = current.step as? CaptureStep.Proposal ?: return
-        if (!proposal.canSave) return
+        if (!proposal.canSave || saving) return
+        saving = true
         val date = LocalDate.ofEpochDay(route.epochDay)
         val now = System.currentTimeMillis()
         val entries = proposal.items.mapIndexedNotNull { index, item ->

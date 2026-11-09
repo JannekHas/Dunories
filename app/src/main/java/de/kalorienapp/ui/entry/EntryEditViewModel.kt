@@ -63,11 +63,15 @@ class EntryEditViewModel(
 
     fun onMealTypeChange(value: MealType) = _state.update { it.copy(mealType = value) }
 
+    /** Schutz gegen Doppeltippen: sonst würde dasselbe Essen zweimal gespeichert. */
+    private var saving = false
+
     fun save(onDone: () -> Unit) {
         val current = _state.value
         val form = current.form
         val total = form.totalNutrients()
-        if (!form.isValid || total == null) return
+        if (!form.isValid || total == null || saving) return
+        saving = true
         val entry = FoodEntry(
             id = existing?.id ?: 0,
             date = existing?.date ?: LocalDate.ofEpochDay(route.epochDay),

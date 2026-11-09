@@ -48,7 +48,7 @@ class FoodAnalyzer(
     suspend fun analyzeLabel(uri: Uri, onStage: (AnalysisStage) -> Unit): List<FoodDraft> {
         onStage(AnalysisStage.AI)
         val bitmap = ImageLoader.load(context, uri, maxSide = LABEL_MAX_SIDE)
-        return gemini.analyzeLabel(ImageLoader.toJpeg(bitmap, quality = 90))
+        return gemini.analyzeLabel(ImageLoader.toAiImage(bitmap, quality = 90))
     }
 
     suspend fun analyzeText(description: String, onStage: (AnalysisStage) -> Unit): List<FoodDraft> {
@@ -59,8 +59,7 @@ class FoodAnalyzer(
     private suspend fun analyzeWithAi(bitmap: Bitmap, onStage: (AnalysisStage) -> Unit): List<FoodDraft> {
         onStage(AnalysisStage.AI)
         // Kleineres Bild spart Upload-Zeit und Tokens, reicht für die Erkennung.
-        val jpeg = ImageLoader.toJpeg(ImageLoader.scaleDown(bitmap, AI_MAX_SIDE))
-        return gemini.analyzePhoto(jpeg)
+        return gemini.analyzePhoto(ImageLoader.toAiImage(ImageLoader.scaleDown(bitmap, AI_MAX_SIDE)))
     }
 
     private companion object {

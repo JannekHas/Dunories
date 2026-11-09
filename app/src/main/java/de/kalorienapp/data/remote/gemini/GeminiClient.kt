@@ -45,13 +45,13 @@ class GeminiException(val error: GeminiError, cause: Throwable? = null) : Except
  */
 class GeminiClient(private val apiKey: String) {
 
-    suspend fun analyzePhoto(jpeg: ByteArray): List<FoodDraft> {
-        val image = Base64.getEncoder().encodeToString(jpeg)
+    suspend fun analyzePhoto(imageBytes: ByteArray): List<FoodDraft> {
+        val image = Base64.getEncoder().encodeToString(imageBytes)
         return generate(EntrySource.AI_PHOTO) {
             addJsonObject { put("text", PHOTO_PROMPT) }
             addJsonObject {
                 putJsonObject("inline_data") {
-                    put("mime_type", "image/jpeg")
+                    put("mime_type", IMAGE_MIME)
                     put("data", image)
                 }
             }
@@ -59,13 +59,13 @@ class GeminiClient(private val apiKey: String) {
     }
 
     /** Foto einer Nährwerttabelle exakt ablesen (keine Schätzung). */
-    suspend fun analyzeLabel(jpeg: ByteArray): List<FoodDraft> {
-        val image = Base64.getEncoder().encodeToString(jpeg)
+    suspend fun analyzeLabel(imageBytes: ByteArray): List<FoodDraft> {
+        val image = Base64.getEncoder().encodeToString(imageBytes)
         return generate(EntrySource.LABEL) {
             addJsonObject { put("text", LABEL_PROMPT) }
             addJsonObject {
                 putJsonObject("inline_data") {
-                    put("mime_type", "image/jpeg")
+                    put("mime_type", IMAGE_MIME)
                     put("data", image)
                 }
             }
@@ -186,6 +186,9 @@ class GeminiClient(private val apiKey: String) {
     internal val key: String get() = apiKey
 
     companion object {
+        /** Bilder gehen als WebP an die KI (kleiner als JPEG → schnellerer Upload). */
+        const val IMAGE_MIME = "image/webp"
+
         internal fun errorFor(code: Int): GeminiError = when (code) {
             429 -> GeminiError.QUOTA
             // Ungültiger Key liefert je nach Fall 400, 401 oder 403.

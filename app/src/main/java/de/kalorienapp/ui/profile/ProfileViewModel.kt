@@ -100,13 +100,18 @@ class ProfileViewModel(
         }
     }
 
+    /** Schutz gegen Doppeltippen (sonst doppelte Gewichtsmessung und doppeltes Ziel). */
+    private var saving = false
+
     /**
      * Onboarding-Abschluss: Profil und erstes Ziel speichern;
      * das Startgewicht wird die erste Messung im Gewichtsverlauf.
      */
     fun save(onSaved: () -> Unit) {
+        if (saving) return
         val profile = _uiState.value.form.toProfile(currentYear) ?: return
         val goal = _uiState.value.goalState?.goal ?: return
+        saving = true
         viewModelScope.launch {
             repository.save(profile)
             weightRepository.save(WeightEntry(measuredAt = Instant.now(), weightKg = profile.weightKg))

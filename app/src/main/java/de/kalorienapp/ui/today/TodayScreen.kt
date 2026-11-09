@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.pluralStringResource
 import de.kalorienapp.ui.components.pressable
+import de.kalorienapp.ui.components.SkeletonBlock
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -257,6 +259,10 @@ fun TodayScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = if (onBack != null) 88.dp else 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            if (!state.loaded) {
+                item(key = "skeleton") { TodaySkeleton() }
+                return@LazyColumn
+            }
             if (!state.hasGoal && state.isToday) {
                 item(key = "goal_banner") { GoalBanner(onSetGoal) }
             }
@@ -299,6 +305,25 @@ fun TodayScreen(
                     onSaveCombo = { comboToSave = group },
                 )
             }
+        }
+    }
+}
+
+/** Platzhalter in der Form von Ringen, Kacheln und Mahlzeiten, solange „Heute“ lädt. */
+@Composable
+private fun TodaySkeleton() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        SkeletonBlock(CircleShape, Modifier.fillMaxWidth(0.62f).aspectRatio(1f))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            repeat(3) { SkeletonBlock(RoundedCornerShape(14.dp), Modifier.weight(1f).height(56.dp)) }
+        }
+        repeat(3) { SkeletonBlock(RoundedCornerShape(6.dp), Modifier.fillMaxWidth().height(18.dp)) }
+        repeat(MealType.entries.size) {
+            SkeletonBlock(RoundedCornerShape(12.dp), Modifier.fillMaxWidth().height(48.dp))
         }
     }
 }

@@ -55,6 +55,8 @@ data class TodayUiState(
     val sex: Sex? = null,
     /** false → Hinweis „Kein aktives Gewichtsziel“. */
     val hasGoal: Boolean = true,
+    /** false, solange die Datenbank noch lädt → Platzhalter statt leerem Bildschirm. */
+    val loaded: Boolean = false,
 ) {
     fun isFavorite(entry: FoodEntry) = entry.name.lowercase() in favoriteNames
 
@@ -110,6 +112,7 @@ class TodayViewModel(
                     favoriteNames = favorites.map { it.name.lowercase() }.toSet(),
                     hasGoal = goalState == null || goalState.goal != null,
                     sex = goalState?.profile?.sex,
+                    loaded = true,
                 )
             }
         }

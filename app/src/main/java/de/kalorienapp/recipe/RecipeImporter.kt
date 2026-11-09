@@ -112,7 +112,7 @@ class RecipeImporter(
         val input = RecipeAnalysisInput(
             caption = post.caption,
             transcript = post.transcript,
-            images = bitmaps.map(::toAiJpeg),
+            images = bitmaps.map(::toAiImage),
             source = source,
             sourceUrl = post.url,
         )
@@ -129,7 +129,7 @@ class RecipeImporter(
         }
         if (bitmaps.isEmpty()) return ImportResult.Failure(ImportFailure.FILE_UNREADABLE)
         return analyze(
-            RecipeAnalysisInput(images = bitmaps.map(::toAiJpeg), source = RecipeSource.IMAGES),
+            RecipeAnalysisInput(images = bitmaps.map(::toAiImage), source = RecipeSource.IMAGES),
             categories, onStage, bitmaps,
         )
     }
@@ -143,7 +143,7 @@ class RecipeImporter(
         try {
             uploaded = local.inputStream().let { files.upload(it, local.length(), mimeType) }
             return analyze(
-                RecipeAnalysisInput(video = uploaded, images = frames.map(::toAiJpeg), source = RecipeSource.VIDEO),
+                RecipeAnalysisInput(video = uploaded, images = frames.map(::toAiImage), source = RecipeSource.VIDEO),
                 categories, onStage, frames,
             )
         } finally {
@@ -207,7 +207,7 @@ class RecipeImporter(
 
     private fun decode(bytes: ByteArray): Bitmap? = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
 
-    private fun toAiJpeg(bitmap: Bitmap) = ImageLoader.toJpeg(ImageLoader.scaleDown(bitmap, AI_MAX_SIDE), quality = 80)
+    private fun toAiImage(bitmap: Bitmap) = ImageLoader.toAiImage(ImageLoader.scaleDown(bitmap, AI_MAX_SIDE), quality = 75)
 
     private fun GeminiException.toFailure() = when (error) {
         de.kalorienapp.data.remote.gemini.GeminiError.NO_API_KEY -> ImportFailure.NO_API_KEY

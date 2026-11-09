@@ -33,7 +33,7 @@ import kotlin.math.roundToInt
 data class RecipeAnalysisInput(
     val caption: String? = null,
     val transcript: String? = null,
-    /** JPEGs; die KI wählt per Index das Bild mit dem fertigen Gericht. */
+    /** Bilder (WebP); die KI wählt per Index das Bild mit dem fertigen Gericht. */
     val images: List<ByteArray> = emptyList(),
     val video: GeminiFile? = null,
     val source: RecipeSource,
@@ -65,12 +65,12 @@ class GeminiRecipeAnalyzer(private val client: GeminiClient) {
                     }
                 }
             }
-            input.images.forEachIndexed { index, jpeg ->
+            input.images.forEachIndexed { index, image ->
                 addJsonObject { put("text", "Bild $index:") }
                 addJsonObject {
                     putJsonObject("inline_data") {
-                        put("mime_type", "image/jpeg")
-                        put("data", Base64.getEncoder().encodeToString(jpeg))
+                        put("mime_type", GeminiClient.IMAGE_MIME)
+                        put("data", Base64.getEncoder().encodeToString(image))
                     }
                 }
             }
