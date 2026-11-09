@@ -1,13 +1,15 @@
 package de.kalorienapp.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -36,9 +38,16 @@ fun ConcentricRings(
     gap: Dp = 6.dp,
     center: @Composable BoxScope.() -> Unit = {},
 ) {
+    // Beim Öffnen von 0 hochfüllen, danach weich zum neuen Wert federn (ohne Nachschwingen, unterbrechbar).
     val animated = rings.map { ring ->
-        val value by animateFloatAsState(ring.progress.coerceIn(0f, 2f), tween(700), label = "ring")
-        value
+        val value = remember { Animatable(0f) }
+        LaunchedEffect(ring.progress) {
+            value.animateTo(
+                ring.progress.coerceIn(0f, 2f),
+                spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessVeryLow),
+            )
+        }
+        value.value
     }
     Box(modifier.aspectRatio(1f), contentAlignment = Alignment.Center) {
         Canvas(Modifier.matchParentSize()) {

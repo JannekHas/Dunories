@@ -1,6 +1,5 @@
 package de.kalorienapp.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,11 +23,12 @@ fun NeonPill(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
 ) {
+    val shape = RoundedCornerShape(14.dp)
     Surface(
         color = color,
         contentColor = Neon.OnNeon,
-        shape = RoundedCornerShape(14.dp),
-        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        shape = shape,
+        modifier = modifier.then(if (onClick != null) Modifier.pressable(onClick, shape) else Modifier),
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

@@ -1,6 +1,13 @@
 package de.kalorienapp.ui.today
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.pluralStringResource
+import de.kalorienapp.ui.components.pressable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,8 +46,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -103,6 +108,8 @@ private val dateFormatter = DateTimeFormatter.ofPattern("EEE, d. MMMM", Locale.G
 @Composable
 fun TodayScreen(
     onSetGoal: () -> Unit,
+    /** Angezeigter Tag – dorthin trägt das große „+“ der unteren Leiste ein. */
+    onDateShown: (LocalDate) -> Unit = {},
     onAddEntry: (date: LocalDate, mealType: MealType?) -> Unit,
     onEditEntry: (FoodEntry) -> Unit,
     /** Gesetzt, wenn der Tag aus dem Kalender geöffnet wurde. */
@@ -113,6 +120,8 @@ fun TodayScreen(
     val endedGoal by viewModel.endedGoal.collectAsStateWithLifecycle()
     val water by viewModel.water.collectAsStateWithLifecycle()
     val fasting by viewModel.fasting.collectAsStateWithLifecycle()
+    val streak by viewModel.streak.collectAsStateWithLifecycle()
+    LaunchedEffect(state.date) { onDateShown(state.date) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var comboToSave by remember { mutableStateOf<MealGroup?>(null) }
@@ -229,24 +238,30 @@ fun TodayScreen(
                 },
             )
         },
+        // Aus dem Kalender geöffnet: keine untere Leiste → eigener „+“-Knopf.
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onAddEntry(state.date, null) },
-                containerColor = Neon.Yellow,
-                contentColor = Neon.OnNeon,
-            ) {
-                Icon(painterResource(R.drawable.ic_camera), stringResource(R.string.add_entry))
+            if (onBack != null) {
+                FloatingActionButton(
+                    onClick = { onAddEntry(state.date, null) },
+                    containerColor = Neon.Yellow,
+                    contentColor = Neon.OnNeon,
+                ) {
+                    Icon(Icons.Filled.Add, stringResource(R.string.add_entry))
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = if (onBack != null) 88.dp else 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (!state.hasGoal && state.isToday) {
                 item(key = "goal_banner") { GoalBanner(onSetGoal) }
+            }
+            if (streak > 0 && state.isToday) {
+                item(key = "streak") { StreakBanner(streak) }
             }
             state.summary?.let { summary ->
                 item(key = "summary") {
@@ -254,7 +269,6 @@ fun TodayScreen(
                         summary = summary,
                         sex = state.sex,
                         onActivityClick = { showActivityList = true },
-                        onAddActivity = { showActivityList = true },
                     )
                 }
             }
@@ -283,6 +297,31 @@ fun TodayScreen(
                     onDelete = ::deleteWithUndo,
                     onToggleFavorite = ::toggleFavorite,
                     onSaveCombo = { comboToSave = group },
+                )
+            }
+        }
+    }
+}
+
+/** Erfolgsmoment: Serie der Tage im Ziel bis gestern. */
+@Composable
+private fun StreakBanner(days: Int) {
+    Surface(color = Neon.Green, contentColor = Neon.OnNeon, shape = RoundedCornerShape(14.dp)) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(stringResource(R.string.streak_check), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Column {
+                Text(
+                    pluralStringResource(R.plurals.streak_title, days, days),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    stringResource(if (days == 1) R.string.streak_text_first else R.string.streak_text_more),
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
         }
@@ -327,7 +366,6 @@ private fun SummaryCard(
     summary: DaySummary,
     sex: Sex?,
     onActivityClick: () -> Unit,
-    onAddActivity: () -> Unit,
 ) {
     val over = summary.remainingKcal < 0
     val budget = (summary.targets.kcal + summary.activityKcal).coerceAtLeast(1)
@@ -347,9 +385,15 @@ private fun SummaryCard(
             // Kleiner als früher (0,82), damit die Mahlzeiten ohne viel Scrollen sichtbar sind.
             modifier = Modifier.fillMaxWidth(0.62f),
         ) {
+            // Zahl zählt beim Eintragen weich mit, statt zu springen.
+            val shownKcal by animateIntAsState(
+                if (over) -summary.remainingKcal else summary.remainingKcal,
+                spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
+                label = "kcal",
+            )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    (if (over) -summary.remainingKcal else summary.remainingKcal).format(),
+                    shownKcal.format(),
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                     color = if (over) Neon.Red else Neon.TextPrimary,
@@ -379,7 +423,7 @@ private fun SummaryCard(
                 color = Neon.Orange,
                 modifier = Modifier.weight(1f),
             )
-            // Aktivität: Tippen oder „+“ öffnen die Übersicht der Aktivitäten.
+            // Aktivität: Tippen öffnet die Übersicht (dort auch „Hinzufügen“).
             NeonPill(
                 value = "+" + summary.activityKcal.format(),
                 label = stringResource(R.string.summary_activity),
@@ -387,16 +431,6 @@ private fun SummaryCard(
                 modifier = Modifier.weight(1f),
                 onClick = onActivityClick,
             )
-            FilledIconButton(
-                onClick = onAddActivity,
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = Neon.Violet,
-                    contentColor = Neon.OnNeon,
-                ),
-                modifier = Modifier.size(40.dp),
-            ) {
-                Icon(Icons.Filled.Add, stringResource(R.string.activity_add_title))
-            }
         }
 
         NutrientLegend(summary, sex)
@@ -543,9 +577,15 @@ private fun MealCard(
 ) {
     var menu by remember { mutableStateOf(false) }
     Card(modifier = Modifier.fillMaxWidth()) {
-        Surface(color = group.mealType.neonColor, contentColor = Neon.OnNeon, shape = RoundedCornerShape(12.dp)) {
+        // Kopfzeile antippen = in diese Mahlzeit eintragen (statt eigenem „+“-Knopf).
+        Surface(
+            color = group.mealType.neonColor,
+            contentColor = Neon.OnNeon,
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.pressable(onAdd, RoundedCornerShape(12.dp)),
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = 16.dp, end = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -559,6 +599,13 @@ private fun MealCard(
                         stringResource(R.string.kcal_value, group.total.kcal.format()),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                } else {
+                    Text(
+                        stringResource(R.string.meal_add_hint),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(end = 12.dp),
                     )
                 }
                 if (group.entries.isNotEmpty()) {
@@ -574,9 +621,6 @@ private fun MealCard(
                         }
                     }
                 }
-                IconButton(onClick = onAdd) {
-                    Icon(Icons.Filled.Add, stringResource(R.string.add_short))
-                }
             }
         }
         group.entries.forEach { entry ->
@@ -587,15 +631,6 @@ private fun MealCard(
                 onDelete = { onDelete(entry) },
                 onToggleFavorite = { onToggleFavorite(entry) },
             )
-        }
-        if (group.entries.isEmpty()) {
-            Box(Modifier.padding(start = 16.dp, top = 10.dp, bottom = 12.dp)) {
-                Text(
-                    stringResource(R.string.meal_empty),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
     }
 }

@@ -58,6 +58,19 @@ class GoalCalculatorTest {
     }
 
     @Test
+    fun `abnehmen - protein bezogen auf das wunschgewicht`() {
+        // 98 kg, Wunsch 80 kg: 1.8*80 = 144 g statt 1.8*98 = 176 g
+        val t = GoalCalculator.targets(profile(weightKg = 98.0), year, Goal.LOSE, -1100, targetWeightKg = 80.0)
+        assertEquals(144, t.proteinG)
+    }
+
+    @Test
+    fun `zunehmen - protein bleibt beim aktuellen gewicht`() {
+        val t = GoalCalculator.targets(profile(weightKg = 70.0), year, Goal.GAIN, 300, targetWeightKg = 80.0)
+        assertEquals(126, t.proteinG)
+    }
+
+    @Test
     fun `kcal ziel faellt nicht unter minimum`() {
         val p = profile(sex = Sex.FEMALE, age = 80, heightCm = 150.0, weightKg = 40.0)
         assertEquals(GoalCalculator.MIN_KCAL_TARGET, GoalCalculator.targets(p, year, Goal.LOSE, -1100).kcal)

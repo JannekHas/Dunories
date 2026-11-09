@@ -8,6 +8,8 @@ import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.repository.GoalRepository
+import de.kalorienapp.data.repository.StatsRepository
+import de.kalorienapp.domain.Streak
 import de.kalorienapp.data.repository.WaterRepository
 import de.kalorienapp.domain.FastingConfig
 import de.kalorienapp.domain.Water
@@ -68,7 +70,13 @@ class TodayViewModel(
     private val entryRepository: FoodEntryRepository,
     private val library: FoodLibraryRepository,
     private val activityRepository: ActivityEntryRepository,
+    statsRepository: StatsRepository,
 ) : ViewModel() {
+
+    /** Tage in Folge im Ziel bis gestern – Erfolgsmoment auf „Heute“ (0 = nichts zeigen). */
+    val streak: StateFlow<Int> = LocalDate.now().let { today ->
+        statsRepository.days(today.minusDays(STREAK_LOOKBACK_DAYS), today.minusDays(1)).map { Streak.current(it, today) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     /** Aus dem Kalender geöffnet → dieses Datum, sonst heute. */
     private val date = MutableStateFlow(
@@ -196,3 +204,5 @@ class TodayViewModel(
         viewModelScope.launch { activityRepository.save(entry) }
     }
 }
+
+private const val STREAK_LOOKBACK_DAYS = 90L

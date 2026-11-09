@@ -36,6 +36,7 @@ object AppViewModelProvider {
                 container().foodEntryRepository,
                 container().foodLibraryRepository,
                 container().activityEntryRepository,
+                container().statsRepository,
             )
         }
         initializer {

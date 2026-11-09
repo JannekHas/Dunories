@@ -46,16 +46,20 @@ object GoalCalculator {
     /**
      * Tagesziele; manuelle Overrides haben Vorrang vor den berechneten Werten.
      * [direction] und [adjustmentKcal] kommen aus dem aktiven Gewichtsziel (ohne Ziel: Halten, 0).
+     * Protein bezieht sich beim Abnehmen auf das Wunschgewicht ([targetWeightKg]) – sonst bekäme man bei
+     * viel Übergewicht so viel Protein, dass für Kohlenhydrate kaum etwas bleibt.
      */
     fun targets(
         profile: Profile,
         currentYear: Int,
         direction: Goal = Goal.MAINTAIN,
         adjustmentKcal: Int = 0,
+        targetWeightKg: Double? = null,
     ): DailyTargets {
         val kcal = profile.kcalTargetOverride ?: calculatedKcalTarget(profile, currentYear, adjustmentKcal)
         val proteinPerKg = profile.proteinPerKg ?: defaultProteinPerKg(direction)
-        val protein = profile.proteinOverrideG ?: (proteinPerKg * profile.weightKg).roundToInt()
+        val proteinWeight = proteinReferenceWeight(profile.weightKg, direction, targetWeightKg)
+        val protein = profile.proteinOverrideG ?: (proteinPerKg * proteinWeight).roundToInt()
         val fat = profile.fatOverrideG ?: (kcal * FAT_KCAL_SHARE / KCAL_PER_G_FAT).roundToInt()
         val carbs = profile.carbsOverrideG
             ?: ((kcal - protein * KCAL_PER_G_PROTEIN - fat * KCAL_PER_G_FAT).toDouble() / KCAL_PER_G_CARBS)
@@ -63,6 +67,10 @@ object GoalCalculator {
                 .coerceAtLeast(0)
         return DailyTargets(kcal = kcal, proteinG = protein, carbsG = carbs, fatG = fat)
     }
+
+    /** Gewicht, auf das sich „Protein pro kg“ bezieht: beim Abnehmen das (niedrigere) Wunschgewicht. */
+    fun proteinReferenceWeight(weightKg: Double, direction: Goal, targetWeightKg: Double?): Double =
+        if (direction == Goal.LOSE && targetWeightKg != null) minOf(weightKg, targetWeightKg) else weightKg
 
     /** Verbleibend = Ziel + selbst eingetragene Aktivitäten − Gegessenes. */
     fun daySummary(targets: DailyTargets, eaten: Nutrients, activityKcal: Int = 0): DaySummary = DaySummary(

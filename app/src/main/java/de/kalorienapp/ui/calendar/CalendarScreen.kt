@@ -12,19 +12,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -91,50 +86,31 @@ class CalendarViewModel(statsRepository: StatsRepository) : ViewModel() {
 
 private val monthFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", Locale.GERMAN)
 
-/** Monatskalender: Tage farbig nach Zielerreichung, Tippen öffnet den Tag. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Monatskalender (Tab in der Statistik): Tage farbig nach Zielerreichung, Tippen öffnet den Tag. */
 @Composable
-fun CalendarScreen(
+fun CalendarSection(
     onDayClick: (LocalDate) -> Unit,
     viewModel: CalendarViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        state.month.format(monthFormatter).replaceFirstChar { it.uppercase() },
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = viewModel::previousMonth) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.previous_month))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = viewModel::nextMonth) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.next_month))
-                    }
-                },
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = viewModel::previousMonth) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.previous_month))
+            }
+            Text(
+                state.month.format(monthFormatter).replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f),
             )
-        },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            MonthGrid(state.month, state.days, onDayClick)
-            Legend()
-            state.summary?.let { MonthSummary(it) }
+            IconButton(onClick = viewModel::nextMonth) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.next_month))
+            }
         }
+        MonthGrid(state.month, state.days, onDayClick)
+        Legend()
+        state.summary?.let { MonthSummary(it) }
     }
 }
 

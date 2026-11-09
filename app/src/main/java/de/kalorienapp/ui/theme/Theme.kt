@@ -1,9 +1,11 @@
 package de.kalorienapp.ui.theme
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.em
 
 /**
  * Neon-Palette im Stil von „Revolution Idle“: kräftige Regenbogenfarben auf Schwarz.
@@ -65,8 +67,24 @@ private val NeonColors = darkColorScheme(
     outlineVariant = Neon.Track,
 )
 
+/**
+ * Laufweite je Größe (wie Apple): große Zahlen und Überschriften enger, kleine Texte unverändert,
+ * große Schrift mit knappem Zeilenabstand.
+ */
+private val NeonTypography = Typography().run {
+    copy(
+        displayLarge = displayLarge.copy(letterSpacing = (-0.03).em, lineHeight = 1.05.em),
+        displayMedium = displayMedium.copy(letterSpacing = (-0.025).em, lineHeight = 1.08.em),
+        displaySmall = displaySmall.copy(letterSpacing = (-0.02).em, lineHeight = 1.1.em),
+        headlineLarge = headlineLarge.copy(letterSpacing = (-0.015).em),
+        headlineMedium = headlineMedium.copy(letterSpacing = (-0.01).em),
+        headlineSmall = headlineSmall.copy(letterSpacing = (-0.01).em),
+        titleLarge = titleLarge.copy(letterSpacing = (-0.005).em),
+    )
+}
+
 /** Immer dunkel – das Neon-Design lebt vom schwarzen Hintergrund. */
 @Composable
 fun KalorienTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = NeonColors, content = content)
+    MaterialTheme(colorScheme = NeonColors, typography = NeonTypography, content = content)
 }

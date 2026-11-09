@@ -66,11 +66,11 @@
 
     <!-- Ziele -->
     <string name="targets_title">Dein Tagesziel</string>
-    <string name="targets_at_minimum">Untergrenze von %1$s kcal erreicht – rechnerisch bräuchte dein Ziel noch weniger. Ein späteres Zieldatum macht es entspannter (Profil → Ziel).</string>
+    <string name="targets_at_minimum">Mindestwert %1$s kcal – ein späteres Zieldatum gibt dir mehr Spielraum.</string>
     <string name="targets_incomplete">Bitte Körperdaten vollständig ausfüllen.</string>
     <string name="targets_macros">Protein %1$d g · KH %2$d g · Fett %3$d g</string>
     <string name="targets_override_hint">Leere Felder werden automatisch berechnet. Trage einen Wert ein, um ihn festzulegen.</string>
-    <string name="targets_protein_per_kg">Protein pro kg Körpergewicht</string>
+    <string name="targets_protein_per_kg">Protein pro kg (beim Abnehmen: Wunschgewicht)</string>
     <string name="targets_kcal">Kalorienziel</string>
 
     <!-- Onboarding -->
@@ -91,8 +91,6 @@
     <string name="summary_target">Ziel</string>
     <string name="summary_eaten">Gegessen</string>
     <string name="add_entry">Essen erfassen</string>
-    <string name="add_short">+ Hinzufügen</string>
-    <string name="meal_empty">Noch nichts eingetragen</string>
     <string name="entry_macros">P %1$s g · KH %2$s g · F %3$s g</string>
     <string name="entry_amount_prefix">%1$s %2$s · %3$s</string>
     <string name="entry_deleted">„%1$s“ gelöscht</string>
@@ -193,6 +191,19 @@
     <!-- Kalender & Statistik -->
     <string name="nav_calendar">Kalender</string>
     <string name="nav_stats">Statistik</string>
+    <string name="nav_weight">Gewicht</string>
+    <string name="weight_screen_title">Gewicht &amp; Körper</string>
+    <string name="stats_empty_title">Noch keine Daten</string>
+    <string name="stats_empty_text">Trag ein paar Tage ein, dann siehst du hier deinen Verlauf, Durchschnitte und wie oft du im Ziel warst.</string>
+    <string name="stats_empty_action">Jetzt eintragen</string>
+    <string name="meal_add_hint">+ Eintragen</string>
+    <string name="streak_check">✓</string>
+    <plurals name="streak_title">
+        <item quantity="one">Gestern im Ziel</item>
+        <item quantity="other">%1$d Tage in Folge im Ziel</item>
+    </plurals>
+    <string name="streak_text_first">Stark – mach heute genauso weiter.</string>
+    <string name="streak_text_more">Weiter so – jeder Tag zählt.</string>
     <string name="previous_month">Vorheriger Monat</string>
     <string name="next_month">Nächster Monat</string>
     <string name="calendar_on_target">Im Budget</string>
@@ -239,7 +250,7 @@
     <string name="goal_preview_incomplete">Bitte Wunschgewicht und Zieldatum angeben.</string>
     <string name="goal_preview_pace">Tempo heute: %1$s kg pro Woche (%2$s kcal pro Tag)</string>
     <string name="goal_preview_kcal">Tagesziel: %1$s kcal</string>
-    <string name="goal_limited_hint">Das wäre schneller als gesund. Wir rechnen mit höchstens %1$s kg pro Woche – realistisch erreichst du dein Wunschgewicht am %2$s.</string>
+    <string name="goal_limited_hint">Gesund sind max. %1$s kg pro Woche – realistisch am %2$s.</string>
     <string name="goal_none_title">Kein Gewichtsziel</string>
     <string name="goal_none_text">Setze ein Wunschgewicht mit Zieldatum – daraus berechnen wir dein Tagesziel. Bis dahin gilt dein Grundumsatz.</string>
     <string name="goal_set">Ziel setzen</string>

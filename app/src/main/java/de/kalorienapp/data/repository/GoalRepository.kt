@@ -76,7 +76,7 @@ data class GoalState(
     val direction: Goal get() = goal?.direction ?: Goal.MAINTAIN
 
     fun targetsFor(year: Int): DailyTargets =
-        GoalCalculator.targets(profile, year, direction, plan?.dailyAdjustmentKcal ?: 0)
+        GoalCalculator.targets(profile, year, direction, plan?.dailyAdjustmentKcal ?: 0, goal?.targetWeightKg)
 
     val targets: DailyTargets get() = targetsFor(LocalDate.now().year)
 

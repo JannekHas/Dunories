@@ -11,8 +11,9 @@ data object TodayRoute
 @Serializable
 data object ProfileRoute
 
+/** Gewicht, Körpermaße, erreichte Ziele. */
 @Serializable
-data object CalendarRoute
+data object WeightRoute
 
 @Serializable
 data object StatsRoute

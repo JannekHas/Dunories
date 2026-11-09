@@ -1,10 +1,33 @@
 package de.kalorienapp.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination
+import de.kalorienapp.ui.components.PressableSurface
+import de.kalorienapp.ui.stats.WeightScreen
+import java.time.LocalDate
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -30,7 +53,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import de.kalorienapp.BuildConfig
 import de.kalorienapp.R
-import de.kalorienapp.ui.calendar.CalendarScreen
 import de.kalorienapp.ui.capture.CaptureScreen
 import de.kalorienapp.ui.entry.EntryEditScreen
 import de.kalorienapp.ui.goal.GoalScreen
@@ -57,11 +79,19 @@ private data class TopLevelDestination(val route: Any, val icon: @Composable () 
 
 private val topLevelDestinations = listOf(
     TopLevelDestination(TodayRoute, { Icons.Filled.Home }, R.string.nav_today),
-    TopLevelDestination(CalendarRoute, { Icons.Filled.DateRange }, R.string.nav_calendar),
-    TopLevelDestination(RecipesRoute, { ImageVector.vectorResource(R.drawable.ic_restaurant) }, R.string.nav_recipes),
     TopLevelDestination(StatsRoute, { ImageVector.vectorResource(R.drawable.ic_bar_chart) }, R.string.nav_stats),
+    TopLevelDestination(WeightRoute, { ImageVector.vectorResource(R.drawable.ic_scale) }, R.string.nav_weight),
+    TopLevelDestination(RecipesRoute, { ImageVector.vectorResource(R.drawable.ic_restaurant) }, R.string.nav_recipes),
     TopLevelDestination(ProfileRoute, { Icons.Filled.Person }, R.string.nav_profile),
 ).filter { it.route != RecipesRoute || BuildConfig.FEATURE_RECIPES }
+
+private fun NavDestination?.isTopLevel() = this != null && topLevelDestinations.any { hasRoute(it.route::class) }
+
+/** Reiterwechsel blenden nur über; Unterseiten kommen von rechts und gehen dorthin zurück. */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch() =
+    initialState.destination.isTopLevel() && targetState.destination.isTopLevel()
+
+private val slideSpring = spring<IntOffset>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
 
 @Composable
 fun AppNavHost(startDestination: Any, container: AppContainer) {
@@ -74,8 +104,12 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
     }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
-    val showBottomBar = topLevelDestinations.any { dest ->
-        currentDestination?.hasRoute(dest.route::class) == true
+    val showBottomBar = currentDestination.isTopLevel()
+    // Angezeigter Tag auf „Heute“ – das große „+“ trägt dort ein, sonst immer heute.
+    var shownDate by remember { mutableStateOf(LocalDate.now()) }
+    val addEntry = {
+        val date = if (currentDestination?.hasRoute(TodayRoute::class) == true) shownDate else LocalDate.now()
+        navController.navigate(CaptureRoute(epochDay = date.toEpochDay()))
     }
 
     Scaffold(
@@ -84,12 +118,14 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar(containerColor = Neon.Surface) {
-                    topLevelDestinations.forEach { dest ->
+                    val middle = topLevelDestinations.size / 2
+                    topLevelDestinations.forEachIndexed { index, dest ->
+                        if (index == middle) AddButton(onClick = addEntry)
                         NavigationBarItem(
                             selected = currentDestination?.hasRoute(dest.route::class) == true,
                             onClick = { navController.navigateTopLevel(dest.route) },
                             icon = { Icon(dest.icon(), contentDescription = null) },
-                            label = { Text(stringResource(dest.labelRes)) },
+                            label = { Text(stringResource(dest.labelRes), maxLines = 1) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Neon.OnNeon,
                                 selectedTextColor = Neon.Cyan,
@@ -115,7 +151,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
             val destination = currentDestination ?: return@LaunchedEffect
             if (pendingNav == null || destination.hasRoute(OnboardingRoute::class)) return@LaunchedEffect
             when (val request = container.navRequests.take()) {
-                NavRequest.Weigh -> navController.navigateTopLevel(StatsRoute)
+                NavRequest.Weigh -> navController.navigateTopLevel(WeightRoute)
                 is NavRequest.Report -> navController.navigate(WeeklyReportRoute(request.id))
                 is NavRequest.Capture -> navController.navigate(
                     CaptureRoute(epochDay = java.time.LocalDate.now().toEpochDay(), mealType = request.mealType),
@@ -137,6 +173,22 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
             navController = navController,
             startDestination = startDestination,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+            enterTransition = {
+                if (isTabSwitch()) fadeIn(tween(180))
+                else slideInHorizontally(slideSpring) { it / 4 } + fadeIn(tween(180))
+            },
+            exitTransition = {
+                if (isTabSwitch()) fadeOut(tween(120))
+                else slideOutHorizontally(slideSpring) { -it / 10 } + fadeOut(tween(180))
+            },
+            popEnterTransition = {
+                if (isTabSwitch()) fadeIn(tween(180))
+                else slideInHorizontally(slideSpring) { -it / 10 } + fadeIn(tween(180))
+            },
+            popExitTransition = {
+                if (isTabSwitch()) fadeOut(tween(120))
+                else slideOutHorizontally(slideSpring) { it / 4 } + fadeOut(tween(180))
+            },
         ) {
             composable<OnboardingRoute> {
                 OnboardingScreen(
@@ -149,6 +201,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
             }
             composable<TodayRoute> {
                 TodayScreen(
+                    onDateShown = { shownDate = it },
                     onSetGoal = { navController.navigate(GoalRoute) },
                     onAddEntry = { date, meal ->
                         navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
@@ -158,14 +211,17 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     },
                 )
             }
-            composable<CalendarRoute> {
-                CalendarScreen(onDayClick = { date -> navController.navigate(DayRoute(date.toEpochDay())) })
-            }
             composable<StatsRoute> {
                 StatsScreen(
+                    onOpenReport = { navController.navigate(WeeklyReportRoute(it)) },
+                    onDayClick = { date -> navController.navigate(DayRoute(date.toEpochDay())) },
+                    onAddEntry = addEntry,
+                )
+            }
+            composable<WeightRoute> {
+                WeightScreen(
                     openWeighDialog = container.navRequests.openWeighDialog.collectAsStateWithLifecycle().value,
                     onWeighDialogShown = container.navRequests::weighDialogShown,
-                    onOpenReport = { navController.navigate(WeeklyReportRoute(it)) },
                 )
             }
             composable<WeeklyReportRoute> {
@@ -252,6 +308,21 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
             composable<EntryEditRoute> {
                 EntryEditScreen(onDone = { navController.popBackStack() })
             }
+        }
+    }
+}
+
+/** Großes „+“ in der Mitte der Leiste: Essen erfassen (Mahlzeit nach Uhrzeit vorgewählt). */
+@Composable
+private fun RowScope.AddButton(onClick: () -> Unit) {
+    Box(Modifier.weight(1f).align(Alignment.CenterVertically), contentAlignment = Alignment.Center) {
+        PressableSurface(
+            onClick = onClick,
+            shape = CircleShape,
+            color = Neon.Yellow,
+            modifier = Modifier.size(56.dp),
+        ) {
+            Icon(Icons.Filled.Add, stringResource(R.string.add_entry), tint = Neon.OnNeon, modifier = Modifier.size(30.dp))
         }
     }
 }
