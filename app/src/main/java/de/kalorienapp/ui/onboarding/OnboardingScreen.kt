@@ -133,7 +133,6 @@ fun OnboardingScreen(
                 else -> {
                     StepIntro(stringResource(R.string.onboarding_targets_intro))
                     TargetsCard(state.targets, atMinimum = state.form.kcalOverride.isBlank() && state.targets?.kcal == GoalCalculator.MIN_KCAL_TARGET)
-                    TargetAdjustmentsSection(state, viewModel::update)
                 }
             }
         }

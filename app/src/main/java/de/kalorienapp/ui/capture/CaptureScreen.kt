@@ -65,6 +65,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import de.kalorienapp.ui.components.pressable
 import de.kalorienapp.R
 import de.kalorienapp.ui.components.Tip
 import de.kalorienapp.ui.components.TipCaret
@@ -263,14 +267,20 @@ private fun CameraContent(
         ) {
             CameraAction(
                 label = stringResource(R.string.capture_gallery_short),
+                icon = R.drawable.ic_capture_gallery,
+                color = Neon.Magenta,
                 onClick = {
                     galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 },
-            ) { Icon(painterResource(R.drawable.ic_photo_library), contentDescription = null) }
-            CameraAction(label = stringResource(R.string.quick_short), onClick = viewModel::showQuickPick) {
-                Icon(Icons.Filled.Star, contentDescription = null)
-            }
+            )
+            CameraAction(
+                label = stringResource(R.string.quick_short),
+                icon = R.drawable.ic_capture_favorites,
+                color = Neon.Yellow,
+                onClick = viewModel::showQuickPick,
+            )
             LargeFloatingActionButton(
+                shape = CircleShape,
                 onClick = {
                     if (hasPermission && !capturing) {
                         capturing = true
@@ -285,34 +295,47 @@ private fun CameraContent(
                     CircularProgressIndicator(modifier = Modifier.size(32.dp))
                 } else {
                     Icon(
-                        painterResource(R.drawable.ic_camera),
+                        painterResource(R.drawable.ic_capture_camera),
                         stringResource(R.string.capture_take_photo),
-                        modifier = Modifier.size(36.dp),
+                        modifier = Modifier.size(38.dp),
                     )
                 }
             }
-            CameraAction(label = stringResource(R.string.capture_describe), onClick = viewModel::showTextInput) {
-                Icon(Icons.Filled.Edit, contentDescription = null)
-            }
-            CameraAction(label = stringResource(R.string.capture_manual), onClick = onManualEntry) {
-                Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
-            }
+            CameraAction(
+                label = stringResource(R.string.capture_describe),
+                icon = R.drawable.ic_capture_describe,
+                color = Neon.Violet,
+                onClick = viewModel::showTextInput,
+            )
+            CameraAction(
+                label = stringResource(R.string.capture_manual),
+                icon = R.drawable.ic_capture_manual,
+                color = Neon.Green,
+                onClick = onManualEntry,
+            )
         }
     }
 }
 
-/** Kleiner Knopf mit Beschriftung in der Kameraleiste. */
+/** Kleiner Knopf mit Beschriftung in der Kameraleiste: farbig getönter Glaskreis mit Neon-Icon. */
 @Composable
-private fun CameraAction(label: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
+private fun CameraAction(label: String, @DrawableRes icon: Int, color: Color, onClick: () -> Unit) {
     // Ganze Spalte antippbar, damit auch die Beschriftung reagiert.
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick)
+            .pressable(onClick, MaterialTheme.shapes.medium)
             .padding(4.dp),
     ) {
-        FilledTonalIconButton(onClick = onClick, modifier = Modifier.size(52.dp)) { icon() }
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .background(color.copy(alpha = 0.16f), CircleShape)
+                .border(1.dp, color.copy(alpha = 0.55f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(painterResource(icon), contentDescription = null, tint = color, modifier = Modifier.size(26.dp))
+        }
         Text(
             label,
             color = Color.White,

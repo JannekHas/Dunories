@@ -127,6 +127,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
     val showBottomBar = currentDestination.isTopLevel()
     // Angezeigter Tag auf „Heute“ – das große „+“ trägt dort ein, sonst immer heute.
     var shownDate by remember { mutableStateOf(LocalDate.now()) }
+    var navUnlockedAt by remember { mutableStateOf(0L) }
     // Inhalte laufen unter der gläsernen Leiste durch; sie wird daraus weichgezeichnet.
     val hazeState = rememberHazeState()
     val addEntry = {
@@ -153,7 +154,8 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                         if (index == middle) AddButton(onClick = addEntry)
                         NavigationBarItem(
                             selected = currentDestination?.hasRoute(dest.route::class) == true,
-                            onClick = { navController.navigateTopLevel(dest.route) },
+                            // Kurz nach der Einrichtung gesperrt: ein Doppeltipp auf „Fertig“ landete sonst im Profil.
+                            onClick = { if (System.currentTimeMillis() > navUnlockedAt) navController.navigateTopLevel(dest.route) },
                             icon = { Icon(dest.icon(), contentDescription = null) },
                             label = { Text(stringResource(dest.labelRes), maxLines = 1) },
                             colors = NavigationBarItemDefaults.colors(
@@ -229,6 +231,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     screen<OnboardingRoute> {
                         OnboardingScreen(
                             onFinished = {
+                                navUnlockedAt = System.currentTimeMillis() + 800
                                 navController.navigate(TodayRoute) {
                                     popUpTo<OnboardingRoute> { inclusive = true }
                                 }
