@@ -41,9 +41,27 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // Kleine APK zum Weitergeben: Code und Ressourcen schrumpfen (R8)
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // Privat-App: Release mit Debug-Key signieren, damit die APK direkt installierbar ist
+            // und Debug- und Release-Version sich gegenseitig ohne Datenverlust ersetzen können
             signingConfig = signingConfigs.getByName("debug")
+            // `-PcleanTest`: als zweite App daneben installieren → Einrichtung wie ein neuer Nutzer testen,
+            // ohne den Speicherstand der eigentlichen App anzufassen
+            if (providers.gradleProperty("cleanTest").isPresent) applicationIdSuffix = ".cleantest"
+        }
+    }
+
+    // Eine APK je Prozessortyp – die Barcode-Erkennung bringt sonst ihre Bibliothek viermal mit.
+    // Handys: arm64-v8a (fast alle) bzw. armeabi-v7a (sehr alte), Emulator: x86_64.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = false
         }
     }
 
