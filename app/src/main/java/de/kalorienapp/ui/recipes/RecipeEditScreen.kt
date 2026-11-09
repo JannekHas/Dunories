@@ -69,6 +69,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.Effort
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.NumberField
@@ -174,7 +175,7 @@ fun RecipeEditScreen(
         ) {
             if (state.fromImport) {
                 item(key = "hint") {
-                    Card(colors = CardDefaults.cardColors(containerColor = Neon.SurfaceHigh)) {
+                    GlassCard(strong = true) {
                         Text(
                             stringResource(R.string.recipe_import_review_hint),
                             style = MaterialTheme.typography.bodyMedium,
@@ -388,7 +389,7 @@ fun RecipeEditScreen(
 @Composable
 private fun IngredientRow(ingredient: IngredientForm, onClick: () -> Unit, onDelete: () -> Unit) {
     val domain = ingredient.toDomain()
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    GlassCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(start = 14.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(

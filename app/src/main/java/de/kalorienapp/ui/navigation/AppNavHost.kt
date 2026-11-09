@@ -20,6 +20,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavGraphBuilder
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.HazeColorEffect
+import dev.chrisbanes.haze.blur.hazeBlur
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
+import de.kalorienapp.ui.components.GlowBackground
+import de.kalorienapp.ui.components.LocalBottomBarPadding
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.navigation.NavDestination
 import de.kalorienapp.ui.components.PressableSurface
 import de.kalorienapp.ui.stats.WeightScreen
@@ -107,6 +120,8 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
     val showBottomBar = currentDestination.isTopLevel()
     // Angezeigter Tag auf „Heute“ – das große „+“ trägt dort ein, sonst immer heute.
     var shownDate by remember { mutableStateOf(LocalDate.now()) }
+    // Inhalte laufen unter der gläsernen Leiste durch; sie wird daraus weichgezeichnet.
+    val hazeState = rememberHazeState()
     val addEntry = {
         val date = if (currentDestination?.hasRoute(TodayRoute::class) == true) shownDate else LocalDate.now()
         navController.navigate(CaptureRoute(epochDay = date.toEpochDay()))
@@ -117,7 +132,15 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar(containerColor = Neon.Surface) {
+                NavigationBar(
+                    containerColor = Color.Transparent,
+                    modifier = Modifier
+                        .hazeBlur(HazeInput.Sources(hazeState), style = BottomBarGlass)
+                        .drawWithContent {
+                            drawContent()
+                            drawLine(Neon.GlassEdgeTop, Offset.Zero, Offset(size.width, 0f), strokeWidth = 1.dp.toPx())
+                        },
+                ) {
                     val middle = topLevelDestinations.size / 2
                     topLevelDestinations.forEachIndexed { index, dest ->
                         if (index == middle) AddButton(onClick = addEntry)
@@ -169,148 +192,165 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                 askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
-            enterTransition = {
-                if (isTabSwitch()) fadeIn(tween(180))
-                else slideInHorizontally(slideSpring) { it / 4 } + fadeIn(tween(180))
-            },
-            exitTransition = {
-                if (isTabSwitch()) fadeOut(tween(120))
-                else slideOutHorizontally(slideSpring) { -it / 10 } + fadeOut(tween(180))
-            },
-            popEnterTransition = {
-                if (isTabSwitch()) fadeIn(tween(180))
-                else slideInHorizontally(slideSpring) { -it / 10 } + fadeIn(tween(180))
-            },
-            popExitTransition = {
-                if (isTabSwitch()) fadeOut(tween(120))
-                else slideOutHorizontally(slideSpring) { it / 4 } + fadeOut(tween(180))
-            },
-        ) {
-            composable<OnboardingRoute> {
-                OnboardingScreen(
-                    onFinished = {
-                        navController.navigate(TodayRoute) {
-                            popUpTo<OnboardingRoute> { inclusive = true }
-                        }
-                    },
-                )
-            }
-            composable<TodayRoute> {
-                TodayScreen(
-                    onDateShown = { shownDate = it },
-                    onSetGoal = { navController.navigate(GoalRoute) },
-                    onAddEntry = { date, meal ->
-                        navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
-                    },
-                    onEditEntry = { entry ->
-                        navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
-                    },
-                )
-            }
-            composable<StatsRoute> {
-                StatsScreen(
-                    onOpenReport = { navController.navigate(WeeklyReportRoute(it)) },
-                    onDayClick = { date -> navController.navigate(DayRoute(date.toEpochDay())) },
-                    onAddEntry = addEntry,
-                )
-            }
-            composable<WeightRoute> {
-                WeightScreen(
-                    openWeighDialog = container.navRequests.openWeighDialog.collectAsStateWithLifecycle().value,
-                    onWeighDialogShown = container.navRequests::weighDialogShown,
-                )
-            }
-            composable<WeeklyReportRoute> {
-                WeeklyReportScreen(onBack = { navController.popBackStack() })
-            }
-            composable<DayRoute> {
-                TodayScreen(
-                    onSetGoal = { navController.navigate(GoalRoute) },
-                    onAddEntry = { date, meal ->
-                        navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
-                    },
-                    onEditEntry = { entry ->
-                        navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
-                    },
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable<ProfileRoute> {
-                ProfileScreen(onNewGoal = { navController.navigate(GoalRoute) })
-            }
-            composable<RecipesRoute> {
-                RecipesScreen(
-                    onOpen = { navController.navigate(RecipeDetailRoute(it.id)) },
-                    onCreate = { navController.navigate(RecipeEditRoute()) },
-                    onImportLink = { text -> shareInbox.put(ImportSource.Text(text)) },
-                    onOpenShopping = { navController.navigate(ShoppingListRoute) },
-                )
-            }
-            composable<ShoppingListRoute> {
-                ShoppingListScreen(onBack = { navController.popBackStack() })
-            }
-            composable<RecipeDetailRoute> {
-                RecipeDetailScreen(
-                    onBack = { navController.popBackStack() },
-                    onEdit = { navController.navigate(RecipeEditRoute(id = it.id)) },
-                )
-            }
-            composable<RecipeEditRoute> { entry ->
-                val route = entry.toRoute<RecipeEditRoute>()
-                RecipeEditScreen(
-                    onClose = { navController.popBackStack() },
-                    onSaved = { id ->
-                        if (route.id != 0L) {
-                            navController.popBackStack()
-                        } else {
-                            // Neues Rezept → Detailansicht statt Editor im Back-Stack.
-                            navController.navigate(RecipeDetailRoute(id)) {
-                                popUpTo<RecipeEditRoute> { inclusive = true }
+        CompositionLocalProvider(LocalBottomBarPadding provides padding.calculateBottomPadding()) {
+            NavHost(
+                navController = navController,
+                startDestination = startDestination,
+                // Kein Abstand nach unten: Screens scrollen unter die Leiste und holen sich ihre Höhe über LocalBottomBarPadding.
+                modifier = Modifier.hazeSource(hazeState).consumeWindowInsets(padding),
+                enterTransition = {
+                    if (isTabSwitch()) fadeIn(tween(180))
+                    else slideInHorizontally(slideSpring) { it / 4 } + fadeIn(tween(180))
+                },
+                exitTransition = {
+                    if (isTabSwitch()) fadeOut(tween(120))
+                    else slideOutHorizontally(slideSpring) { -it / 10 } + fadeOut(tween(180))
+                },
+                popEnterTransition = {
+                    if (isTabSwitch()) fadeIn(tween(180))
+                    else slideInHorizontally(slideSpring) { -it / 10 } + fadeIn(tween(180))
+                },
+                popExitTransition = {
+                    if (isTabSwitch()) fadeOut(tween(120))
+                    else slideOutHorizontally(slideSpring) { it / 4 } + fadeOut(tween(180))
+                },
+            ) {
+                screen<OnboardingRoute> {
+                    OnboardingScreen(
+                        onFinished = {
+                            navController.navigate(TodayRoute) {
+                                popUpTo<OnboardingRoute> { inclusive = true }
                             }
-                        }
-                    },
-                )
-            }
-            composable<RecipeImportRoute> {
-                RecipeImportScreen(
-                    onReview = {
-                        navController.navigate(RecipeEditRoute(fromImport = true)) {
-                            popUpTo<RecipeImportRoute> { inclusive = true }
-                        }
-                    },
-                    onManual = {
-                        navController.navigate(RecipeEditRoute()) {
-                            popUpTo<RecipeImportRoute> { inclusive = true }
-                        }
-                    },
-                    onClose = { navController.popBackStack() },
-                )
-            }
-            composable<GoalRoute> {
-                GoalScreen(onDone = { navController.popBackStack() })
-            }
-            composable<CaptureRoute> { entry ->
-                val route = entry.toRoute<CaptureRoute>()
-                CaptureScreen(
-                    onClose = { navController.popBackStack() },
-                    onManualEntry = { meal ->
-                        // Erfassung durch den manuellen Editor ersetzen, damit „Zurück“ zur Übersicht führt.
-                        navController.navigate(EntryEditRoute(epochDay = route.epochDay, mealType = meal.name)) {
-                            popUpTo<CaptureRoute> { inclusive = true }
-                        }
-                    },
-                )
-            }
-            composable<EntryEditRoute> {
-                EntryEditScreen(onDone = { navController.popBackStack() })
+                        },
+                    )
+                }
+                screen<TodayRoute> {
+                    TodayScreen(
+                        onDateShown = { shownDate = it },
+                        onSetGoal = { navController.navigate(GoalRoute) },
+                        onAddEntry = { date, meal ->
+                            navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
+                        },
+                        onEditEntry = { entry ->
+                            navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
+                        },
+                    )
+                }
+                screen<StatsRoute> {
+                    StatsScreen(
+                        onOpenReport = { navController.navigate(WeeklyReportRoute(it)) },
+                        onDayClick = { date -> navController.navigate(DayRoute(date.toEpochDay())) },
+                        onAddEntry = addEntry,
+                    )
+                }
+                screen<WeightRoute> {
+                    WeightScreen(
+                        openWeighDialog = container.navRequests.openWeighDialog.collectAsStateWithLifecycle().value,
+                        onWeighDialogShown = container.navRequests::weighDialogShown,
+                    )
+                }
+                screen<WeeklyReportRoute> {
+                    WeeklyReportScreen(onBack = { navController.popBackStack() })
+                }
+                screen<DayRoute> {
+                    TodayScreen(
+                        onSetGoal = { navController.navigate(GoalRoute) },
+                        onAddEntry = { date, meal ->
+                            navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
+                        },
+                        onEditEntry = { entry ->
+                            navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
+                        },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                screen<ProfileRoute> {
+                    ProfileScreen(onNewGoal = { navController.navigate(GoalRoute) })
+                }
+                screen<RecipesRoute> {
+                    RecipesScreen(
+                        onOpen = { navController.navigate(RecipeDetailRoute(it.id)) },
+                        onCreate = { navController.navigate(RecipeEditRoute()) },
+                        onImportLink = { text -> shareInbox.put(ImportSource.Text(text)) },
+                        onOpenShopping = { navController.navigate(ShoppingListRoute) },
+                    )
+                }
+                screen<ShoppingListRoute> {
+                    ShoppingListScreen(onBack = { navController.popBackStack() })
+                }
+                screen<RecipeDetailRoute> {
+                    RecipeDetailScreen(
+                        onBack = { navController.popBackStack() },
+                        onEdit = { navController.navigate(RecipeEditRoute(id = it.id)) },
+                    )
+                }
+                screen<RecipeEditRoute> { entry ->
+                    val route = entry.toRoute<RecipeEditRoute>()
+                    RecipeEditScreen(
+                        onClose = { navController.popBackStack() },
+                        onSaved = { id ->
+                            if (route.id != 0L) {
+                                navController.popBackStack()
+                            } else {
+                                // Neues Rezept → Detailansicht statt Editor im Back-Stack.
+                                navController.navigate(RecipeDetailRoute(id)) {
+                                    popUpTo<RecipeEditRoute> { inclusive = true }
+                                }
+                            }
+                        },
+                    )
+                }
+                screen<RecipeImportRoute> {
+                    RecipeImportScreen(
+                        onReview = {
+                            navController.navigate(RecipeEditRoute(fromImport = true)) {
+                                popUpTo<RecipeImportRoute> { inclusive = true }
+                            }
+                        },
+                        onManual = {
+                            navController.navigate(RecipeEditRoute()) {
+                                popUpTo<RecipeImportRoute> { inclusive = true }
+                            }
+                        },
+                        onClose = { navController.popBackStack() },
+                    )
+                }
+                screen<GoalRoute> {
+                    GoalScreen(onDone = { navController.popBackStack() })
+                }
+                screen<CaptureRoute> { entry ->
+                    val route = entry.toRoute<CaptureRoute>()
+                    CaptureScreen(
+                        onClose = { navController.popBackStack() },
+                        onManualEntry = { meal ->
+                            // Erfassung durch den manuellen Editor ersetzen, damit „Zurück“ zur Übersicht führt.
+                            navController.navigate(EntryEditRoute(epochDay = route.epochDay, mealType = meal.name)) {
+                                popUpTo<CaptureRoute> { inclusive = true }
+                            }
+                        },
+                    )
+                }
+                screen<EntryEditRoute> {
+                    EntryEditScreen(onDone = { navController.popBackStack() })
+                }
             }
         }
     }
 }
+
+/** Gläserne Leiste: weichgezeichneter Inhalt, abgedunkelt für lesbare Symbole. Ohne Android 12 nur abgedunkelt. */
+private val BottomBarGlass = HazeBlurStyle {
+    blurRadius(28.dp)
+    backgroundColor(Neon.Background)
+    colorEffects(listOf(HazeColorEffect.tint(Neon.Background.copy(alpha = 0.55f))))
+    fallbackColorEffect(HazeColorEffect.tint(Neon.Background.copy(alpha = 0.92f)))
+    noiseFactor(0.04f)
+}
+
+/** Jeder Screen bekommt den Hintergrund mit Lichtflecken (gleitet bei Unterseiten mit). */
+private inline fun <reified T : Any> NavGraphBuilder.screen(
+    noinline content: @Composable (NavBackStackEntry) -> Unit,
+) = composable<T> { entry -> GlowBackground { content(entry) } }
 
 /** Großes „+“ in der Mitte der Leiste: Essen erfassen (Mahlzeit nach Uhrzeit vorgewählt). */
 @Composable

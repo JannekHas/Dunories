@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.data.repository.BodyMeasurementRepository
 import de.kalorienapp.domain.model.BodyMeasurement
 import de.kalorienapp.domain.model.MeasureType
@@ -131,7 +132,7 @@ fun BodyMeasurementsSection(viewModel: BodyMeasurementViewModel = viewModel(fact
             val unit = stringResource(type.unitRes)
             val latest = list.last()
             val diff = latest.value - list.first().value
-            Card(Modifier.fillMaxWidth()) {
+            GlassCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.clickable { expanded = if (expanded == type.name) null else type.name }.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(type.labelRes), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))

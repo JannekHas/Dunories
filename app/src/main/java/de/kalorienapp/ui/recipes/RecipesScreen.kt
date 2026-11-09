@@ -55,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.data.repository.RecipeRepository
 import de.kalorienapp.data.repository.ShoppingRepository
 import de.kalorienapp.domain.model.Recipe
@@ -253,7 +254,7 @@ fun RecipesScreen(
 
 @Composable
 private fun RecipeCard(recipe: Recipe, categories: List<RecipeCategory>, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    GlassCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
             RecipeImage(
                 recipe,
@@ -281,7 +282,7 @@ private fun RecipeCard(recipe: Recipe, categories: List<RecipeCategory>, onClick
 
 @Composable
 private fun EmptyHint() {
-    Card(Modifier.fillMaxWidth()) {
+    GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(painterResource(R.drawable.ic_restaurant), contentDescription = null, tint = Neon.Yellow, modifier = Modifier.size(32.dp))
             Text(stringResource(R.string.recipes_empty_title), style = MaterialTheme.typography.titleMedium)

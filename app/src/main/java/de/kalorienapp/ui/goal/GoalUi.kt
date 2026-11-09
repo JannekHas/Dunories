@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.data.repository.GoalState
 import de.kalorienapp.domain.GoalPlanner
 import de.kalorienapp.domain.model.Goal
@@ -158,7 +159,7 @@ fun GoalInputs(form: GoalFormState, currentWeightKg: Double?, onUpdate: (GoalFor
 /** Was das eingegebene Ziel bedeutet: Tempo, Anpassung und ggf. Hinweis auf Begrenzung. */
 @Composable
 fun GoalPreviewCard(preview: GoalState?, modifier: Modifier = Modifier) {
-    Card(modifier.fillMaxWidth()) {
+    GlassCard(modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             val goal = preview?.goal
             val plan = preview?.plan
@@ -201,7 +202,7 @@ private fun LimitedHint(limited: Boolean, realisticDate: LocalDate?, direction: 
 /** Aktives Ziel im Profil mit Fortschritt; ohne Ziel ein Hinweis. */
 @Composable
 fun GoalCard(state: GoalState?, onNewGoal: () -> Unit, modifier: Modifier = Modifier) {
-    Card(modifier.fillMaxWidth()) {
+    GlassCard(modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             val goal = state?.goal
             val plan = state?.plan

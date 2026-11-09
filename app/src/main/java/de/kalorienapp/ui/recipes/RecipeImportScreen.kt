@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.ui.components.AiWaitProgress
 import de.kalorienapp.data.remote.social.SocialPageParser
 import de.kalorienapp.data.remote.social.SocialPlatform
@@ -171,7 +172,7 @@ private fun Progress(source: ImportSource, current: ImportStage?) {
         add(ImportStage.PREPARING_IMAGE)
     }
     val currentIndex = stages.indexOf(current).coerceAtLeast(0)
-    Card(Modifier.fillMaxWidth()) {
+    GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             stages.forEachIndexed { index, stage ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -224,7 +225,7 @@ private fun FailureCard(failure: ImportFailure, platform: SocialPlatform?) {
         ImportFailure.AI_ERROR -> R.string.import_fail_ai_title to R.string.error_ai_invalid
         ImportFailure.FILE_UNREADABLE -> R.string.import_fail_file_title to R.string.import_fail_file_text
     }
-    Card(Modifier.fillMaxWidth()) {
+    GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(title), style = MaterialTheme.typography.titleMedium, color = Neon.Yellow)
             Text(stringResource(text), style = MaterialTheme.typography.bodyMedium)

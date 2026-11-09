@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.EntrySource
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.domain.model.sum
@@ -112,7 +113,7 @@ private fun ProposalItemCard(
 ) {
     val form = item.form
     val total = form.totalNutrients()
-    Card(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

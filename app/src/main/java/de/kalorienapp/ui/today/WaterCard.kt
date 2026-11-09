@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.Water
 import de.kalorienapp.ui.components.NumberField
 import de.kalorienapp.ui.components.format
@@ -58,7 +59,7 @@ fun WaterCard(
     if (editGoal) {
         WaterGoalDialog(state, onSave = { onGoal(it); editGoal = false }, onDismiss = { editGoal = false })
     }
-    Card(Modifier.fillMaxWidth()) {
+    GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Eine Zeile: Titel + Stand (antippen = Ziel ändern), zwei Schnellknöpfe, Rückgängig.
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {

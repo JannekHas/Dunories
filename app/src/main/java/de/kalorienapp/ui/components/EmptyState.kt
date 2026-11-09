@@ -27,7 +27,7 @@ fun EmptyState(
     onAction: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    Card(modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Neon.SurfaceHigh)) {
+    GlassCard(modifier.fillMaxWidth(), strong = true) {
         Column(
             Modifier.fillMaxWidth().padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

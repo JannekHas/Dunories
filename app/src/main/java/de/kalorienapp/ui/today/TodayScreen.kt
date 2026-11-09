@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.pluralStringResource
 import de.kalorienapp.ui.components.pressable
+import de.kalorienapp.ui.components.LocalBottomBarPadding
 import de.kalorienapp.ui.components.SkeletonBlock
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.background
@@ -83,6 +84,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.BuildConfig
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.FoodEntry
@@ -252,11 +254,11 @@ fun TodayScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState, Modifier.padding(bottom = LocalBottomBarPadding.current)) },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = if (onBack != null) 88.dp else 16.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = if (onBack != null) 88.dp else 16.dp + LocalBottomBarPadding.current),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (!state.loaded) {
@@ -355,7 +357,7 @@ private fun StreakBanner(days: Int) {
 
 @Composable
 private fun GoalBanner(onSetGoal: () -> Unit) {
-    Card(colors = CardDefaults.cardColors(containerColor = Neon.SurfaceHigh)) {
+    GlassCard(strong = true) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -601,7 +603,7 @@ private fun MealCard(
     onSaveCombo: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
-    Card(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
         // Kopfzeile antippen = in diese Mahlzeit eintragen (statt eigenem „+“-Knopf).
         Surface(
             color = group.mealType.neonColor,

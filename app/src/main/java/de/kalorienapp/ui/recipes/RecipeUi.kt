@@ -43,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.Effort
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.domain.model.Recipe
@@ -175,7 +176,7 @@ private fun MacroDot(text: String, color: Color) {
 fun NutritionOverviewCard(recipe: Recipe, modifier: Modifier = Modifier) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val perServing = recipe.perServing
-    Card(modifier.fillMaxWidth()) {
+    GlassCard(modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 pluralStringResource(R.plurals.recipe_per_serving_of, recipe.safeServings, recipe.safeServings),

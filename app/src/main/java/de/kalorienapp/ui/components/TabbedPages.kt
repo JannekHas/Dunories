@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.ui.theme.Neon
@@ -40,7 +41,7 @@ fun TabbedPages(
     Column(modifier) {
         PrimaryTabRow(
             selectedTabIndex = pagerState.currentPage,
-            containerColor = Neon.Background,
+            containerColor = Color.Transparent,
             contentColor = Neon.Cyan,
             indicator = {
                 TabRowDefaults.PrimaryIndicator(
@@ -65,7 +66,7 @@ fun TabbedPages(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
-                    .padding(top = 12.dp, bottom = 24.dp),
+                    .padding(top = 12.dp, bottom = 24.dp + LocalBottomBarPadding.current),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) { page(index) }
         }

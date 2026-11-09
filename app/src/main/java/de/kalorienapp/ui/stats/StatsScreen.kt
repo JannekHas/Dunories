@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.PeriodStats
 import de.kalorienapp.domain.model.Sex
@@ -142,7 +143,7 @@ private fun SummaryPills(stats: PeriodStats) {
 @Composable
 private fun AverageCard(stats: PeriodStats, targets: DailyTargets?, sex: Sex?) {
     val avg = stats.averageEaten ?: return
-    Card(Modifier.fillMaxWidth()) {
+    GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stringResource(R.string.stats_avg_title), style = MaterialTheme.typography.titleMedium)
             Text(

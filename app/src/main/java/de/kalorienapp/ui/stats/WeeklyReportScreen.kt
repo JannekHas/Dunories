@@ -51,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.ui.components.AiWaitProgress
 import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.domain.model.WeeklyReport
@@ -78,10 +79,7 @@ fun WeeklyReportSection(
     onGenerate: () -> Unit,
     onOpen: (WeeklyReport) -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Neon.SurfaceHigh),
-    ) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), strong = true) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(painterResource(R.drawable.ic_sparkle), contentDescription = null, tint = Neon.Violet, modifier = Modifier.size(22.dp))
@@ -222,7 +220,7 @@ fun WeeklyReportScreen(
             if (r.tips.isNotEmpty()) {
                 Text(stringResource(R.string.report_tips), style = MaterialTheme.typography.titleMedium)
                 r.tips.forEachIndexed { index, tip ->
-                    Card(Modifier.fillMaxWidth()) {
+                    GlassCard(Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.Top) {
                             Box(
                                 Modifier.size(26.dp).clip(CircleShape).background(Neon.Rainbow[(index + 4) % Neon.Rainbow.size]),
@@ -237,7 +235,7 @@ fun WeeklyReportScreen(
                 }
             }
             r.goalNote?.let { note ->
-                Card(colors = CardDefaults.cardColors(containerColor = Neon.SurfaceHigh), modifier = Modifier.fillMaxWidth()) {
+                GlassCard(strong = true, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(stringResource(R.string.report_goal), style = MaterialTheme.typography.titleSmall, color = Neon.Cyan)
                         Text(note, style = MaterialTheme.typography.bodyMedium)

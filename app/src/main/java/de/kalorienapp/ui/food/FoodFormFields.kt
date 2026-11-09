@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.ui.components.NumberField
@@ -112,14 +113,11 @@ fun FoodFormFields(
 /** Summe für die eingegebene Menge – das wird tatsächlich gezählt. */
 @Composable
 private fun TotalCard(amount: Double?, unitLabel: String, total: Nutrients?) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-    ) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), strong = true) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (amount == null || total == null) {
                 Text(stringResource(R.string.entry_total_missing_amount), style = MaterialTheme.typography.bodyMedium)
-                return@Card
+                return@GlassCard
             }
             Text(
                 stringResource(R.string.entry_total_for, amount.format(1).trimDecimalZero(), unitLabel),

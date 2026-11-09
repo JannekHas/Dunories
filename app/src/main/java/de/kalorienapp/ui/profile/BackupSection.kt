@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.backup.BackupFormat
 import de.kalorienapp.backup.BackupManager
 import de.kalorienapp.ui.AppViewModelProvider
@@ -195,7 +196,7 @@ fun BackupSection(viewModel: BackupViewModel = viewModel(factory = AppViewModelP
             title = { Text(stringResource(R.string.backup_restore_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Card(colors = CardDefaults.cardColors(containerColor = Neon.SurfaceHigh)) {
+                    GlassCard(strong = true) {
                         Column(Modifier.padding(12.dp)) {
                             Text(stringResource(R.string.backup_restore_contains), style = MaterialTheme.typography.labelLarge)
                             BackupSummaryText(confirm.prepared.summary)
@@ -239,7 +240,7 @@ fun BackupSection(viewModel: BackupViewModel = viewModel(factory = AppViewModelP
                 CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Neon.Cyan)
                 Text(stringResource(R.string.backup_working), style = MaterialTheme.typography.bodySmall)
             }
-            is BackupState.Done -> Card(colors = CardDefaults.cardColors(containerColor = Neon.SurfaceHigh), modifier = Modifier.fillMaxWidth()) {
+            is BackupState.Done -> GlassCard(strong = true, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
                     Text(
                         stringResource(if (s.saved) R.string.backup_saved else R.string.backup_created),

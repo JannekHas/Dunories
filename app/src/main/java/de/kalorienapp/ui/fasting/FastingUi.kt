@@ -45,6 +45,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.domain.Fasting
 import de.kalorienapp.domain.FastingConfig
@@ -209,7 +210,7 @@ fun FastingCard(config: FastingConfig, sex: Sex?, eatenKcal: Double, entriesInFa
         FastingPhase.FASTING, FastingPhase.FAST_DAY -> Neon.Violet
         FastingPhase.EATING, FastingPhase.NORMAL_DAY -> Neon.Green
     }
-    Card(Modifier.fillMaxWidth()) {
+    GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -270,7 +271,7 @@ fun FastingCard(config: FastingConfig, sex: Sex?, eatenKcal: Double, entriesInFa
 /** Statistik: eingehaltene Tage und Ø Fastenpause im Zeitraum. */
 @Composable
 fun FastingStatsCard(stats: FastingStats) {
-    Card(Modifier.fillMaxWidth()) {
+    GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(stringResource(R.string.fasting_stats_title), style = MaterialTheme.typography.titleMedium)
             if (stats.evaluatedDays == 0) {

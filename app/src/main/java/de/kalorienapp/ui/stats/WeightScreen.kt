@@ -43,6 +43,7 @@ import de.kalorienapp.domain.WeightTrend
 import de.kalorienapp.domain.model.WeightEntry
 import de.kalorienapp.domain.model.WeightGoal
 import de.kalorienapp.ui.AppViewModelProvider
+import de.kalorienapp.ui.components.LocalBottomBarPadding
 import de.kalorienapp.ui.components.NumberField
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.parseDecimal
@@ -103,7 +104,7 @@ fun WeightScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
-                .padding(top = 4.dp, bottom = 24.dp),
+                .padding(top = 4.dp, bottom = 24.dp + LocalBottomBarPadding.current),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             WeightSection(
