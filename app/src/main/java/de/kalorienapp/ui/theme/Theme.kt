@@ -11,7 +11,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
+import de.kalorienapp.BuildConfig
 import de.kalorienapp.R
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 
 /**
  * Neon-Palette im Stil von „Revolution Idle“: kräftige Regenbogenfarben auf Dunkelgrau mit
@@ -140,5 +144,9 @@ private val NeonTypography = Typography().run {
 /** Immer dunkel – das Neon-Design lebt vom dunklen Hintergrund. */
 @Composable
 fun KalorienTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = NeonColors, typography = NeonTypography, content = content)
+    // Ganze App-Schrift skalieren (zusätzlich zur Schriftgröße aus den Android-Einstellungen).
+    val density = LocalDensity.current
+    CompositionLocalProvider(LocalDensity provides Density(density.density, density.fontScale * BuildConfig.TEXT_SCALE)) {
+        MaterialTheme(colorScheme = NeonColors, typography = NeonTypography, content = content)
+    }
 }

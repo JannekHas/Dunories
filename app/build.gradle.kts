@@ -31,6 +31,9 @@ android {
             "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"",
         )
 
+        // Schriftgröße der ganzen App (1.0 = Standard); zum Ausprobieren: -PtextScale=1.1
+        buildConfigField("float", "TEXT_SCALE", "${providers.gradleProperty("textScale").getOrElse("1.0")}f")
+
         // Sichtbare Bereiche der App – ausgeblendete bleiben im Code und in der Datenbank erhalten
         val features = mapOf("WATER" to false, "RECIPES" to false)
         features.forEach { (name, on) ->

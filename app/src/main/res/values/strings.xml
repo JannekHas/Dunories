@@ -54,7 +54,8 @@
     <string name="section_body">Körperdaten</string>
     <string name="section_goal">Ziel</string>
     <string name="section_targets">Ziele anpassen</string>
-    <string name="profile_sex">Geschlecht</string>
+    <string name="profile_sex">Biologisches Geschlecht (für die Stoffwechsel-Berechnung)</string>
+    <string name="profile_sex_info">Wir fragen dies ausschließlich ab, um deinen biologischen Grundumsatz (Kalorienbedarf) mathematisch möglichst präzise zu berechnen. Deine persönliche Geschlechtsidentität wird hiervon nicht berührt.</string>
     <string name="profile_age">Alter</string>
     <string name="profile_height">Größe</string>
     <string name="profile_weight">Gewicht</string>
