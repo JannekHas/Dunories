@@ -28,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import de.kalorienapp.BuildConfig
 import de.kalorienapp.R
 import de.kalorienapp.ui.calendar.CalendarScreen
 import de.kalorienapp.ui.capture.CaptureScreen
@@ -60,7 +61,7 @@ private val topLevelDestinations = listOf(
     TopLevelDestination(RecipesRoute, { ImageVector.vectorResource(R.drawable.ic_restaurant) }, R.string.nav_recipes),
     TopLevelDestination(StatsRoute, { ImageVector.vectorResource(R.drawable.ic_bar_chart) }, R.string.nav_stats),
     TopLevelDestination(ProfileRoute, { Icons.Filled.Person }, R.string.nav_profile),
-)
+).filter { it.route != RecipesRoute || BuildConfig.FEATURE_RECIPES }
 
 @Composable
 fun AppNavHost(startDestination: Any, container: AppContainer) {

@@ -30,6 +30,13 @@ android {
             "GEMINI_API_KEY",
             "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"",
         )
+
+        // Sichtbare Bereiche der App – ausgeblendete bleiben im Code und in der Datenbank erhalten
+        val features = mapOf("WATER" to false, "RECIPES" to false)
+        features.forEach { (name, on) ->
+            buildConfigField("boolean", "FEATURE_$name", on.toString())
+            resValue("bool", "feature_${name.lowercase()}", on.toString())
+        }
     }
 
     buildTypes {
@@ -48,6 +55,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
 }
 

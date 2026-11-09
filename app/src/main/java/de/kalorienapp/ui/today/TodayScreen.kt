@@ -74,6 +74,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import de.kalorienapp.BuildConfig
 import de.kalorienapp.R
 import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DaySummary
@@ -268,8 +269,10 @@ fun TodayScreen(
                     FastingCard(config, state.sex, state.summary?.eaten?.kcal ?: 0.0, outside)
                 }
             }
-            item(key = "water") {
-                WaterCard(water, onAdd = viewModel::addWater, onUndo = viewModel::undoWater, onGoal = viewModel::setWaterGoal)
+            if (BuildConfig.FEATURE_WATER) {
+                item(key = "water") {
+                    WaterCard(water, onAdd = viewModel::addWater, onUndo = viewModel::undoWater, onGoal = viewModel::setWaterGoal)
+                }
             }
             items(state.meals, key = { it.mealType.name }) { group ->
                 MealCard(

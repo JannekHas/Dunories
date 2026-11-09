@@ -1,5 +1,6 @@
 package de.kalorienapp.data.repository
 
+import de.kalorienapp.BuildConfig
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.db.dao.ActivityEntryDao
 import de.kalorienapp.data.db.dao.FoodEntryDao
@@ -61,9 +62,12 @@ class WeeklyReportRepository(
             activities = activityDao.between(from.toEpochDay(), to.toEpochDay()).map { it.toDomain() },
             weights = weightRepository.entries.first(),
             measurements = measurementRepository.all.first(),
-            waterByDay = waterRepository.dailyTotals(from, to),
-            waterGoalMl = Water.goalMl(settings.waterGoalMl.value, state.profile.weightKg),
-        )
+        ).let { input ->
+            if (!BuildConfig.FEATURE_WATER) input else input.copy(
+                waterByDay = waterRepository.dailyTotals(from, to),
+                waterGoalMl = Water.goalMl(settings.waterGoalMl.value, state.profile.weightKg),
+            )
+        }
         val fasting = settings.fastingConfig.value.takeIf { settings.fastingEnabled.value }
         val input = if (fasting == null) baseInput else baseInput.copy(
             fasting = fasting,
