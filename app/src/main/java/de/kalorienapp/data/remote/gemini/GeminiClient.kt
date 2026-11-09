@@ -43,7 +43,11 @@ class GeminiException(val error: GeminiError, cause: Throwable? = null) : Except
  * Gemini-REST-Client. Antworten werden immer als JSON mit festem Schema angefordert
  * (Nährwerte pro 100 g/ml in Etikett-Reihenfolge) und tolerant geparst.
  */
-class GeminiClient(private val apiKey: String) {
+class GeminiClient(
+    private val apiKey: String,
+    /** Paketname + Signatur ([AppIdentity]) für den auf Dunories beschränkten Schlüssel. */
+    private val appIdentity: Map<String, String> = emptyMap(),
+) {
 
     suspend fun analyzePhoto(imageBytes: ByteArray): List<FoodDraft> {
         val image = Base64.getEncoder().encodeToString(imageBytes)
@@ -162,7 +166,7 @@ class GeminiClient(private val apiKey: String) {
                 val body = Http.postJson(
                     url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent",
                     body = request,
-                    headers = mapOf("x-goog-api-key" to apiKey),
+                    headers = authHeaders,
                     timeoutMs = timeoutMs,
                 )
                 log("ok")
@@ -184,6 +188,8 @@ class GeminiClient(private val apiKey: String) {
     }
 
     internal val key: String get() = apiKey
+
+    internal val authHeaders: Map<String, String> get() = mapOf("x-goog-api-key" to apiKey) + appIdentity
 
     companion object {
         /** Bilder gehen als WebP an die KI (kleiner als JPEG → schnellerer Upload). */

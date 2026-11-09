@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.pluralStringResource
 import de.kalorienapp.ui.components.pressable
+import de.kalorienapp.ui.components.Tip
+import de.kalorienapp.ui.components.TipCaret
+import de.kalorienapp.ui.components.TipSlot
 import de.kalorienapp.ui.components.LocalBottomBarPadding
 import de.kalorienapp.ui.components.SkeletonBlock
 import androidx.compose.foundation.layout.aspectRatio
@@ -296,6 +299,7 @@ fun TodayScreen(
                     WaterCard(water, onAdd = viewModel::addWater, onUndo = viewModel::undoWater, onGoal = viewModel::setWaterGoal)
                 }
             }
+            item(key = "tip_meal") { TipSlot(Tip.MEAL, caret = TipCaret.DOWN_CENTER, after = Tip.ADD) }
             items(state.meals, key = { it.mealType.name }) { group ->
                 MealCard(
                     group = group,
@@ -460,6 +464,8 @@ private fun SummaryCard(
             )
         }
 
+        TipSlot(Tip.ACTIVITY, caret = TipCaret.UP_END, after = Tip.MEAL)
+        TipSlot(Tip.RINGS, condition = summary.eaten.kcal > 0, after = Tip.ACTIVITY)
         NutrientLegend(summary, sex)
     }
 }

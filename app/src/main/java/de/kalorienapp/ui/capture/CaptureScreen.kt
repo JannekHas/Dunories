@@ -66,6 +66,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.Tip
+import de.kalorienapp.ui.components.TipCaret
+import de.kalorienapp.ui.components.TipSlot
 import de.kalorienapp.ui.components.AiWaitProgress
 import de.kalorienapp.capture.AnalysisStage
 import de.kalorienapp.domain.model.MealType
@@ -246,6 +249,7 @@ private fun CameraContent(
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
             )
+            TipSlot(Tip.CAPTURE, caret = TipCaret.UP_CENTER)
         }
 
         Row(

@@ -5,6 +5,7 @@ import de.kalorienapp.backup.BackupManager
 import de.kalorienapp.capture.FoodAnalyzer
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.db.AppDatabase
+import de.kalorienapp.data.remote.gemini.AppIdentity
 import de.kalorienapp.data.remote.gemini.GeminiClient
 import de.kalorienapp.data.remote.gemini.GeminiFiles
 import de.kalorienapp.data.remote.gemini.GeminiRecipeAnalyzer
@@ -57,7 +58,7 @@ class AppContainer(context: Context) {
     val shoppingRepository = ShoppingRepository(database.shoppingDao())
     val weightRepository = WeightRepository(database.weightEntryDao(), profileRepository)
 
-    private val gemini = GeminiClient(BuildConfig.GEMINI_API_KEY)
+    private val gemini = GeminiClient(BuildConfig.GEMINI_API_KEY, AppIdentity.headers(context))
 
     val foodAnalyzer = FoodAnalyzer(
         context = context,

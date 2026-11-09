@@ -94,6 +94,22 @@ class AppSettings(context: Context) {
         _weeklyReport.value = enabled
     }
 
+    private val _seenTips = MutableStateFlow(prefs.getStringSet(KEY_SEEN_TIPS, emptySet()).orEmpty().toSet())
+    /** Namen der weggeklickten Tipps ([de.kalorienapp.ui.components.Tip]). */
+    val seenTips: StateFlow<Set<String>> = _seenTips.asStateFlow()
+
+    fun markTipSeen(name: String) {
+        val updated = _seenTips.value + name
+        prefs.edit().putStringSet(KEY_SEEN_TIPS, updated).apply()
+        _seenTips.value = updated
+    }
+
+    /** Profil → „Tipps wieder anzeigen“. */
+    fun resetTips() {
+        prefs.edit().remove(KEY_SEEN_TIPS).apply()
+        _seenTips.value = emptySet()
+    }
+
     /** Ob schon einmal nach der Benachrichtigungs-Erlaubnis gefragt wurde (nicht bei jedem Start nerven). */
     var notificationPermissionAsked: Boolean
         get() = prefs.getBoolean(KEY_PERMISSION_ASKED, false)
@@ -112,5 +128,6 @@ class AppSettings(context: Context) {
         private const val KEY_FASTING_HOURS = "fasting_custom_hours"
         private const val KEY_FASTING_DAYS = "fasting_days"
         private const val KEY_PERMISSION_ASKED = "notification_permission_asked"
+        private const val KEY_SEEN_TIPS = "seen_tips"
     }
 }

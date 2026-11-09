@@ -46,6 +46,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.LocalTips
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.notify.CalorieNotifier
 import de.kalorienapp.notify.CaloriesWidget
@@ -179,6 +180,16 @@ fun NotificationSettingsSection(
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.widget_add)) }
         }
+        // Einmalige Tipps erneut zeigen (z. B. nach dem Ausprobieren oder für jemand anderen am Handy).
+        val tips = LocalTips.current
+        val tipsShownAgain = stringResource(R.string.tips_reset_done)
+        OutlinedButton(
+            onClick = {
+                tips?.resetTips()
+                android.widget.Toast.makeText(context, tipsShownAgain, android.widget.Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(stringResource(R.string.tips_reset)) }
     }
 }
 

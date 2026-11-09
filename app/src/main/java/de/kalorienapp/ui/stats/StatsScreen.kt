@@ -40,6 +40,8 @@ import de.kalorienapp.ui.components.MicroList
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.calendar.CalendarSection
 import de.kalorienapp.ui.components.EmptyState
+import de.kalorienapp.ui.components.Tip
+import de.kalorienapp.ui.components.TipSlot
 import de.kalorienapp.ui.components.ChoiceChips
 import de.kalorienapp.ui.components.TabbedPages
 import de.kalorienapp.ui.components.NeonPill
@@ -72,6 +74,7 @@ fun StatsScreen(
         ) { page ->
             when (page) {
                 TAB_FOOD -> {
+                    TipSlot(Tip.STATS)
                     ChoiceChips(
                         options = StatsPeriod.entries,
                         selected = state.period,

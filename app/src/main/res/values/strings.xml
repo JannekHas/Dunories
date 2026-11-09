@@ -192,6 +192,17 @@
     <string name="nav_calendar">Kalender</string>
     <string name="nav_stats">Statistik</string>
     <string name="nav_weight">Gewicht</string>
+    <string name="tip_label">Tipp</string>
+    <string name="tip_dismiss">Verstanden</string>
+    <string name="tip_add">Mit dem + trägst du Essen ein: Foto vom Teller, Barcode einer Verpackung, Nährwerttabelle – oder einfach beschreiben oder sprechen.</string>
+    <string name="tip_meal">Du kannst auch direkt auf eine Mahlzeit tippen – dann landet der Eintrag genau dort.</string>
+    <string name="tip_activity">Sport gemacht? Tippe auf „Aktivität“ und trag die verbrannten Kalorien ein – sie erhöhen dein Tagesbudget.</string>
+    <string name="tip_rings">Außen siehst du deine Kalorien, innen Protein (pink), Kohlenhydrate (gelb) und Fett (grün). „Alle Nährwerte“ zeigt Zucker, Ballaststoffe, Vitamine und mehr.</string>
+    <string name="tip_capture">Das kannst du fotografieren:\n• Dein Essen – die KI schätzt Mengen und Nährwerte\n• Den Barcode einer Verpackung – wird automatisch erkannt\n• Die Nährwerttabelle – oben auf „Nährwerttabelle“ stellen, dann wird exakt abgelesen\nUnten: Bild aus der Galerie, Favoriten, Beschreiben (auch per Sprache) oder Manuell.</string>
+    <string name="tip_stats">Wische zwischen Ernährung, Kalender und KI. Montags wertet die KI automatisch deine Woche aus.</string>
+    <string name="tip_weight">Wieg dich am besten morgens nach dem Aufstehen. Die violette Linie zeigt deinen echten Trend – ohne die täglichen Wasserschwankungen.</string>
+    <string name="tips_reset">Tipps wieder anzeigen</string>
+    <string name="tips_reset_done">Die Tipps erscheinen wieder an ihren Stellen.</string>
     <string name="weight_screen_title">Gewicht &amp; Körper</string>
     <string name="stats_empty_title">Noch keine Daten</string>
     <string name="stats_empty_text">Trag ein paar Tage ein, dann siehst du hier deinen Verlauf, Durchschnitte und wie oft du im Ziel warst.</string>

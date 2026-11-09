@@ -96,7 +96,7 @@ class GeminiFiles(private val client: GeminiClient) {
             requestMethod = method
             connectTimeout = 15_000
             readTimeout = 60_000
-            setRequestProperty("x-goog-api-key", client.key)
+            client.authHeaders.forEach { (k, v) -> setRequestProperty(k, v) }
         }
 
     private fun check(connection: HttpURLConnection) {

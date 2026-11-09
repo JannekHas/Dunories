@@ -32,6 +32,13 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import de.kalorienapp.ui.components.GlowBackground
 import de.kalorienapp.ui.components.LocalBottomBarPadding
+import de.kalorienapp.ui.components.LocalTips
+import de.kalorienapp.ui.components.Tip
+import de.kalorienapp.ui.components.TipCaret
+import de.kalorienapp.ui.components.TipSlot
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.navigation.NavDestination
 import de.kalorienapp.ui.components.PressableSurface
@@ -192,147 +199,162 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                 askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-        CompositionLocalProvider(LocalBottomBarPadding provides padding.calculateBottomPadding()) {
-            NavHost(
-                navController = navController,
-                startDestination = startDestination,
-                // Kein Abstand nach unten: Screens scrollen unter die Leiste und holen sich ihre Höhe über LocalBottomBarPadding.
-                modifier = Modifier.hazeSource(hazeState).consumeWindowInsets(padding),
-                enterTransition = {
-                    if (isTabSwitch()) fadeIn(tween(180))
-                    else slideInHorizontally(slideSpring) { it / 4 } + fadeIn(tween(180))
-                },
-                exitTransition = {
-                    if (isTabSwitch()) fadeOut(tween(120))
-                    else slideOutHorizontally(slideSpring) { -it / 10 } + fadeOut(tween(180))
-                },
-                popEnterTransition = {
-                    if (isTabSwitch()) fadeIn(tween(180))
-                    else slideInHorizontally(slideSpring) { -it / 10 } + fadeIn(tween(180))
-                },
-                popExitTransition = {
-                    if (isTabSwitch()) fadeOut(tween(120))
-                    else slideOutHorizontally(slideSpring) { it / 4 } + fadeOut(tween(180))
-                },
-            ) {
-                screen<OnboardingRoute> {
-                    OnboardingScreen(
-                        onFinished = {
-                            navController.navigate(TodayRoute) {
-                                popUpTo<OnboardingRoute> { inclusive = true }
-                            }
-                        },
-                    )
-                }
-                screen<TodayRoute> {
-                    TodayScreen(
-                        onDateShown = { shownDate = it },
-                        onSetGoal = { navController.navigate(GoalRoute) },
-                        onAddEntry = { date, meal ->
-                            navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
-                        },
-                        onEditEntry = { entry ->
-                            navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
-                        },
-                    )
-                }
-                screen<StatsRoute> {
-                    StatsScreen(
-                        onOpenReport = { navController.navigate(WeeklyReportRoute(it)) },
-                        onDayClick = { date -> navController.navigate(DayRoute(date.toEpochDay())) },
-                        onAddEntry = addEntry,
-                    )
-                }
-                screen<WeightRoute> {
-                    WeightScreen(
-                        openWeighDialog = container.navRequests.openWeighDialog.collectAsStateWithLifecycle().value,
-                        onWeighDialogShown = container.navRequests::weighDialogShown,
-                    )
-                }
-                screen<WeeklyReportRoute> {
-                    WeeklyReportScreen(onBack = { navController.popBackStack() })
-                }
-                screen<DayRoute> {
-                    TodayScreen(
-                        onSetGoal = { navController.navigate(GoalRoute) },
-                        onAddEntry = { date, meal ->
-                            navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
-                        },
-                        onEditEntry = { entry ->
-                            navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
-                        },
-                        onBack = { navController.popBackStack() },
-                    )
-                }
-                screen<ProfileRoute> {
-                    ProfileScreen(onNewGoal = { navController.navigate(GoalRoute) })
-                }
-                screen<RecipesRoute> {
-                    RecipesScreen(
-                        onOpen = { navController.navigate(RecipeDetailRoute(it.id)) },
-                        onCreate = { navController.navigate(RecipeEditRoute()) },
-                        onImportLink = { text -> shareInbox.put(ImportSource.Text(text)) },
-                        onOpenShopping = { navController.navigate(ShoppingListRoute) },
-                    )
-                }
-                screen<ShoppingListRoute> {
-                    ShoppingListScreen(onBack = { navController.popBackStack() })
-                }
-                screen<RecipeDetailRoute> {
-                    RecipeDetailScreen(
-                        onBack = { navController.popBackStack() },
-                        onEdit = { navController.navigate(RecipeEditRoute(id = it.id)) },
-                    )
-                }
-                screen<RecipeEditRoute> { entry ->
-                    val route = entry.toRoute<RecipeEditRoute>()
-                    RecipeEditScreen(
-                        onClose = { navController.popBackStack() },
-                        onSaved = { id ->
-                            if (route.id != 0L) {
-                                navController.popBackStack()
-                            } else {
-                                // Neues Rezept → Detailansicht statt Editor im Back-Stack.
-                                navController.navigate(RecipeDetailRoute(id)) {
-                                    popUpTo<RecipeEditRoute> { inclusive = true }
+        CompositionLocalProvider(
+            LocalBottomBarPadding provides padding.calculateBottomPadding(),
+            LocalTips provides container.settings,
+        ) {
+            Box(Modifier.fillMaxSize()) {
+                NavHost(
+                    navController = navController,
+                    startDestination = startDestination,
+                    // Kein Abstand nach unten: Screens scrollen unter die Leiste und holen sich ihre Höhe über LocalBottomBarPadding.
+                    modifier = Modifier.hazeSource(hazeState).consumeWindowInsets(padding),
+                    enterTransition = {
+                        if (isTabSwitch()) fadeIn(tween(180))
+                        else slideInHorizontally(slideSpring) { it / 4 } + fadeIn(tween(180))
+                    },
+                    exitTransition = {
+                        if (isTabSwitch()) fadeOut(tween(120))
+                        else slideOutHorizontally(slideSpring) { -it / 10 } + fadeOut(tween(180))
+                    },
+                    popEnterTransition = {
+                        if (isTabSwitch()) fadeIn(tween(180))
+                        else slideInHorizontally(slideSpring) { -it / 10 } + fadeIn(tween(180))
+                    },
+                    popExitTransition = {
+                        if (isTabSwitch()) fadeOut(tween(120))
+                        else slideOutHorizontally(slideSpring) { it / 4 } + fadeOut(tween(180))
+                    },
+                ) {
+                    screen<OnboardingRoute> {
+                        OnboardingScreen(
+                            onFinished = {
+                                navController.navigate(TodayRoute) {
+                                    popUpTo<OnboardingRoute> { inclusive = true }
                                 }
-                            }
-                        },
-                    )
+                            },
+                        )
+                    }
+                    screen<TodayRoute> {
+                        TodayScreen(
+                            onDateShown = { shownDate = it },
+                            onSetGoal = { navController.navigate(GoalRoute) },
+                            onAddEntry = { date, meal ->
+                                navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
+                            },
+                            onEditEntry = { entry ->
+                                navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
+                            },
+                        )
+                    }
+                    screen<StatsRoute> {
+                        StatsScreen(
+                            onOpenReport = { navController.navigate(WeeklyReportRoute(it)) },
+                            onDayClick = { date -> navController.navigate(DayRoute(date.toEpochDay())) },
+                            onAddEntry = addEntry,
+                        )
+                    }
+                    screen<WeightRoute> {
+                        WeightScreen(
+                            openWeighDialog = container.navRequests.openWeighDialog.collectAsStateWithLifecycle().value,
+                            onWeighDialogShown = container.navRequests::weighDialogShown,
+                        )
+                    }
+                    screen<WeeklyReportRoute> {
+                        WeeklyReportScreen(onBack = { navController.popBackStack() })
+                    }
+                    screen<DayRoute> {
+                        TodayScreen(
+                            onSetGoal = { navController.navigate(GoalRoute) },
+                            onAddEntry = { date, meal ->
+                                navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
+                            },
+                            onEditEntry = { entry ->
+                                navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
+                            },
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
+                    screen<ProfileRoute> {
+                        ProfileScreen(onNewGoal = { navController.navigate(GoalRoute) })
+                    }
+                    screen<RecipesRoute> {
+                        RecipesScreen(
+                            onOpen = { navController.navigate(RecipeDetailRoute(it.id)) },
+                            onCreate = { navController.navigate(RecipeEditRoute()) },
+                            onImportLink = { text -> shareInbox.put(ImportSource.Text(text)) },
+                            onOpenShopping = { navController.navigate(ShoppingListRoute) },
+                        )
+                    }
+                    screen<ShoppingListRoute> {
+                        ShoppingListScreen(onBack = { navController.popBackStack() })
+                    }
+                    screen<RecipeDetailRoute> {
+                        RecipeDetailScreen(
+                            onBack = { navController.popBackStack() },
+                            onEdit = { navController.navigate(RecipeEditRoute(id = it.id)) },
+                        )
+                    }
+                    screen<RecipeEditRoute> { entry ->
+                        val route = entry.toRoute<RecipeEditRoute>()
+                        RecipeEditScreen(
+                            onClose = { navController.popBackStack() },
+                            onSaved = { id ->
+                                if (route.id != 0L) {
+                                    navController.popBackStack()
+                                } else {
+                                    // Neues Rezept → Detailansicht statt Editor im Back-Stack.
+                                    navController.navigate(RecipeDetailRoute(id)) {
+                                        popUpTo<RecipeEditRoute> { inclusive = true }
+                                    }
+                                }
+                            },
+                        )
+                    }
+                    screen<RecipeImportRoute> {
+                        RecipeImportScreen(
+                            onReview = {
+                                navController.navigate(RecipeEditRoute(fromImport = true)) {
+                                    popUpTo<RecipeImportRoute> { inclusive = true }
+                                }
+                            },
+                            onManual = {
+                                navController.navigate(RecipeEditRoute()) {
+                                    popUpTo<RecipeImportRoute> { inclusive = true }
+                                }
+                            },
+                            onClose = { navController.popBackStack() },
+                        )
+                    }
+                    screen<GoalRoute> {
+                        GoalScreen(onDone = { navController.popBackStack() })
+                    }
+                    screen<CaptureRoute> { entry ->
+                        val route = entry.toRoute<CaptureRoute>()
+                        CaptureScreen(
+                            onClose = { navController.popBackStack() },
+                            onManualEntry = { meal ->
+                                // Erfassung durch den manuellen Editor ersetzen, damit „Zurück“ zur Übersicht führt.
+                                navController.navigate(EntryEditRoute(epochDay = route.epochDay, mealType = meal.name)) {
+                                    popUpTo<CaptureRoute> { inclusive = true }
+                                }
+                            },
+                        )
+                    }
+                    screen<EntryEditRoute> {
+                        EntryEditScreen(onDone = { navController.popBackStack() })
+                    }
                 }
-                screen<RecipeImportRoute> {
-                    RecipeImportScreen(
-                        onReview = {
-                            navController.navigate(RecipeEditRoute(fromImport = true)) {
-                                popUpTo<RecipeImportRoute> { inclusive = true }
-                            }
-                        },
-                        onManual = {
-                            navController.navigate(RecipeEditRoute()) {
-                                popUpTo<RecipeImportRoute> { inclusive = true }
-                            }
-                        },
-                        onClose = { navController.popBackStack() },
-                    )
-                }
-                screen<GoalRoute> {
-                    GoalScreen(onDone = { navController.popBackStack() })
-                }
-                screen<CaptureRoute> { entry ->
-                    val route = entry.toRoute<CaptureRoute>()
-                    CaptureScreen(
-                        onClose = { navController.popBackStack() },
-                        onManualEntry = { meal ->
-                            // Erfassung durch den manuellen Editor ersetzen, damit „Zurück“ zur Übersicht führt.
-                            navController.navigate(EntryEditRoute(epochDay = route.epochDay, mealType = meal.name)) {
-                                popUpTo<CaptureRoute> { inclusive = true }
-                            }
-                        },
-                    )
-                }
-                screen<EntryEditRoute> {
-                    EntryEditScreen(onDone = { navController.popBackStack() })
-                }
+                // Erster Tipp für neue Nutzer: zeigt auf das große „+“.
+                TipSlot(
+                    Tip.ADD,
+                    caret = TipCaret.DOWN_CENTER,
+                    condition = currentDestination?.hasRoute(TodayRoute::class) == true,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = padding.calculateBottomPadding() + 4.dp),
+                )
             }
         }
     }
