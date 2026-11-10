@@ -42,6 +42,14 @@ data object ShoppingListRoute
 @Serializable
 data object GoalRoute
 
+/** Feier-Bildschirm für ein beendetes Ziel (auch aus „Erreichte Ziele“ erneut aufrufbar). */
+@Serializable
+data class GoalCelebrationRoute(val goalId: Long)
+
+/** „Erfolg teilen“: Baukasten fürs teilbare Bild. */
+@Serializable
+data class GoalShareRoute(val goalId: Long)
+
 /** Tagesansicht für ein bestimmtes Datum (aus dem Kalender geöffnet). */
 @Serializable
 data class DayRoute(val epochDay: Long)

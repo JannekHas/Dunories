@@ -102,7 +102,6 @@ import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
 import de.kalorienapp.domain.Fasting
 import de.kalorienapp.ui.fasting.FastingCard
-import de.kalorienapp.ui.goal.GoalResultDialog
 import de.kalorienapp.ui.theme.Neon
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -115,6 +114,7 @@ private val dateFormatter = DateTimeFormatter.ofPattern("EEE, d. MMMM", Locale.G
 @Composable
 fun TodayScreen(
     onSetGoal: () -> Unit,
+    onGoalEnded: (Long) -> Unit = {},
     /** Im Kalender angetippter Tag → hier anzeigen (danach [onDayShown]). */
     requestedDay: LocalDate? = null,
     onDayShown: () -> Unit = {},
@@ -160,12 +160,12 @@ fun TodayScreen(
     val activitySnackbar = remember { SnackbarHostState() }
     var activityDialog by remember { mutableStateOf<ActivityDialogState?>(null) }
 
-    endedGoal?.let { goal ->
-        GoalResultDialog(
-            goal = goal,
-            onNewGoal = { viewModel.dismissEndedGoal(); onSetGoal() },
-            onDismiss = viewModel::dismissEndedGoal,
-        )
+    // Ziel beendet → großer Feier-Bildschirm (statt eines schlichten Dialogs)
+    LaunchedEffect(endedGoal) {
+        endedGoal?.let { goal ->
+            viewModel.dismissEndedGoal()
+            onGoalEnded(goal.id)
+        }
     }
 
     activityDialog?.let { dialog ->

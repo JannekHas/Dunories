@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.goal
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -68,7 +69,7 @@ fun Goal.color(): Color = when (this) {
     Goal.GAIN -> Neon.Orange
 }
 
-private fun signed(value: Double, decimals: Int = 1): String =
+internal fun signed(value: Double, decimals: Int = 1): String =
     (if (value > 0) "+" else if (value < 0) "−" else "") + abs(value).format(decimals)
 
 private fun signed(value: Int): String = (if (value > 0) "+" else if (value < 0) "−" else "") + abs(value).format()
@@ -309,8 +310,11 @@ fun GoalResultDialog(goal: WeightGoal, onNewGoal: () -> Unit, onDismiss: () -> U
 
 /** Ein erreichtes Ziel in der Historie (löschbar). */
 @Composable
-fun GoalHistoryItem(goal: WeightGoal, onDelete: () -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+fun GoalHistoryItem(goal: WeightGoal, onDelete: () -> Unit, modifier: Modifier = Modifier, onOpen: (() -> Unit)? = null) {
+    Row(
+        modifier.fillMaxWidth().then(if (onOpen != null) Modifier.clickable(onClick = onOpen) else Modifier),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 stringResource(goal.direction.labelRes),

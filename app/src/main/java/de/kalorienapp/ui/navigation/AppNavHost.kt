@@ -75,7 +75,9 @@ import de.kalorienapp.BuildConfig
 import de.kalorienapp.R
 import de.kalorienapp.ui.capture.CaptureScreen
 import de.kalorienapp.ui.entry.EntryEditScreen
+import de.kalorienapp.ui.goal.GoalCelebrationScreen
 import de.kalorienapp.ui.goal.GoalScreen
+import de.kalorienapp.ui.goal.GoalShareScreen
 import de.kalorienapp.ui.onboarding.OnboardingScreen
 import de.kalorienapp.recipe.ImportSource
 import de.kalorienapp.AppContainer
@@ -238,6 +240,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     }
                     screen<TodayRoute> {
                         TodayScreen(
+                            onGoalEnded = { navController.navigate(GoalCelebrationRoute(it)) },
                             requestedDay = container.navRequests.showDay.collectAsStateWithLifecycle().value,
                             onDayShown = container.navRequests::dayShown,
                             onSetGoal = { navController.navigate(GoalRoute) },
@@ -262,6 +265,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     }
                     screen<WeightRoute> {
                         WeightScreen(
+                            onOpenGoal = { navController.navigate(GoalCelebrationRoute(it)) },
                             openWeighDialog = container.navRequests.openWeighDialog.collectAsStateWithLifecycle().value,
                             onWeighDialogShown = container.navRequests::weighDialogShown,
                         )
@@ -331,6 +335,19 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             },
                             onClose = { navController.popBackStack() },
                         )
+                    }
+                    screen<GoalCelebrationRoute> { entry ->
+                        val route = entry.toRoute<GoalCelebrationRoute>()
+                        GoalCelebrationScreen(
+                            onShare = { navController.navigate(GoalShareRoute(route.goalId)) },
+                            onNewGoal = {
+                                navController.navigate(GoalRoute) { popUpTo<GoalCelebrationRoute> { inclusive = true } }
+                            },
+                            onClose = { navController.popBackStack() },
+                        )
+                    }
+                    screen<GoalShareRoute> {
+                        GoalShareScreen(onBack = { navController.popBackStack() })
                     }
                     screen<GoalRoute> {
                         GoalScreen(onDone = { navController.popBackStack() })

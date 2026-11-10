@@ -65,6 +65,8 @@ fun WeightScreen(
     /** Aus der Wiege-Erinnerung geöffnet → Dialog direkt zeigen. */
     openWeighDialog: Boolean = false,
     onWeighDialogShown: () -> Unit = {},
+    /** Erreichtes Ziel antippen → Feier-Bildschirm (dort auch „Erfolg teilen“). */
+    onOpenGoal: (Long) -> Unit = {},
     viewModel: StatsViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -122,7 +124,7 @@ fun WeightScreen(
                 HorizontalDivider()
                 Text(stringResource(R.string.goal_history_title), style = MaterialTheme.typography.titleLarge)
                 state.reachedGoals.forEach { goal ->
-                    GoalHistoryItem(goal, onDelete = { goalToDelete = goal })
+                    GoalHistoryItem(goal, onDelete = { goalToDelete = goal }, onOpen = { onOpenGoal(goal.id) })
                 }
             }
         }
