@@ -67,6 +67,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -114,6 +115,9 @@ private val dateFormatter = DateTimeFormatter.ofPattern("EEE, d. MMMM", Locale.G
 @Composable
 fun TodayScreen(
     onSetGoal: () -> Unit,
+    /** Im Kalender angetippter Tag → hier anzeigen (danach [onDayShown]). */
+    requestedDay: LocalDate? = null,
+    onDayShown: () -> Unit = {},
     onAddEntry: (date: LocalDate, mealType: MealType?) -> Unit,
     onEditEntry: (FoodEntry) -> Unit,
     /** Gesetzt, wenn der Tag aus dem Kalender geöffnet wurde. */
@@ -125,6 +129,9 @@ fun TodayScreen(
     val water by viewModel.water.collectAsStateWithLifecycle()
     val fasting by viewModel.fasting.collectAsStateWithLifecycle()
     val streak by viewModel.streak.collectAsStateWithLifecycle()
+    LaunchedEffect(requestedDay) {
+        requestedDay?.let { viewModel.showDate(it); onDayShown() }
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var comboToSave by remember { mutableStateOf<MealGroup?>(null) }

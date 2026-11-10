@@ -169,6 +169,10 @@ class TodayViewModel(
 
     fun nextDay() = date.update { it.plusDays(1) }
 
+    fun showDate(day: LocalDate) {
+        date.value = day
+    }
+
     fun goToToday() {
         date.value = LocalDate.now()
     }

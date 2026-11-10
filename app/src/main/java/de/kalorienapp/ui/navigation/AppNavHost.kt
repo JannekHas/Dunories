@@ -238,6 +238,8 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     }
                     screen<TodayRoute> {
                         TodayScreen(
+                            requestedDay = container.navRequests.showDay.collectAsStateWithLifecycle().value,
+                            onDayShown = container.navRequests::dayShown,
                             onSetGoal = { navController.navigate(GoalRoute) },
                             onAddEntry = { date, meal ->
                                 navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))
@@ -250,7 +252,11 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     screen<StatsRoute> {
                         StatsScreen(
                             onOpenReport = { navController.navigate(WeeklyReportRoute(it)) },
-                            onDayClick = { date -> navController.navigate(DayRoute(date.toEpochDay())) },
+                            // Tag antippen → Reiter „Heute“ mit diesem Tag (keine eigene Unterseite mehr; Wunsch des Nutzers)
+                            onDayClick = { date ->
+                                container.navRequests.showDay(date)
+                                navController.navigateTopLevel(TodayRoute)
+                            },
                             onAddEntry = addEntry,
                         )
                     }

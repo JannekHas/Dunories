@@ -37,7 +37,7 @@ fun BodyDataSection(form: ProfileFormState, onUpdate: FormUpdate) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.profile_sex), style = MaterialTheme.typography.labelLarge)
         ChoiceChips(
-            options = listOf(Sex.FEMALE, Sex.MALE),
+            options = listOf(Sex.MALE, Sex.FEMALE),
             selected = form.sex,
             onSelect = { sex -> onUpdate { it.copy(sex = sex) } },
             label = { stringResource(it.labelRes) },

@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.navigation
 
+import java.time.LocalDate
 import android.content.Intent
 import de.kalorienapp.notify.Notifications
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,18 @@ class NavRequests {
     /** Für den Statistik-Screen: Wiege-Dialog beim nächsten Anzeigen öffnen. */
     private val _openWeighDialog = MutableStateFlow(false)
     val openWeighDialog: StateFlow<Boolean> = _openWeighDialog.asStateFlow()
+
+    /** Tag, den „Heute“ beim nächsten Anzeigen zeigen soll (Tag im Kalender angetippt). */
+    private val _showDay = MutableStateFlow<LocalDate?>(null)
+    val showDay: StateFlow<LocalDate?> = _showDay.asStateFlow()
+
+    fun showDay(day: LocalDate) {
+        _showDay.value = day
+    }
+
+    fun dayShown() {
+        _showDay.value = null
+    }
 
     fun accept(intent: Intent?) {
         _pending.value = when (intent?.getStringExtra(Notifications.EXTRA_OPEN)) {

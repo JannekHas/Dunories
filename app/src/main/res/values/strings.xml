@@ -272,8 +272,7 @@
     <string name="goal_remaining">Jetzt %1$s kg · noch %2$s kg in %3$s</string>
     <string name="goal_result_reached">Ziel erreicht!</string>
     <string name="goal_result_date">Zieldatum erreicht</string>
-    <string name="goal_result_text">Start %1$s kg · Ziel %2$s kg · Ende %3$s kg
-Veränderung: %4$s kg in %5$s</string>
+    <string name="goal_result_text">Start %1$s kg · Ziel %2$s kg · Ende %3$s kg\nVeränderung: %4$s kg in %5$s</string>
     <string name="goal_result_next">Wie geht es weiter? Setze ein neues Ziel – zum Beispiel dein Gewicht halten.</string>
     <string name="goal_later">Später</string>
     <string name="goal_banner_text">Kein aktives Gewichtsziel – dein Tagesziel ist gerade dein Grundumsatz.</string>
