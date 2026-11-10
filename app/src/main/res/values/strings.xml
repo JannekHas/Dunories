@@ -211,7 +211,7 @@
     <string name="meal_add_hint">+ Eintragen</string>
     <string name="meal_menu_add">Eintragen</string>
     <string name="refine_title">Falsch erkannt?</string>
-    <string name="refine_text">Schreib oder sag kurz, was es wirklich ist – die KI schätzt dann mit Foto und deinem Hinweis neu.</string>
+    <string name="refine_text">Schreib oder sag kurz, was es wirklich ist – die KI schätzt dann mit deinem Hinweis neu.</string>
     <string name="refine_placeholder">z. B. „Das ist Linsen-Dal, keine Bolognese, etwa 300 g“</string>
     <string name="refine_button">Neu schätzen</string>
     <plurals name="streak_title">
@@ -274,11 +274,7 @@
     <string name="goal_range">%1$s → %2$s kg bis %3$s</string>
     <string name="goal_maintain_since">%1$s kg halten, seit %2$s</string>
     <string name="goal_remaining">Jetzt %1$s kg · noch %2$s kg in %3$s</string>
-    <string name="goal_result_reached">Ziel erreicht!</string>
-    <string name="goal_result_date">Zieldatum erreicht</string>
     <string name="goal_result_text">Start %1$s kg · Ziel %2$s kg · Ende %3$s kg\nVeränderung: %4$s kg in %5$s</string>
-    <string name="goal_result_next">Wie geht es weiter? Setze ein neues Ziel – zum Beispiel dein Gewicht halten.</string>
-    <string name="goal_later">Später</string>
     <string name="goal_celebrate_reached">Ziel erreicht!</string>
     <string name="goal_celebrate_date">Starke Leistung!</string>
     <string name="goal_celebrate_route">%1$s kg → %2$s kg</string>

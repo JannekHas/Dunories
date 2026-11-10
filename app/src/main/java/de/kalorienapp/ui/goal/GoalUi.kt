@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -45,7 +44,6 @@ import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.data.repository.GoalState
 import de.kalorienapp.domain.GoalPlanner
 import de.kalorienapp.domain.model.Goal
-import de.kalorienapp.domain.model.GoalEndReason
 import de.kalorienapp.domain.model.WeightGoal
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
@@ -282,29 +280,6 @@ private fun goalSummaryText(goal: WeightGoal): String {
         end.toInputString(),
         signed(end - goal.startWeightKg),
         pluralStringResource(R.plurals.days, days, days),
-    )
-}
-
-/** Ergebnis eines gerade beendeten Ziels, mit direktem Weg zum neuen Ziel. */
-@Composable
-fun GoalResultDialog(goal: WeightGoal, onNewGoal: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                stringResource(
-                    if (goal.endReason == GoalEndReason.REACHED) R.string.goal_result_reached else R.string.goal_result_date,
-                ),
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(goalSummaryText(goal), style = MaterialTheme.typography.bodyLarge)
-                Text(stringResource(R.string.goal_result_next), style = MaterialTheme.typography.bodyMedium, color = Neon.TextSecondary)
-            }
-        },
-        confirmButton = { TextButton(onClick = onNewGoal) { Text(stringResource(R.string.goal_new)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.goal_later)) } },
     )
 }
 
