@@ -195,6 +195,7 @@ class MealReminderWorker(context: Context, params: WorkerParameters) : Coroutine
                     },
                 )
                 val notification = NotificationCompat.Builder(applicationContext, Notifications.CHANNEL_REMINDERS)
+                .setGroup(Notifications.GROUP_OTHER)
                     .setSmallIcon(R.drawable.ic_notification)
                     .setContentTitle(applicationContext.getString(R.string.notif_meal_title, mealName))
                     .setContentText(applicationContext.getString(R.string.notif_meal_text))
@@ -228,6 +229,7 @@ class FastingWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                 R.string.notif_fasting_fast_title to applicationContext.getString(R.string.notif_fasting_fast_text, config.windowStart.toString())
             }
             val notification = NotificationCompat.Builder(applicationContext, Notifications.CHANNEL_REMINDERS)
+                .setGroup(Notifications.GROUP_OTHER)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(applicationContext.getString(title))
                 .setContentText(text)
@@ -254,6 +256,7 @@ class WeightReminderWorker(context: Context, params: WorkerParameters) : Corouti
             val ateAlready = c.foodEntryDao.countForDay(today.toEpochDay()) > 0
             if (ReminderPlanner.isWeighInDue(last, today, days) && !ateAlready) {
                 val notification = NotificationCompat.Builder(applicationContext, Notifications.CHANNEL_REMINDERS)
+                .setGroup(Notifications.GROUP_OTHER)
                     .setSmallIcon(R.drawable.ic_notification)
                     .setContentTitle(applicationContext.getString(R.string.notif_weigh_title))
                     .setContentText(applicationContext.getString(R.string.notif_weigh_text))
@@ -281,6 +284,7 @@ class WeeklyReportWorker(context: Context, params: WorkerParameters) : Coroutine
                 val report = c.weeklyReportRepository.generate(from, to)
                 if (Notifications.canPost(applicationContext)) {
                     val notification = NotificationCompat.Builder(applicationContext, Notifications.CHANNEL_REPORTS)
+                .setGroup(Notifications.GROUP_OTHER)
                         .setSmallIcon(R.drawable.ic_notification)
                         .setContentTitle(applicationContext.getString(R.string.notif_report_title))
                         .setContentText(report.headline.ifBlank { report.summary })

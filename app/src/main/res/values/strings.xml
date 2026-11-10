@@ -209,7 +209,7 @@
     <string name="stats_empty_text">Trag ein paar Tage ein, dann siehst du hier deinen Verlauf, Durchschnitte und wie oft du im Ziel warst.</string>
     <string name="stats_empty_action">Jetzt eintragen</string>
     <string name="meal_add_hint">+ Eintragen</string>
-    <string name="streak_check">✓</string>
+    <string name="meal_menu_add">Eintragen</string>
     <plurals name="streak_title">
         <item quantity="one">Gestern im Ziel</item>
         <item quantity="other">%1$d Tage in Folge im Ziel</item>

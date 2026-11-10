@@ -19,6 +19,10 @@ object Notifications {
     const val CHANNEL_REMINDERS = "reminders"
     const val CHANNEL_REPORTS = "reports"
 
+    /** Eigene Gruppen: die dauerhafte Kalorien-Anzeige wird nie mit Erinnerungen zusammengefasst. */
+    const val GROUP_CALORIES = "de.kalorienapp.calories"
+    const val GROUP_OTHER = "de.kalorienapp.other"
+
     const val ID_CALORIES = 1
     const val ID_WEIGH = 2
     const val ID_REPORT = 3

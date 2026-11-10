@@ -82,6 +82,7 @@ class CalendarViewModel(statsRepository: StatsRepository) : ViewModel() {
 
     fun previousMonth() = month.update { it.minusMonths(1) }
     fun nextMonth() = month.update { it.plusMonths(1) }
+    fun currentMonth() = month.update { YearMonth.now() }
 }
 
 private val monthFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", Locale.GERMAN)
@@ -102,7 +103,8 @@ fun CalendarSection(
                 state.month.format(monthFormatter).replaceFirstChar { it.uppercase() },
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f),
+                // Antippen springt zurück zum aktuellen Monat (wie der Titel auf „Heute“)
+                modifier = Modifier.weight(1f).clip(MaterialTheme.shapes.small).clickable(onClick = viewModel::currentMonth),
             )
             IconButton(onClick = viewModel::nextMonth) {
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.next_month))

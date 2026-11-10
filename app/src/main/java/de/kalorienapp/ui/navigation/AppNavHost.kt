@@ -125,14 +125,12 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val showBottomBar = currentDestination.isTopLevel()
-    // Angezeigter Tag auf „Heute“ – das große „+“ trägt dort ein, sonst immer heute.
-    var shownDate by remember { mutableStateOf(LocalDate.now()) }
     var navUnlockedAt by remember { mutableStateOf(0L) }
     // Inhalte laufen unter der gläsernen Leiste durch; sie wird daraus weichgezeichnet.
     val hazeState = rememberHazeState()
     val addEntry = {
-        val date = if (currentDestination?.hasRoute(TodayRoute::class) == true) shownDate else LocalDate.now()
-        navController.navigate(CaptureRoute(epochDay = date.toEpochDay()))
+        // Immer für heute (Wunsch des Nutzers); andere Tage über die Mahlzeit-Zeilen des Tages.
+        navController.navigate(CaptureRoute(epochDay = LocalDate.now().toEpochDay()))
     }
 
     Scaffold(
@@ -240,7 +238,6 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     }
                     screen<TodayRoute> {
                         TodayScreen(
-                            onDateShown = { shownDate = it },
                             onSetGoal = { navController.navigate(GoalRoute) },
                             onAddEntry = { date, meal ->
                                 navController.navigate(CaptureRoute(epochDay = date.toEpochDay(), mealType = meal?.name))

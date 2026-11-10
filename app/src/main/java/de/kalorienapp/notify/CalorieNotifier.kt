@@ -128,6 +128,8 @@ class CalorieNotifier(
         val notification = NotificationCompat.Builder(context, Notifications.CHANNEL_CALORIES)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
+            .setGroup(Notifications.GROUP_CALORIES)
+            .setSortKey("0")
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             .setLargeIcon(ringBitmap(summary, context.resources.displayMetrics.density))

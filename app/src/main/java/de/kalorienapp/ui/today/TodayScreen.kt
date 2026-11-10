@@ -5,7 +5,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.pluralStringResource
 import de.kalorienapp.ui.components.pressable
 import de.kalorienapp.ui.components.Tip
@@ -115,8 +114,6 @@ private val dateFormatter = DateTimeFormatter.ofPattern("EEE, d. MMMM", Locale.G
 @Composable
 fun TodayScreen(
     onSetGoal: () -> Unit,
-    /** Angezeigter Tag – dorthin trägt das große „+“ der unteren Leiste ein. */
-    onDateShown: (LocalDate) -> Unit = {},
     onAddEntry: (date: LocalDate, mealType: MealType?) -> Unit,
     onEditEntry: (FoodEntry) -> Unit,
     /** Gesetzt, wenn der Tag aus dem Kalender geöffnet wurde. */
@@ -128,7 +125,6 @@ fun TodayScreen(
     val water by viewModel.water.collectAsStateWithLifecycle()
     val fasting by viewModel.fasting.collectAsStateWithLifecycle()
     val streak by viewModel.streak.collectAsStateWithLifecycle()
-    LaunchedEffect(state.date) { onDateShown(state.date) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var comboToSave by remember { mutableStateOf<MealGroup?>(null) }
@@ -343,7 +339,7 @@ private fun StreakBanner(days: Int) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(stringResource(R.string.streak_check), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Icon(painterResource(R.drawable.ic_streak_check), contentDescription = null, modifier = Modifier.size(32.dp))
             Column {
                 Text(
                     pluralStringResource(R.plurals.streak_title, days, days),
@@ -635,7 +631,11 @@ private fun MealCard(
                         stringResource(R.string.kcal_value, group.total.kcal.format()),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.meal_menu_add),
+                        modifier = Modifier.padding(start = 4.dp, end = 4.dp).size(20.dp),
                     )
                 } else {
                     Text(
@@ -650,6 +650,11 @@ private fun MealCard(
                             Icon(Icons.Filled.MoreVert, stringResource(R.string.more_options))
                         }
                         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.meal_menu_add)) },
+                                leadingIcon = { Icon(Icons.Filled.Add, null) },
+                                onClick = { menu = false; onAdd() },
+                            )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.combo_save)) },
                                 onClick = { menu = false; onSaveCombo() },
