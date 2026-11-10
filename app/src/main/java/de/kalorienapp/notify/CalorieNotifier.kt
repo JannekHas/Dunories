@@ -15,6 +15,9 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.compose.ui.graphics.toArgb
 import de.kalorienapp.KalorienApplication
 import de.kalorienapp.R
+import java.time.format.DateTimeFormatter
+import java.time.LocalDateTime
+import de.kalorienapp.domain.Fasting
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.repository.ActivityEntryRepository
 import de.kalorienapp.data.repository.FoodEntryRepository
@@ -62,7 +65,9 @@ class CalorieNotifier(
                     goals.current,
                     entries.entriesFor(day),
                     activities.entriesFor(day),
-                ) { enabled, state, eaten, acts ->
+                    // Fasten an/aus oder Plan geändert → Fastenzeile sofort anpassen
+                    combine(settings.fastingEnabled, settings.fastingConfig) { on, config -> on to config },
+                ) { enabled, state, eaten, acts, _ ->
                     enabled to state?.let { summaryOf(it.targetsFor(day.year), eaten, acts) }
                 }
             }.collect { (enabled, summary) ->
@@ -106,6 +111,16 @@ class CalorieNotifier(
         } else {
             context.getString(R.string.notif_calories_over, abs(remaining).format())
         }
+        val n = summary.eaten
+        val t = summary.targets
+        val macros = context.getString(
+            R.string.notif_calories_macros,
+            n.proteinG.format(), t.proteinG.format(), n.carbsG.format(), t.carbsG.format(), n.fatG.format(), t.fatG.format(),
+        )
+        // In der Fastenzeit steht der Hinweis vorne – zugeklappt sieht man nur eine Zeile.
+        val fasting = fastingLine()
+        val text = fasting ?: macros
+        val bigText = if (fasting != null) "$fasting\n$macros" else macros
         val dismiss = PendingIntent.getBroadcast(
             context, 0, Intent(context, DismissReceiver::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
@@ -113,6 +128,8 @@ class CalorieNotifier(
         val notification = NotificationCompat.Builder(context, Notifications.CHANNEL_CALORIES)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             .setLargeIcon(ringBitmap(summary, context.resources.displayMetrics.density))
             .setColor(Neon.Cyan.toArgb())
             .setOngoing(true)
@@ -126,6 +143,21 @@ class CalorieNotifier(
             .setDeleteIntent(dismiss)
             .build()
         NotificationManagerCompat.from(context).notify(Notifications.ID_CALORIES, notification)
+    }
+
+    /**
+     * „Fastenzeit · Du darfst um 12:00 Uhr wieder essen“ bzw. „Heute ist Fastentag“ (5:2); null außerhalb.
+     * Aktualisiert beim Fensterwechsel ([de.kalorienapp.notify.FastingWorker]), nicht sekündlich.
+     */
+    private fun fastingLine(): String? {
+        if (!settings.fastingEnabled.value) return null
+        val config = settings.fastingConfig.value
+        val now = LocalDateTime.now()
+        if (!config.isDaily) {
+            return if (now.dayOfWeek in config.fastDays) context.getString(R.string.notif_calories_fast_day) else null
+        }
+        if (Fasting.isInEatingWindow(config, now.toLocalTime())) return null
+        return context.getString(R.string.notif_calories_fasting, config.windowStart.format(TIME_FORMAT))
     }
 
     /** Weggewischt → sofort wieder anzeigen (solange der Schalter an ist). */
@@ -145,6 +177,7 @@ class CalorieNotifier(
 
     companion object {
         private const val SIZE_DP = 64
+        private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
         /** Die vier Ringe von „Heute“: außen kcal (Regenbogen), dann Protein, KH, Fett. */
         fun ringBitmap(summary: DaySummary, density: Float): Bitmap {

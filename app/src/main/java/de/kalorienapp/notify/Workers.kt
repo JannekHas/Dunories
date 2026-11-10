@@ -216,6 +216,8 @@ class FastingWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     @SuppressLint("MissingPermission") // canPost prüft die Erlaubnis
     override suspend fun doWork(): Result {
         val c = applicationContext.container
+        // Kalorien-Benachrichtigung: Fastenzeile ein-/ausblenden
+        c.calorieNotifier.refresh()
         val config = c.settings.fastingConfig.value
         if (c.settings.fastingEnabled.value && config.isDaily && Notifications.canPost(applicationContext)) {
             // Kurz nach dem geplanten Zeitpunkt: Fenster jetzt offen → es hat gerade begonnen.

@@ -406,6 +406,9 @@ Veränderung: %4$s kg in %5$s</string>
     <string name="channel_reports">KI-Wochenauswertung</string>
     <string name="notif_calories_left">Noch %1$s kcal</string>
     <string name="notif_calories_over">%1$s kcal über dem Budget</string>
+    <string name="notif_calories_macros">Protein %1$s/%2$s g · KH %3$s/%4$s g · Fett %5$s/%6$s g</string>
+    <string name="notif_calories_fasting">Fastenzeit · Du darfst um %1$s Uhr wieder essen</string>
+    <string name="notif_calories_fast_day">Heute ist Fastentag</string>
     <string name="notif_weigh_title">Zeit zum Wiegen ⚖️</string>
     <string name="notif_weigh_text">Am besten jetzt vor dem Frühstück – tippen zum Eintragen.</string>
     <string name="notif_report_title">Deine Wochenauswertung ist da</string>
