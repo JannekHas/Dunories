@@ -210,6 +210,10 @@
     <string name="stats_empty_action">Jetzt eintragen</string>
     <string name="meal_add_hint">+ Eintragen</string>
     <string name="meal_menu_add">Eintragen</string>
+    <string name="refine_title">Falsch erkannt?</string>
+    <string name="refine_text">Schreib oder sag kurz, was es wirklich ist – die KI schätzt dann mit Foto und deinem Hinweis neu.</string>
+    <string name="refine_placeholder">z. B. „Das ist Linsen-Dal, keine Bolognese, etwa 300 g“</string>
+    <string name="refine_button">Neu schätzen</string>
     <plurals name="streak_title">
         <item quantity="one">Gestern im Ziel</item>
         <item quantity="other">%1$d Tage in Folge im Ziel</item>

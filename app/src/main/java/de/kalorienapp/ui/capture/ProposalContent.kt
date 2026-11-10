@@ -25,6 +25,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.res.painterResource
+import de.kalorienapp.ui.theme.Neon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -82,6 +90,8 @@ fun ProposalContent(
                     Text(stringResource(R.string.proposal_add_item), modifier = Modifier.padding(start = 8.dp))
                 }
             }
+            // Falsch erkannt? Hinweis tippen oder sprechen → KI schätzt mit Foto + Hinweis neu.
+            if (isAi) item(key = "refine") { RefineCard(onRefine = viewModel::refine) }
         }
 
         Surface(tonalElevation = 3.dp) {
@@ -98,6 +108,38 @@ fun ProposalContent(
                 ) {
                     Text(stringResource(R.string.proposal_save, proposal.items.size))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RefineCard(onRefine: (String) -> Unit) {
+    var hint by rememberSaveable { mutableStateOf("") }
+    GlassCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.refine_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.refine_text),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = hint,
+                onValueChange = { hint = it },
+                placeholder = { Text(stringResource(R.string.refine_placeholder)) },
+                minLines = 2,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            SpeechButton(onText = { spoken -> hint = if (hint.isBlank()) spoken else "$hint $spoken" })
+            Button(
+                onClick = { onRefine(hint) },
+                enabled = hint.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(painterResource(R.drawable.ic_sparkle), contentDescription = null)
+                Text(stringResource(R.string.refine_button), modifier = Modifier.padding(start = 8.dp))
             }
         }
     }

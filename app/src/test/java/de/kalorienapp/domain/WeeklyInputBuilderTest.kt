@@ -31,8 +31,10 @@ class WeeklyInputBuilderTest {
         val activities = listOf(ActivityEntry(date = from.plusDays(1), name = "Fußball", kcal = 400))
         val days = StatsCalculator.days(from, to, eaten, mapOf(from.plusDays(1) to 400)) { targets }
         val entries = listOf(
-            FoodEntry(date = from, mealType = MealType.BREAKFAST, name = "Skyr", amount = 500.0, nutrients = Nutrients(kcal = 300.0)),
-            FoodEntry(date = from.plusDays(1), mealType = MealType.SNACK, name = "skyr ", amount = 250.0, nutrients = Nutrients(kcal = 150.0)),
+            FoodEntry(date = from, mealType = MealType.BREAKFAST, name = "Skyr", amount = 500.0, nutrients = Nutrients(kcal = 300.0),
+                createdAt = from.atTime(8, 0).toInstant(zone).toEpochMilli()),
+            FoodEntry(date = from.plusDays(1), mealType = MealType.SNACK, name = "skyr ", amount = 250.0, nutrients = Nutrients(kcal = 150.0),
+                createdAt = from.plusDays(1).atTime(15, 0).toInstant(zone).toEpochMilli()),
             FoodEntry(
                 date = from.plusDays(1), mealType = MealType.SNACK, name = "Chips", amount = 175.0,
                 nutrients = Nutrients(kcal = 950.0),

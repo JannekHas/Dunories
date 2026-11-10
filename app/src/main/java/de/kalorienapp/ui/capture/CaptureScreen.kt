@@ -476,7 +476,7 @@ private val CaptureError.messageRes: Int
  * Der erkannte Text landet im Beschreiben-Feld und kann vor dem Schätzen korrigiert werden.
  */
 @Composable
-private fun SpeechButton(onText: (String) -> Unit) {
+internal fun SpeechButton(onText: (String) -> Unit) {
     val context = LocalContext.current
     var unavailable by remember { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->

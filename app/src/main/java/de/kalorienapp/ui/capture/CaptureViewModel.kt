@@ -90,7 +90,7 @@ class CaptureViewModel(
 
     /** Letzte Eingabe – für „Erneut versuchen“. */
     private sealed interface Input {
-        data class Photo(val uri: Uri, val skipBarcode: Boolean = false) : Input
+        data class Photo(val uri: Uri, val skipBarcode: Boolean = false, val hint: String? = null) : Input
         data class Text(val description: String) : Input
         data class Label(val uri: Uri) : Input
     }
@@ -155,6 +155,19 @@ class CaptureViewModel(
     fun submitDescription() {
         val text = _state.value.description.trim()
         if (text.isNotEmpty()) analyze(Input.Text(text))
+    }
+
+    /**
+     * KI-Vorschlag mit einem Hinweis des Nutzers neu schätzen lassen: beim Foto Bild + Hinweis
+     * (Hinweis hat Vorrang), bei einer Beschreibung wird der Hinweis als Korrektur angehängt.
+     */
+    fun refine(hint: String) {
+        if (hint.isBlank()) return
+        when (val input = lastInput) {
+            is Input.Photo -> analyze(input.copy(skipBarcode = true, hint = hint.trim()))
+            is Input.Text -> analyze(Input.Text(input.description.trim() + "\nKorrektur: " + hint.trim()))
+            else -> Unit
+        }
     }
 
     fun retry() {
@@ -225,7 +238,7 @@ class CaptureViewModel(
                     is Input.Text -> proposalOf(analyzer.analyzeText(input.description, onStage))
                     is Input.Label -> proposalOf(analyzer.analyzeLabel(input.uri, onStage))
                     is Input.Photo -> if (input.skipBarcode) {
-                        proposalOf(analyzer.analyzePhotoWithAi(input.uri, onStage))
+                        proposalOf(analyzer.analyzePhotoWithAi(input.uri, onStage, input.hint))
                     } else {
                         when (val result = analyzer.analyzePhoto(input.uri, onStage)) {
                             is AnalysisResult.Drafts -> proposalOf(result.drafts)

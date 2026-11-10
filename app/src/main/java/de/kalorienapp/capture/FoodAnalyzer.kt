@@ -41,8 +41,8 @@ class FoodAnalyzer(
     }
 
     /** Foto direkt per KI analysieren (z. B. wenn der Barcode unbekannt ist). */
-    suspend fun analyzePhotoWithAi(uri: Uri, onStage: (AnalysisStage) -> Unit): List<FoodDraft> =
-        analyzeWithAi(ImageLoader.load(context, uri, maxSide = AI_MAX_SIDE), onStage)
+    suspend fun analyzePhotoWithAi(uri: Uri, onStage: (AnalysisStage) -> Unit, hint: String? = null): List<FoodDraft> =
+        analyzeWithAi(ImageLoader.load(context, uri, maxSide = AI_MAX_SIDE), onStage, hint)
 
     /** Nährwerttabelle ablesen – höhere Auflösung, damit die kleine Schrift lesbar bleibt. */
     suspend fun analyzeLabel(uri: Uri, onStage: (AnalysisStage) -> Unit): List<FoodDraft> {
@@ -56,10 +56,10 @@ class FoodAnalyzer(
         return gemini.analyzeText(description)
     }
 
-    private suspend fun analyzeWithAi(bitmap: Bitmap, onStage: (AnalysisStage) -> Unit): List<FoodDraft> {
+    private suspend fun analyzeWithAi(bitmap: Bitmap, onStage: (AnalysisStage) -> Unit, hint: String? = null): List<FoodDraft> {
         onStage(AnalysisStage.AI)
         // Kleineres Bild spart Upload-Zeit und Tokens, reicht für die Erkennung.
-        return gemini.analyzePhoto(ImageLoader.toAiImage(ImageLoader.scaleDown(bitmap, AI_MAX_SIDE)))
+        return gemini.analyzePhoto(ImageLoader.toAiImage(ImageLoader.scaleDown(bitmap, AI_MAX_SIDE)), hint)
     }
 
     private companion object {

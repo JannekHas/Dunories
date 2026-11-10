@@ -49,10 +49,12 @@ class GeminiClient(
     private val appIdentity: Map<String, String> = emptyMap(),
 ) {
 
-    suspend fun analyzePhoto(imageBytes: ByteArray): List<FoodDraft> {
+    /** [hint] = Korrektur des Nutzers („Das ist Linsen-Dal, ca. 300 g“) – hat Vorrang vor dem Bild. */
+    suspend fun analyzePhoto(imageBytes: ByteArray, hint: String? = null): List<FoodDraft> {
         val image = Base64.getEncoder().encodeToString(imageBytes)
         return generate(EntrySource.AI_PHOTO) {
             addJsonObject { put("text", PHOTO_PROMPT) }
+            hint?.takeIf { it.isNotBlank() }?.let { addJsonObject { put("text", HINT_PROMPT + it.trim()) } }
             addJsonObject {
                 putJsonObject("inline_data") {
                     put("mime_type", IMAGE_MIME)
@@ -226,6 +228,10 @@ Gib ausschließlich JSON gemäß Schema zurück."""
         private const val PHOTO_PROMPT = """Analysiere dieses Foto einer Mahlzeit.
 Erkenne alle sichtbaren Lebensmittel und Getränke als einzelne Komponenten und schätze die Menge auf dem Foto.
 Wenn kein Essen oder Getränk zu sehen ist, gib eine leere Liste zurück.$COMMON_RULES"""
+
+        private const val HINT_PROMPT = """Hinweis des Nutzers zu diesem Foto – er hat Vorrang vor dem, was du auf dem Bild
+zu erkennen glaubst (z. B. andere Lebensmittel, Mengen, Zubereitung oder Zutaten, die man nicht sieht).
+Nutze das Foto nur noch für alles, was der Hinweis offenlässt: """
 
         private const val LABEL_PROMPT = """Auf dem Foto ist eine Nährwerttabelle (Etikett einer Verpackung).
 Lies die Werte GENAU so ab, wie sie gedruckt sind – nichts schätzen. Gib genau EIN Element zurück:
