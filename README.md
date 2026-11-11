@@ -2,6 +2,10 @@
 
 **Kalorien, Makros und Gewicht im Blick – mit einem Foto.**
 
+<p align="center">
+  <img src="docs/dunories-hauptbild.jpg" alt="Dunories – Foto machen. Fertig." width="480">
+</p>
+
 Dunories ist eine Android-App zum Tracken von Kalorien, Makro- und Nährwerten. Essen wird per Foto, Barcode oder kurzer Beschreibung erfasst; eine KI schätzt die Nährwerte, und jedes Ergebnis bleibt ein bearbeitbarer Vorschlag. Alle Daten liegen ausschließlich lokal auf dem Gerät – ohne Konto, ohne Cloud, ohne Tracking.
 
 ## Funktionen
