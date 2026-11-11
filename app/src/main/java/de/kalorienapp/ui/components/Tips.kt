@@ -43,6 +43,7 @@ enum class Tip(@param:StringRes val textRes: Int) {
     CAPTURE(R.string.tip_capture),
     STATS(R.string.tip_stats),
     WEIGHT(R.string.tip_weight),
+    MOVE(R.string.tip_move),
 }
 
 /** Wohin die Sprechblase zeigt. */

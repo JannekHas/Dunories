@@ -190,6 +190,11 @@ class TodayViewModel(
         return nowFavorite
     }
 
+    /** Eintrag in eine andere Mahlzeit verschieben (Ziehen auf „Heute“). */
+    fun move(entry: FoodEntry, mealType: MealType) {
+        viewModelScope.launch { entryRepository.save(entry.copy(mealType = mealType)) }
+    }
+
     fun restore(entry: FoodEntry) {
         viewModelScope.launch { entryRepository.save(entry) }
     }

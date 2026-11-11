@@ -29,6 +29,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.alpha
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -134,6 +138,9 @@ fun TodayScreen(
     }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val dragState = rememberEntryDragState()
+    val listState = rememberLazyListState()
+    val currentMeals by rememberUpdatedState(state.meals)
     var comboToSave by remember { mutableStateOf<MealGroup?>(null) }
     val comboSaved = stringResource(R.string.combo_saved)
     comboToSave?.let { group ->
@@ -208,6 +215,22 @@ fun TodayScreen(
         }
     }
 
+    val movedMessage = stringResource(R.string.entry_moved)
+    val mealLabels = MealType.entries.associateWith { stringResource(it.labelRes) }
+
+    fun moveWithUndo(entry: FoodEntry, target: MealType) {
+        viewModel.move(entry, target)
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            val result = snackbarHostState.showSnackbar(
+                message = movedMessage.format(entry.name, mealLabels[target]),
+                actionLabel = undoLabel,
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.restore(entry)
+        }
+    }
+
     fun deleteWithUndo(entry: FoodEntry) {
         viewModel.delete(entry)
         scope.launch {
@@ -262,9 +285,23 @@ fun TodayScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState, Modifier.padding(bottom = LocalBottomBarPadding.current)) },
     ) { padding ->
+        val bottomPadding = if (onBack != null) 88.dp else 16.dp + LocalBottomBarPadding.current
+        // Einträge per Gedrückt-Halten in eine andere Mahlzeit ziehen (Geste liegt über der ganzen Liste).
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .entryDragArea(
+                    state = dragState,
+                    findEntry = { id -> currentMeals.firstNotNullOfOrNull { g -> g.entries.firstOrNull { it.id == id } } },
+                    onDrop = ::moveWithUndo,
+                ),
+        ) {
+        EntryDragAutoScroll(dragState, listState, with(LocalDensity.current) { bottomPadding.toPx() })
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = if (onBack != null) 88.dp else 16.dp + LocalBottomBarPadding.current),
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = bottomPadding),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (!state.loaded) {
@@ -304,7 +341,15 @@ fun TodayScreen(
             }
             item(key = "tip_meal") { TipSlot(Tip.MEAL, caret = TipCaret.DOWN_CENTER, after = Tip.ADD) }
             items(state.meals, key = { it.mealType.name }) { group ->
+                val dragged = dragState.entry
                 MealCard(
+                    modifier = Modifier
+                        .trackMeal(dragState, group.mealType)
+                        .dropHighlight(
+                            active = dragged != null && dragState.target == group.mealType && dragged.mealType != group.mealType,
+                            color = group.mealType.neonColor,
+                        ),
+                    dragState = dragState,
                     group = group,
                     isFavorite = state::isFavorite,
                     onAdd = { onAddEntry(state.date, group.mealType) },
@@ -314,6 +359,12 @@ fun TodayScreen(
                     onSaveCombo = { comboToSave = group },
                 )
             }
+            // Nach dem ersten Eintrag einmal erklären, dass man verschieben kann.
+            item(key = "tip_move") {
+                TipSlot(Tip.MOVE, condition = state.meals.any { it.entries.isNotEmpty() }, after = Tip.RINGS)
+            }
+        }
+        EntryDragGhost(dragState) { it.neonColor }
         }
     }
 }
@@ -606,6 +657,8 @@ private fun SummaryValue(label: String, value: String) {
 
 @Composable
 private fun MealCard(
+    modifier: Modifier,
+    dragState: EntryDragState,
     group: MealGroup,
     isFavorite: (FoodEntry) -> Boolean,
     onAdd: () -> Unit,
@@ -615,7 +668,7 @@ private fun MealCard(
     onSaveCombo: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
-    GlassCard(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(modifier = modifier.fillMaxWidth()) {
         // Kopfzeile antippen = in diese Mahlzeit eintragen (statt eigenem „+“-Knopf).
         Surface(
             color = group.mealType.neonColor,
@@ -673,6 +726,10 @@ private fun MealCard(
         }
         group.entries.forEach { entry ->
             EntryRow(
+                // Gezogene Zeile bleibt blass stehen, die Karte hängt am Finger.
+                modifier = Modifier
+                    .trackEntry(dragState, entry.id)
+                    .alpha(if (dragState.entry?.id == entry.id) 0.3f else 1f),
                 entry = entry,
                 isFavorite = isFavorite(entry),
                 onClick = { onEdit(entry) },
@@ -685,6 +742,7 @@ private fun MealCard(
 
 @Composable
 private fun EntryRow(
+    modifier: Modifier,
     entry: FoodEntry,
     isFavorite: Boolean,
     onClick: () -> Unit,
@@ -695,7 +753,7 @@ private fun EntryRow(
     val n = entry.nutrients
     val macros = stringResource(R.string.entry_macros, n.proteinG.format(), n.carbsG.format(), n.fatG.format())
     ListItem(
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = modifier.clickable(onClick = onClick),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         headlineContent = { Text(entry.name) },
         supportingContent = {
