@@ -48,13 +48,15 @@ data class GoalSuccess(
                     else -> date to value
                 }
             }
+            // Ziel am selben Tag beendet: Start und Ende trotzdem als zwei Punkte (sonst kein Verlauf).
+            val chartPoints = if (points.size < 2) listOf(goal.startDate to goal.startWeightKg, end to endWeight) else points
             return GoalSuccess(
                 goal = goal,
                 endWeightKg = endWeight,
                 changeKg = endWeight - goal.startWeightKg,
                 days = ChronoUnit.DAYS.between(goal.startDate, end).toInt().coerceAtLeast(1),
                 onTargetRate = onTargetRate,
-                weightPoints = points,
+                weightPoints = chartPoints,
             )
         }
     }

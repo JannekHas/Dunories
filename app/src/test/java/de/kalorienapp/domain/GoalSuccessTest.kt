@@ -51,4 +51,11 @@ class GoalSuccessTest {
         val passed = goal.copy(endWeightKg = 86.0, endReason = GoalEndReason.DATE_PASSED)
         assertEquals(12.0 / 18.0, GoalSuccess.of(passed, emptyList(), null).progress, 0.001)
     }
+
+    @Test
+    fun `ziel am selben tag beendet hat trotzdem start und ende im verlauf`() {
+        val sameDay = goal.copy(endedDate = start, endWeightKg = 96.9)
+        val s = GoalSuccess.of(sameDay, emptyList(), onTargetRate = null)
+        assertEquals(listOf(start to 98.0, start to 96.9), s.weightPoints)
+    }
 }

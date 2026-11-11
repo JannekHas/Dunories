@@ -272,7 +272,7 @@ fun GoalCard(state: GoalState?, onNewGoal: () -> Unit, modifier: Modifier = Modi
 @Composable
 private fun goalSummaryText(goal: WeightGoal): String {
     val end = goal.endWeightKg ?: goal.startWeightKg
-    val days = ChronoUnit.DAYS.between(goal.startDate, goal.endedDate ?: LocalDate.now()).toInt()
+    val days = ChronoUnit.DAYS.between(goal.startDate, goal.endedDate ?: LocalDate.now()).toInt().coerceAtLeast(1)
     return stringResource(
         R.string.goal_result_text,
         goal.startWeightKg.toInputString(),
