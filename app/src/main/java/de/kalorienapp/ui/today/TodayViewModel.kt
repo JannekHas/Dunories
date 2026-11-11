@@ -13,6 +13,7 @@ import de.kalorienapp.domain.Streak
 import de.kalorienapp.data.repository.WaterRepository
 import de.kalorienapp.domain.FastingConfig
 import de.kalorienapp.domain.Water
+import de.kalorienapp.domain.EntryOrder
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DaySummary
@@ -190,9 +191,19 @@ class TodayViewModel(
         return nowFavorite
     }
 
-    /** Eintrag in eine andere Mahlzeit verschieben (Ziehen auf „Heute“). */
-    fun move(entry: FoodEntry, mealType: MealType) {
-        viewModelScope.launch { entryRepository.save(entry.copy(mealType = mealType)) }
+    /**
+     * Eintrag in [meal] an Position [index] verschieben (Ziehen auf „Heute“).
+     * @return die vorherigen Stände aller geänderten Einträge – für „Rückgängig“.
+     */
+    fun move(entry: FoodEntry, meal: MealType, index: Int): List<FoodEntry> {
+        val target = uiState.value.meals.firstOrNull { it.mealType == meal }?.entries.orEmpty().filter { it.id != entry.id }
+        val updated = EntryOrder.place(target, entry, meal, index)
+        viewModelScope.launch { entryRepository.saveAll(updated) }
+        return target + entry
+    }
+
+    fun restoreAll(entries: List<FoodEntry>) {
+        viewModelScope.launch { entryRepository.saveAll(entries) }
     }
 
     fun restore(entry: FoodEntry) {

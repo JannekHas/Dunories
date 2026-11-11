@@ -96,6 +96,7 @@
     <string name="entry_amount_prefix">%1$s %2$s · %3$s</string>
     <string name="entry_deleted">„%1$s“ gelöscht</string>
     <string name="entry_moved">„%1$s“ → %2$s</string>
+    <string name="entry_move_target">→ %1$s</string>
     <string name="tip_move">Falsche Mahlzeit erwischt? Halte einen Eintrag gedrückt und zieh ihn in eine andere Mahlzeit.</string>
 
     <!-- Eintrag bearbeiten -->

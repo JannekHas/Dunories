@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FoodEntryDao {
-    @Query("SELECT * FROM food_entry WHERE dateEpochDay = :epochDay ORDER BY createdAt")
+    @Query("SELECT * FROM food_entry WHERE dateEpochDay = :epochDay ORDER BY COALESCE(sortKey, createdAt), id")
     fun observeForDay(epochDay: Long): Flow<List<FoodEntryEntity>>
 
     @Query("SELECT * FROM food_entry WHERE id = :id")
@@ -18,6 +18,10 @@ interface FoodEntryDao {
 
     @Upsert
     suspend fun upsert(entry: FoodEntryEntity)
+
+    /** Mehrere Einträge in einem Schritt (Verschieben ändert die ganze Ziel-Mahlzeit). */
+    @Upsert
+    suspend fun upsertAll(entries: List<FoodEntryEntity>)
 
     @Query("SELECT * FROM food_entry WHERE dateEpochDay BETWEEN :fromEpochDay AND :toEpochDay ORDER BY dateEpochDay, createdAt")
     suspend fun between(fromEpochDay: Long, toEpochDay: Long): List<FoodEntryEntity>

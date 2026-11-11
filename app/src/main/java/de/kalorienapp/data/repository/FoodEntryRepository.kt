@@ -16,5 +16,7 @@ class FoodEntryRepository(private val dao: FoodEntryDao) {
     /** Legt an oder aktualisiert – auch zum Wiederherstellen gelöschter Einträge (gleiche id). */
     suspend fun save(entry: FoodEntry) = dao.upsert(FoodEntryEntity.fromDomain(entry))
 
+    suspend fun saveAll(entries: List<FoodEntry>) = dao.upsertAll(entries.map(FoodEntryEntity::fromDomain))
+
     suspend fun delete(id: Long) = dao.deleteById(id)
 }

@@ -37,4 +37,9 @@ data class FoodEntry(
     val nutrients: Nutrients,
     val source: EntrySource = EntrySource.MANUAL,
     val createdAt: Long = System.currentTimeMillis(),
-)
+    /** Eigene Reihenfolge innerhalb der Mahlzeit (nach Verschieben); null = nach Erfassungszeit. */
+    val sortKey: Long? = null,
+) {
+    /** Sortierschlüssel in der Tagesansicht. */
+    val orderKey: Long get() = sortKey ?: createdAt
+}

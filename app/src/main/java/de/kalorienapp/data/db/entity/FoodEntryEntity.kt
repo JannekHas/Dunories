@@ -34,6 +34,8 @@ data class FoodEntryEntity(
     val createdAt: Long,
     /** Vitamine/Mineralstoffe für die eingetragene Menge (siehe [Micro.encode]). */
     val micros: String? = null,
+    /** Reihenfolge innerhalb der Mahlzeit nach Verschieben; null = Erfassungszeit. */
+    val sortKey: Long? = null,
 ) {
     fun toDomain() = FoodEntry(
         id = id,
@@ -55,6 +57,7 @@ data class FoodEntryEntity(
         ),
         source = source,
         createdAt = createdAt,
+        sortKey = sortKey,
     )
 
     companion object {
@@ -76,6 +79,7 @@ data class FoodEntryEntity(
             source = e.source,
             createdAt = e.createdAt,
             micros = Micro.encode(e.nutrients.micros),
+            sortKey = e.sortKey,
         )
     }
 }

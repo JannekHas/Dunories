@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.alpha
@@ -141,6 +142,7 @@ fun TodayScreen(
     val dragState = rememberEntryDragState()
     val listState = rememberLazyListState()
     val currentMeals by rememberUpdatedState(state.meals)
+    dragState.mealEntries = { currentMeals.associate { it.mealType to it.entries } }
     var comboToSave by remember { mutableStateOf<MealGroup?>(null) }
     val comboSaved = stringResource(R.string.combo_saved)
     comboToSave?.let { group ->
@@ -218,8 +220,8 @@ fun TodayScreen(
     val movedMessage = stringResource(R.string.entry_moved)
     val mealLabels = MealType.entries.associateWith { stringResource(it.labelRes) }
 
-    fun moveWithUndo(entry: FoodEntry, target: MealType) {
-        viewModel.move(entry, target)
+    fun moveWithUndo(entry: FoodEntry, target: MealType, index: Int) {
+        val previous = viewModel.move(entry, target, index)
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
             val result = snackbarHostState.showSnackbar(
@@ -227,7 +229,7 @@ fun TodayScreen(
                 actionLabel = undoLabel,
                 duration = SnackbarDuration.Short,
             )
-            if (result == SnackbarResult.ActionPerformed) viewModel.restore(entry)
+            if (result == SnackbarResult.ActionPerformed) viewModel.restoreAll(previous)
         }
     }
 
@@ -291,11 +293,7 @@ fun TodayScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .entryDragArea(
-                    state = dragState,
-                    findEntry = { id -> currentMeals.firstNotNullOfOrNull { g -> g.entries.firstOrNull { it.id == id } } },
-                    onDrop = ::moveWithUndo,
-                ),
+                .entryDragArea(state = dragState, onDrop = ::moveWithUndo),
         ) {
         EntryDragAutoScroll(dragState, listState, with(LocalDensity.current) { bottomPadding.toPx() })
         LazyColumn(
@@ -346,7 +344,7 @@ fun TodayScreen(
                     modifier = Modifier
                         .trackMeal(dragState, group.mealType)
                         .dropHighlight(
-                            active = dragged != null && dragState.target == group.mealType && dragged.mealType != group.mealType,
+                            active = dragged != null && dragState.targetMeal == group.mealType,
                             color = group.mealType.neonColor,
                         ),
                     dragState = dragState,
@@ -364,7 +362,7 @@ fun TodayScreen(
                 TipSlot(Tip.MOVE, condition = state.meals.any { it.entries.isNotEmpty() }, after = Tip.RINGS)
             }
         }
-        EntryDragGhost(dragState)
+        EntryDragGhost(dragState) { it.neonColor }
         }
     }
 }
@@ -668,7 +666,8 @@ private fun MealCard(
     onSaveCombo: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
-    GlassCard(modifier = modifier.fillMaxWidth()) {
+    // Karte wächst/schrumpft weich, wenn beim Ziehen die Lücke auf- oder zugeht.
+    GlassCard(modifier = modifier.fillMaxWidth().animateContentSize(spring(dampingRatio = Spring.DampingRatioNoBouncy))) {
         // Kopfzeile antippen = in diese Mahlzeit eintragen (statt eigenem „+“-Knopf).
         Surface(
             color = group.mealType.neonColor,
@@ -724,12 +723,14 @@ private fun MealCard(
                 }
             }
         }
-        group.entries.forEach { entry ->
+        // Gezogene Zeile zieht sich zusammen; an der Landestelle geht eine Lücke in der Farbe der Mahlzeit auf.
+        val dragged = dragState.entry
+        val visible = group.entries.filter { it.id != dragged?.id }
+        val slotIndex = if (dragged != null && dragState.targetMeal == group.mealType) dragState.targetIndex else -1
+        visible.forEachIndexed { i, entry ->
+            if (i == slotIndex) DropSlot(dragState, group.mealType.neonColor)
             EntryRow(
-                // Gezogene Zeile bleibt blass stehen, die Karte hängt am Finger.
-                modifier = Modifier
-                    .trackEntry(dragState, entry.id)
-                    .alpha(if (dragState.entry?.id == entry.id) 0.3f else 1f),
+                modifier = Modifier.trackEntry(dragState, entry.id),
                 entry = entry,
                 isFavorite = isFavorite(entry),
                 onClick = { onEdit(entry) },
@@ -737,6 +738,7 @@ private fun MealCard(
                 onToggleFavorite = { onToggleFavorite(entry) },
             )
         }
+        if (slotIndex >= visible.size) DropSlot(dragState, group.mealType.neonColor)
     }
 }
 
