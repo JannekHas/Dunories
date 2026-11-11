@@ -92,4 +92,28 @@ class GoalPlannerTest {
         assertEquals(GoalEndReason.DATE_PASSED, GoalPlanner.endReason(g, 93.0, today.plusWeeks(12)))
         assertNull(GoalPlanner.endReason(goal(80.0, 80.0, null), 85.0, today.plusYears(1)))
     }
+
+    @Test
+    fun `empfehlung abnehmen mit 0,5 kg pro woche`() {
+        // 5 kg mit 0,5 kg/Woche = 10 Wochen
+        val rec = GoalPlanner.recommendation(85.0, 80.0, maintenanceKcal = 2560.0, today = today)!!
+        assertEquals(0.5, rec.kgPerWeek, 0.001)
+        assertEquals(today.plusDays(70), rec.date)
+    }
+
+    @Test
+    fun `empfehlung langsamer bei niedrigem bedarf, aber mindestens 0,25 kg pro woche`() {
+        // Bedarf 1500: 0,5 kg/Woche hieße Tagesziel unter 1200 → 0,25 kg/Woche, 5 kg = 20 Wochen
+        val rec = GoalPlanner.recommendation(60.0, 55.0, maintenanceKcal = 1500.0, today = today)!!
+        assertEquals(0.25, rec.kgPerWeek, 0.001)
+        assertEquals(today.plusDays(140), rec.date)
+    }
+
+    @Test
+    fun `empfehlung zunehmen und halten`() {
+        val gain = GoalPlanner.recommendation(70.0, 75.0, maintenanceKcal = 2500.0, today = today)!!
+        assertEquals(0.25, gain.kgPerWeek, 0.001)
+        assertEquals(today.plusDays(140), gain.date)
+        assertNull(GoalPlanner.recommendation(80.0, 80.1, maintenanceKcal = 2500.0, today = today))
+    }
 }

@@ -31,13 +31,13 @@ object GoalCalculator {
     }
 
     /**
-     * Basis des Tagesziels ist allein der Grundumsatz – so, als würde man sich nicht bewegen.
-     * Bewegung trägt der Nutzer selbst als Aktivität ein (siehe [daySummary]).
+     * Bedarf an einem Tag ohne Sport: Grundumsatz × Alltagsfaktor ([Profile.lifestyle], DGE-PAL).
+     * Sport trägt der Nutzer selbst als Aktivität ein (siehe [daySummary]).
      */
     fun maintenanceKcal(profile: Profile, currentYear: Int): Double =
-        bmr(profile.sex, profile.weightKg, profile.heightCm, profile.ageIn(currentYear))
+        bmr(profile.sex, profile.weightKg, profile.heightCm, profile.ageIn(currentYear)) * profile.lifestyle.pal
 
-    /** Grundumsatz + Anpassung aus dem Gewichtsziel (siehe [GoalPlanner]), mindestens [MIN_KCAL_TARGET]. */
+    /** Bedarf ohne Sport + Anpassung aus dem Gewichtsziel (siehe [GoalPlanner]), mindestens [MIN_KCAL_TARGET]. */
     fun calculatedKcalTarget(profile: Profile, currentYear: Int, adjustmentKcal: Int): Int =
         (maintenanceKcal(profile, currentYear) + adjustmentKcal)
             .roundToInt()

@@ -112,8 +112,9 @@ fun GoalScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(stringResource(R.string.goal_screen_intro), style = MaterialTheme.typography.bodyMedium)
-            GoalInputs(state.form, state.profile?.weightKg, viewModel::update)
-            GoalPreviewCard(state.preview)
+            val recommendation = state.form.recommendation(state.profile)
+            GoalInputs(state.form, state.profile?.weightKg, viewModel::update, recommendation)
+            GoalPreviewCard(state.preview, recommendation = recommendation)
             if (state.hasActiveGoal) {
                 Text(
                     stringResource(R.string.goal_replace_hint),

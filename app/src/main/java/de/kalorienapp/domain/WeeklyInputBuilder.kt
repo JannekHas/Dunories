@@ -60,7 +60,7 @@ object WeeklyInputBuilder {
         appendLine("ZEITRAUM: ${input.from} bis ${input.to} (${input.days.size} Tage, davon ${loggedDays(input)} mit Einträgen)")
         appendLine()
         appendLine("PERSON: ${if (p.sex.name == "MALE") "männlich" else "weiblich"}, ${p.ageIn(year)} Jahre, ${p.heightCm.r()} cm, aktuell ${p.weightKg.r1()} kg")
-        appendLine("Grundumsatz (Tagesziel-Basis, ohne Bewegung): ${GoalCalculator.maintenanceKcal(p, year).roundToInt()} kcal. Bewegung wird als Aktivität extra eingetragen und erhöht das Budget.")
+        appendLine("Bedarf ohne Sport (Grundumsatz × Alltagsfaktor ${p.lifestyle.pal}, Tagesziel-Basis): ${GoalCalculator.maintenanceKcal(p, year).roundToInt()} kcal. Sport wird als Aktivität extra eingetragen und erhöht das Budget.")
         input.waterGoalMl?.let { appendLine("WASSERZIEL: $it ml pro Tag") }
         appendLine("TAGESZIEL: ${input.targets.kcal} kcal, Protein ${input.targets.proteinG} g, KH ${input.targets.carbsG} g, Fett ${input.targets.fatG} g")
         val goal = input.goal

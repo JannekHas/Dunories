@@ -42,7 +42,9 @@ import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
 import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.data.repository.GoalState
+import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.GoalPlanner
+import de.kalorienapp.domain.GoalRecommendation
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.WeightGoal
 import de.kalorienapp.ui.components.format
@@ -75,7 +77,12 @@ private fun signed(value: Int): String = (if (value > 0) "+" else if (value < 0)
 /** Wunschgewicht, Schnellwahl „Halten“ und Zieldatum. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GoalInputs(form: GoalFormState, currentWeightKg: Double?, onUpdate: (GoalFormState) -> Unit) {
+fun GoalInputs(
+    form: GoalFormState,
+    currentWeightKg: Double?,
+    onUpdate: (GoalFormState) -> Unit,
+    recommendation: GoalRecommendation? = null,
+) {
     var showDatePicker by remember { mutableStateOf(false) }
     val maintain = form.isMaintain(currentWeightKg)
 
@@ -119,13 +126,21 @@ fun GoalInputs(form: GoalFormState, currentWeightKg: Double?, onUpdate: (GoalFor
                     modifier = Modifier.padding(start = 8.dp),
                 )
             }
+            // Empfehlung mit einem Tipp übernehmen (sonst greifen viele zu knappe Daten).
+            recommendation?.takeIf { it.date != form.targetDate }?.let { rec ->
+                TextButton(onClick = { onUpdate(form.copy(targetDate = rec.date)) }) {
+                    Text(stringResource(R.string.goal_recommend, rec.date.formatGoalDate(), rec.kgPerWeek.toInputString(2)))
+                }
+            }
         }
     }
 
     if (showDatePicker) {
         val tomorrow = LocalDate.now().plusDays(1)
         val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = (form.targetDate ?: LocalDate.now().plusWeeks(12)).toEpochDay() * MILLIS_PER_DAY,
+            // Kalender öffnet beim gewählten, sonst beim empfohlenen Datum.
+            initialSelectedDateMillis = (form.targetDate ?: recommendation?.date ?: LocalDate.now().plusWeeks(12))
+                .toEpochDay() * MILLIS_PER_DAY,
             selectableDates = object : SelectableDates {
                 override fun isSelectableDate(utcTimeMillis: Long) =
                     utcTimeMillis / MILLIS_PER_DAY >= tomorrow.toEpochDay()
@@ -157,7 +172,7 @@ fun GoalInputs(form: GoalFormState, currentWeightKg: Double?, onUpdate: (GoalFor
 
 /** Was das eingegebene Ziel bedeutet: Tempo, Anpassung und ggf. Hinweis auf Begrenzung. */
 @Composable
-fun GoalPreviewCard(preview: GoalState?, modifier: Modifier = Modifier) {
+fun GoalPreviewCard(preview: GoalState?, modifier: Modifier = Modifier, recommendation: GoalRecommendation? = null) {
     GlassCard(modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             val goal = preview?.goal
@@ -183,6 +198,16 @@ fun GoalPreviewCard(preview: GoalState?, modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.Bold,
             )
             LimitedHint(plan.limited, plan.realisticDate, goal.direction)
+            // Tagesziel auf die Untergrenze gedrückt → Datum zu knapp, Empfehlung nennen.
+            val atFloor = preview.profile.kcalTargetOverride == null &&
+                GoalCalculator.maintenanceKcal(preview.profile, LocalDate.now().year) + plan.dailyAdjustmentKcal < GoalCalculator.MIN_KCAL_TARGET
+            if (atFloor && recommendation != null) {
+                Text(
+                    stringResource(R.string.goal_floor_hint, recommendation.date.formatGoalDate()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Neon.Yellow,
+                )
+            }
         }
     }
 }

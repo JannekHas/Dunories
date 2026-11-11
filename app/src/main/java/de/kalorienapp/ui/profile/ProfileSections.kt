@@ -5,7 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Card
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.ui.semantics.Role
+import de.kalorienapp.domain.model.Lifestyle
+import de.kalorienapp.ui.components.exampleRes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -75,6 +82,35 @@ fun BodyDataSection(form: ProfileFormState, onUpdate: FormUpdate) {
             errorText = stringResource(R.string.error_weight),
             modifier = Modifier.fillMaxWidth(),
         )
+        LifestyleChoice(form.lifestyle) { lifestyle -> onUpdate { it.copy(lifestyle = lifestyle) } }
+    }
+}
+
+/** Alltag ohne Sport (DGE-PAL): vier Stufen mit Beispielen, Sport kommt extra als Aktivität. */
+@Composable
+private fun LifestyleChoice(selected: Lifestyle?, onSelect: (Lifestyle) -> Unit) {
+    Column(Modifier.selectableGroup().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(stringResource(R.string.lifestyle_title), style = MaterialTheme.typography.labelLarge)
+        Lifestyle.entries.forEach { lifestyle ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .selectable(selected = lifestyle == selected, onClick = { onSelect(lifestyle) }, role = Role.RadioButton)
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(
+                    selected = lifestyle == selected,
+                    onClick = null,
+                    colors = RadioButtonDefaults.colors(selectedColor = Neon.Cyan),
+                )
+                Column(Modifier.padding(start = 12.dp)) {
+                    Text(stringResource(lifestyle.labelRes), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(lifestyle.exampleRes), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+                }
+            }
+        }
+        Text(stringResource(R.string.lifestyle_hint), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
     }
 }
 

@@ -1,7 +1,9 @@
 package de.kalorienapp.data.db.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import de.kalorienapp.domain.model.Lifestyle
 import de.kalorienapp.domain.model.Profile
 import de.kalorienapp.domain.model.Sex
 
@@ -18,6 +20,7 @@ data class ProfileEntity(
     val proteinOverrideG: Int?,
     val fatOverrideG: Int?,
     val carbsOverrideG: Int?,
+    @ColumnInfo(defaultValue = "SEDENTARY") val lifestyle: Lifestyle = Lifestyle.SEDENTARY,
 ) {
     fun toDomain() = Profile(
         sex = sex,
@@ -29,6 +32,7 @@ data class ProfileEntity(
         proteinOverrideG = proteinOverrideG,
         fatOverrideG = fatOverrideG,
         carbsOverrideG = carbsOverrideG,
+        lifestyle = lifestyle,
     )
 
     companion object {
@@ -44,6 +48,7 @@ data class ProfileEntity(
             proteinOverrideG = p.proteinOverrideG,
             fatOverrideG = p.fatOverrideG,
             carbsOverrideG = p.carbsOverrideG,
+            lifestyle = p.lifestyle,
         )
     }
 }

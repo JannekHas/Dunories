@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.profile
 
+import de.kalorienapp.domain.model.Lifestyle
 import de.kalorienapp.domain.model.Profile
 import de.kalorienapp.domain.model.Sex
 import de.kalorienapp.ui.components.parseDecimal
@@ -8,6 +9,8 @@ import de.kalorienapp.ui.components.toInputString
 /** Eingabezustand des Profil-Formulars (Onboarding und Profil-Screen). Leere optionale Felder = automatisch. */
 data class ProfileFormState(
     val sex: Sex? = null,
+    /** Alltag ohne Sport; muss bei der Einrichtung bewusst gewählt werden. */
+    val lifestyle: Lifestyle? = null,
     val age: String = "",
     val heightCm: String = "",
     val weightKg: String = "",
@@ -32,7 +35,7 @@ data class ProfileFormState(
     val carbsOverrideError get() = optionalError(carbsOverride, ::gramValue)
 
     val bodyDataValid: Boolean
-        get() = sex != null && ageValue != null && heightValue != null && weightValue != null
+        get() = sex != null && lifestyle != null && ageValue != null && heightValue != null && weightValue != null
 
     val targetsValid: Boolean
         get() = !proteinPerKgError && !kcalOverrideError && !proteinOverrideError &&
@@ -52,12 +55,14 @@ data class ProfileFormState(
             proteinOverrideG = proteinOverride.toIntOrNull(),
             fatOverrideG = fatOverride.toIntOrNull(),
             carbsOverrideG = carbsOverride.toIntOrNull(),
+            lifestyle = lifestyle!!,
         )
     }
 
     companion object {
         fun from(profile: Profile, currentYear: Int) = ProfileFormState(
             sex = profile.sex,
+            lifestyle = profile.lifestyle,
             age = profile.ageIn(currentYear).toString(),
             heightCm = profile.heightCm.toInputString(),
             weightKg = profile.weightKg.toInputString(),

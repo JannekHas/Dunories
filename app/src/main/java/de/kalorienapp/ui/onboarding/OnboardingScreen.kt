@@ -127,8 +127,9 @@ fun OnboardingScreen(
                 }
                 1 -> {
                     StepIntro(stringResource(R.string.onboarding_goal_intro))
-                    GoalInputs(state.goalForm, form.weightValue, viewModel::updateGoal)
-                    GoalPreviewCard(state.goalState?.takeIf { it.goal != null })
+                    val recommendation = state.goalForm.recommendation(state.goalState?.profile)
+                    GoalInputs(state.goalForm, form.weightValue, viewModel::updateGoal, recommendation)
+                    GoalPreviewCard(state.goalState?.takeIf { it.goal != null }, recommendation = recommendation)
                 }
                 else -> {
                     StepIntro(stringResource(R.string.onboarding_targets_intro))

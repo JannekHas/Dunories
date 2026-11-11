@@ -2,6 +2,7 @@ package de.kalorienapp.domain
 
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.Goal
+import de.kalorienapp.domain.model.Lifestyle
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.domain.model.Profile
 import de.kalorienapp.domain.model.Sex
@@ -37,23 +38,27 @@ class GoalCalculatorTest {
     }
 
     @Test
-    fun `basis ist allein der grundumsatz`() {
-        assertEquals(1780.0, GoalCalculator.maintenanceKcal(profile(), year), 0.001)
+    fun `basis ist grundumsatz mal alltagsfaktor ohne sport`() {
+        // Standard „überwiegend sitzend“: 1780 * 1.4 = 2492
+        assertEquals(2492.0, GoalCalculator.maintenanceKcal(profile(), year), 0.001)
+        // „überwiegend stehend und gehend“: 1780 * 1.8 = 3204
+        val standing = profile().copy(lifestyle = Lifestyle.STANDING)
+        assertEquals(3204.0, GoalCalculator.maintenanceKcal(standing, year), 0.001)
     }
 
     @Test
     fun `targets halten - kcal und makroverteilung`() {
-        // Grundumsatz 1780 kcal; Protein 1.6*80 = 128 g; Fett 1780*0.25/9 = 49.4 → 49 g
-        // KH = (1780 - 128*4 - 49*9) / 4 = (1780 - 512 - 441) / 4 = 206.75 → 207 g
+        // Bedarf 1780 * 1.4 = 2492 kcal; Protein 1.6*80 = 128 g; Fett 2492*0.25/9 = 69.2 → 69 g
+        // KH = (2492 - 128*4 - 69*9) / 4 = (2492 - 512 - 621) / 4 = 339.75 → 340 g
         val t = GoalCalculator.targets(profile(), year)
-        assertEquals(DailyTargets(kcal = 1780, proteinG = 128, carbsG = 207, fatG = 49), t)
+        assertEquals(DailyTargets(kcal = 2492, proteinG = 128, carbsG = 340, fatG = 69), t)
     }
 
     @Test
     fun `abnehmen - anpassung aus dem zielplan und hoeheres protein`() {
-        // 1780 - 550 = 1230 kcal; Protein 1.8*80 = 144 g
+        // 2492 - 550 = 1942 kcal; Protein 1.8*80 = 144 g
         val t = GoalCalculator.targets(profile(), year, direction = Goal.LOSE, adjustmentKcal = -550)
-        assertEquals(1230, t.kcal)
+        assertEquals(1942, t.kcal)
         assertEquals(144, t.proteinG)
     }
 

@@ -58,7 +58,7 @@ import de.kalorienapp.data.db.entity.WeightGoalEntity
         MealComboEntity::class,
         MealComboItemEntity::class,
     ],
-    version = 17,
+    version = 18,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -414,6 +414,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v18: Alltag ohne Sport (DGE-PAL) im Profil; bestehende Profile starten mit „überwiegend sitzend“. */
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `profile` ADD COLUMN `lifestyle` TEXT NOT NULL DEFAULT 'SEDENTARY'")
+            }
+        }
+
         private val COMBO_TABLES_SQL = listOf(
             "CREATE TABLE IF NOT EXISTS `meal_combo` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)",
             "CREATE TABLE IF NOT EXISTS `meal_combo_item` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `comboId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `name` TEXT NOT NULL, `amount` REAL NOT NULL, `unit` TEXT NOT NULL, `kcal` REAL NOT NULL, `proteinG` REAL NOT NULL, `carbsG` REAL NOT NULL, `fatG` REAL NOT NULL, `saturatedFatG` REAL, `sugarG` REAL, `fiberG` REAL, `saltG` REAL, FOREIGN KEY(`comboId`) REFERENCES `meal_combo`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
@@ -439,7 +446,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) = insertDefaultCategories(db)
                 })
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18)
                 .build()
     }
 }

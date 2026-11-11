@@ -1,6 +1,9 @@
 package de.kalorienapp.ui.goal
 
 import de.kalorienapp.data.repository.GoalState
+import de.kalorienapp.domain.GoalCalculator
+import de.kalorienapp.domain.GoalPlanner
+import de.kalorienapp.domain.GoalRecommendation
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.Profile
 import de.kalorienapp.domain.model.WeightGoal
@@ -33,6 +36,13 @@ data class GoalFormState(
         val target = targetValue ?: return false
         currentWeightKg ?: return false
         return kotlin.math.abs(target - currentWeightKg) <= WeightGoal.MAINTAIN_TOLERANCE_KG
+    }
+
+    /** Empfohlenes Zieldatum für das eingegebene Wunschgewicht (null bei „Halten“ oder unvollständig). */
+    fun recommendation(profile: Profile?, today: LocalDate = LocalDate.now()): GoalRecommendation? {
+        profile ?: return null
+        val target = targetValue ?: return null
+        return GoalPlanner.recommendation(profile.weightKg, target, GoalCalculator.maintenanceKcal(profile, today.year), today)
     }
 
     /** Vorschau: Tagesziel, das sich mit diesem Ziel heute ergäbe. */

@@ -5,9 +5,26 @@ import de.kalorienapp.R
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.MealType
+import de.kalorienapp.domain.model.Lifestyle
 import de.kalorienapp.domain.model.Sex
 
 @get:StringRes
+val Lifestyle.labelRes: Int
+    get() = when (this) {
+        Lifestyle.SEDENTARY -> R.string.lifestyle_sedentary
+        Lifestyle.MIXED -> R.string.lifestyle_mixed
+        Lifestyle.STANDING -> R.string.lifestyle_standing
+        Lifestyle.HEAVY -> R.string.lifestyle_heavy
+    }
+
+val Lifestyle.exampleRes: Int
+    get() = when (this) {
+        Lifestyle.SEDENTARY -> R.string.lifestyle_sedentary_example
+        Lifestyle.MIXED -> R.string.lifestyle_mixed_example
+        Lifestyle.STANDING -> R.string.lifestyle_standing_example
+        Lifestyle.HEAVY -> R.string.lifestyle_heavy_example
+    }
+
 val Sex.labelRes: Int
     get() = when (this) {
         Sex.MALE -> R.string.sex_male

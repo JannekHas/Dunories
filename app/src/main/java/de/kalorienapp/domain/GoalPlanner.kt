@@ -17,6 +17,9 @@ import kotlin.math.roundToInt
  * steigt die Anpassung; liegt man vorn, bleibt das ursprünglich geplante Tempo (nie langsamer werden).
  * Das Tempo ist begrenzt auf [MAX_LOSS_KG_PER_WEEK] Abnahme bzw. [MAX_GAIN_KG_PER_WEEK] Zunahme.
  */
+/** Empfohlenes Zieldatum und das Tempo dahinter. */
+data class GoalRecommendation(val date: LocalDate, val kgPerWeek: Double)
+
 object GoalPlanner {
 
     /** Faustwert: Energie in 1 kg Körpergewicht. */
@@ -56,6 +59,36 @@ object GoalPlanner {
         val perWeek = if (diff < 0) MAX_LOSS_KG_PER_WEEK else MAX_GAIN_KG_PER_WEEK
         val weeks = abs(diff) / perWeek
         return today.plusDays(ceil(weeks * 7).toLong())
+    }
+
+    const val RECOMMENDED_LOSS_KG_PER_WEEK = 0.5
+    const val RECOMMENDED_GAIN_KG_PER_WEEK = 0.25
+    private const val MIN_RECOMMENDED_LOSS_KG_PER_WEEK = 0.25
+
+    /** Abstand zur Untergrenze, den die Empfehlung mindestens lässt. */
+    private const val FLOOR_MARGIN_KCAL = 100
+
+    /**
+     * Empfohlenes Zieldatum für ein Wunschgewicht: abnehmen mit 0,5 kg/Woche – langsamer, falls das Tagesziel
+     * sonst unter die Untergrenze (+ Puffer) fiele, aber nicht unter 0,25 kg/Woche; zunehmen mit 0,25 kg/Woche.
+     * null bei „Halten“.
+     */
+    fun recommendation(
+        currentWeightKg: Double,
+        targetWeightKg: Double,
+        maintenanceKcal: Double,
+        today: LocalDate,
+    ): GoalRecommendation? {
+        val diff = targetWeightKg - currentWeightKg
+        if (abs(diff) <= WeightGoal.MAINTAIN_TOLERANCE_KG) return null
+        val kgPerWeek = if (diff < 0) {
+            val byFloor = (maintenanceKcal - GoalCalculator.MIN_KCAL_TARGET - FLOOR_MARGIN_KCAL) * 7 / KCAL_PER_KG
+            byFloor.coerceIn(MIN_RECOMMENDED_LOSS_KG_PER_WEEK, RECOMMENDED_LOSS_KG_PER_WEEK)
+        } else {
+            RECOMMENDED_GAIN_KG_PER_WEEK
+        }
+        val days = ceil(abs(diff) / kgPerWeek * 7).toLong().coerceAtLeast(1)
+        return GoalRecommendation(today.plusDays(days), kgPerWeek)
     }
 
     /** Wunschgewicht erreicht? (Abnehmen: ≤ Ziel, Zunehmen: ≥ Ziel; Halten endet nie von selbst.) */
