@@ -19,3 +19,10 @@ local.properties
 *.aab
 *.keystore
 *.jks
+
+# Lokale Notizen (nicht veröffentlichen)
+CLAUDE.md
+.claude/
+TESTLISTE.md
+Patchnotes.txt
+design/werbung/
