@@ -1,13 +1,19 @@
 package de.kalorienapp.ui.today
 
 import androidx.compose.foundation.border
+import de.kalorienapp.ui.components.GlassShape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -38,8 +43,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
@@ -205,38 +208,40 @@ fun EntryDragAutoScroll(state: EntryDragState, listState: LazyListState, bottomI
     }
 }
 
-/** Schwebende Karte am Finger: Name und kcal des gezogenen Eintrags. */
+/**
+ * Schwebende Karte am Finger: sieht aus wie die Zeile selbst (Name, Menge + Makros, kcal – nur ohne ⋮),
+ * „ploppt“ beim Anheben leicht hervor (größer + Schatten) und liegt über allem.
+ */
 @Composable
-fun EntryDragGhost(state: EntryDragState, targetColor: (MealType) -> Color) {
+fun EntryDragGhost(state: EntryDragState) {
     val entry = state.entry ?: return
     val density = LocalDensity.current
-    val color = state.target?.let(targetColor) ?: Neon.TextSecondary
+    val lift = remember(entry.id) { Animatable(1f) }
+    LaunchedEffect(entry.id) { lift.animateTo(1.04f, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)) }
     Surface(
-        color = Neon.SurfaceHighest,
+        color = Neon.SurfaceHigh,
         contentColor = Neon.TextPrimary,
-        shape = RoundedCornerShape(16.dp),
+        shape = GlassShape,
+        shadowElevation = 12.dp,
         modifier = Modifier
             .offset { IntOffset(state.ghostLeft.roundToInt(), state.ghostTop.roundToInt()) }
             .width(with(density) { state.ghostWidth.toDp() })
-            .shadow(12.dp, RoundedCornerShape(16.dp))
-            .border(2.dp, color, RoundedCornerShape(16.dp)),
+            .graphicsLayer {
+                scaleX = lift.value
+                scaleY = lift.value
+            },
     ) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                entry.name,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                stringResource(R.string.kcal_value, entry.nutrients.kcal.format()),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        ListItem(
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            headlineContent = { Text(entry.name) },
+            supportingContent = { Text(entrySubtitle(entry)) },
+            trailingContent = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.kcal_value, entry.nutrients.kcal.format()), style = MaterialTheme.typography.labelLarge)
+                    // Platz des ⋮-Knopfs, damit die kcal genau an derselben Stelle stehen wie in der Zeile.
+                    Spacer(Modifier.width(48.dp))
+                }
+            },
+        )
     }
 }

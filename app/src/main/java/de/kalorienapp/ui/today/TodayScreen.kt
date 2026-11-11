@@ -364,7 +364,7 @@ fun TodayScreen(
                 TipSlot(Tip.MOVE, condition = state.meals.any { it.entries.isNotEmpty() }, after = Tip.RINGS)
             }
         }
-        EntryDragGhost(dragState) { it.neonColor }
+        EntryDragGhost(dragState)
         }
     }
 }
@@ -751,15 +751,11 @@ private fun EntryRow(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val n = entry.nutrients
-    val macros = stringResource(R.string.entry_macros, n.proteinG.format(), n.carbsG.format(), n.fatG.format())
     ListItem(
         modifier = modifier.clickable(onClick = onClick),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         headlineContent = { Text(entry.name) },
-        supportingContent = {
-            val unit = stringResource(entry.unit.labelRes)
-            Text(entry.amount?.let { stringResource(R.string.entry_amount_prefix, it.format(), unit, macros) } ?: macros)
-        },
+        supportingContent = { Text(entrySubtitle(entry)) },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.kcal_value, n.kcal.format()), style = MaterialTheme.typography.labelLarge)
@@ -792,6 +788,15 @@ private fun EntryRow(
             }
         },
     )
+}
+
+/** „150 g · P 5 g · KH 4 g · F 1 g“ – Unterzeile eines Eintrags (Liste und Zieh-Karte). */
+@Composable
+internal fun entrySubtitle(entry: FoodEntry): String {
+    val n = entry.nutrients
+    val macros = stringResource(R.string.entry_macros, n.proteinG.format(), n.carbsG.format(), n.fatG.format())
+    val unit = stringResource(entry.unit.labelRes)
+    return entry.amount?.let { stringResource(R.string.entry_amount_prefix, it.format(), unit, macros) } ?: macros
 }
 
 /** Offener Aktivitäts-Dialog; existing == null → neue Aktivität. */
