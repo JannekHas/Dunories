@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
@@ -14,16 +15,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -37,6 +38,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -48,6 +50,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import de.kalorienapp.R
 import de.kalorienapp.domain.GoalSuccess
@@ -58,6 +61,7 @@ import de.kalorienapp.ui.components.RingSpec
 import de.kalorienapp.ui.components.toInputString
 import de.kalorienapp.ui.theme.Neon
 import java.time.LocalDate
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -74,6 +78,19 @@ private class ShareData(val s: GoalSuccess, val o: ShareOptions, val headline: S
     fun has(field: ShareField) = o.shows(field) && (field != ShareField.ON_TARGET || s.onTargetRate != null)
 }
 
+/** Betrag der Veränderung ohne Vorzeichen („1,4“) – die Richtung steht als Wort daneben (Wunsch des Nutzers: kein Minus). */
+internal fun GoalSuccess.amountText(): String = abs(changeKg).toInputString()
+
+/** „abgenommen“ / „zugenommen“ / „gehalten“. */
+@Composable
+internal fun GoalSuccess.changeWord(): String = stringResource(
+    when {
+        changeKg < -0.05 -> R.string.change_lost
+        changeKg > 0.05 -> R.string.change_gained
+        else -> R.string.change_kept
+    },
+)
+
 /** Ein teilbares Bild im gewählten [template], Format und Hintergrund (Größe: [ShareDesignWidth] × Format). */
 @Composable
 internal fun ShareCard(s: GoalSuccess, o: ShareOptions, template: ShareTemplate, photo: ImageBitmap?) {
@@ -87,7 +104,7 @@ internal fun ShareCard(s: GoalSuccess, o: ShareOptions, template: ShareTemplate,
             o.background == ShareBackground.TRANSPARENT -> Unit
             o.background == ShareBackground.PHOTO && photo != null -> {
                 Image(photo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                // Abdunkeln oben/unten, damit Schrift auf jedem Foto lesbar bleibt.
+                // Abdunkeln, damit Schrift auf jedem Foto lesbar bleibt.
                 Box(
                     Modifier.fillMaxSize().background(
                         Brush.verticalGradient(
@@ -111,52 +128,68 @@ internal fun ShareCard(s: GoalSuccess, o: ShareOptions, template: ShareTemplate,
 
 // ---------- Designs ----------
 
-/** Poster: große Zahl links, die vier Ringe groß und angeschnitten in der Ecke. */
+/** Poster: die Zahlen groß und füllend, die Ringe nur als kleines Zeichen oben rechts. */
 @Composable
 private fun PosterTemplate(d: ShareData) {
-    Box(Modifier.fillMaxSize()) {
-        FullRings(
-            d,
-            Modifier.align(Alignment.BottomEnd).fillMaxWidth(0.62f).offset(x = 48.dp, y = 48.dp).alpha(0.9f),
-            stroke = 14.dp,
-            gap = 6.dp,
-        )
-        Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Wordmark()
             Spacer(Modifier.weight(1f))
-            Headline(d.headline)
-            if (d.has(ShareField.CHANGE)) ChangeText(d.s, if (d.square) 56.sp else 68.sp)
-            if (d.has(ShareField.WEIGHTS)) WeightsText(d.s)
-            if (d.has(ShareField.CHART)) {
-                WeightChart(d.s.weightPoints, Modifier.fillMaxWidth(if (d.square) 0.5f else 0.8f).height(if (d.square) 64.dp else 120.dp))
-            }
-            FactChips(d)
-            Spacer(Modifier.weight(if (d.story) 1.4f else 0.6f))
+            FullRings(d, Modifier.size(40.dp), stroke = 4.dp, gap = 2.dp)
         }
+        if (!d.square) Spacer(Modifier.weight(0.5f))
+        Headline(d.headline)
+        if (d.has(ShareField.CHANGE)) {
+            if (d.square) {
+                // Im Quadrat Zahl und Wort nebeneinander – so bleibt Höhe für den Verlauf.
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AmountText(d.s, 52.sp, Modifier.weight(1f, fill = false))
+                    Box(Modifier.padding(bottom = 8.dp)) { ChangeWord(d.s) }
+                }
+            } else {
+                AmountText(d.s, 96.sp, Modifier.fillMaxWidth())
+                ChangeWord(d.s)
+            }
+        }
+        if (d.has(ShareField.CHART)) {
+            WeightChart(
+                d.s.weightPoints,
+                Modifier.fillMaxWidth().weight(1f).padding(vertical = 4.dp),
+                labels = d.has(ShareField.WEIGHTS),
+                strokeWidth = 4.dp,
+            )
+        } else {
+            if (d.has(ShareField.WEIGHTS)) WeightsText(d.s)
+            Spacer(Modifier.weight(1f))
+        }
+        FactChips(d)
     }
 }
 
-/** Große Zahl: die Veränderung riesig in Regenbogenfarben, sonst fast nichts. */
+/** Große Zahl: die Veränderung riesig in Regenbogenfarben. */
 @Composable
 private fun NumberTemplate(d: ShareData) {
-    Column(
-        Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.weight(1f))
         Headline(d.headline, textAlign = TextAlign.Center)
-        Text(
-            signed(d.s.changeKg),
+        BasicText(
+            d.s.amountText(),
+            modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.displayLarge.copy(
-                fontSize = 104.sp,
-                lineHeight = 108.sp,
                 fontWeight = FontWeight.ExtraBold,
+                lineHeight = 1.1.em,
+                textAlign = TextAlign.Center,
                 brush = Brush.linearGradient(listOf(Neon.Cyan, Neon.Green, Neon.Yellow, Neon.Orange, Neon.Magenta)),
             ),
             maxLines = 1,
-            softWrap = false,
+            autoSize = TextAutoSize.StepBased(minFontSize = 40.sp, maxFontSize = if (d.square) 110.sp else 140.sp, stepSize = 2.sp),
         )
-        Text(stringResource(R.string.unit_kg), style = MaterialTheme.typography.displaySmall, color = Neon.TextPrimary)
+        Text(
+            stringResource(R.string.unit_kg) + " " + d.s.changeWord(),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = Neon.TextPrimary,
+        )
         if (d.has(ShareField.WEIGHTS)) {
             Spacer(Modifier.height(8.dp))
             WeightsText(d.s)
@@ -173,30 +206,26 @@ private fun NumberTemplate(d: ShareData) {
 private fun ChartTemplate(d: ShareData) {
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Wordmark()
-        Spacer(Modifier.height(if (d.story) 40.dp else 4.dp))
+        Spacer(Modifier.height(if (d.story) 32.dp else 4.dp))
         Headline(d.headline)
-        if (d.has(ShareField.CHANGE)) ChangeText(d.s, if (d.square) 48.sp else 60.sp)
+        if (d.has(ShareField.CHANGE)) {
+            AmountText(d.s, if (d.square) 48.sp else 64.sp, Modifier.fillMaxWidth())
+            ChangeWord(d.s)
+        }
         WeightChart(
             d.s.weightPoints,
             Modifier.fillMaxWidth().weight(1f).padding(vertical = 8.dp),
             labels = d.has(ShareField.WEIGHTS),
             strokeWidth = 4.dp,
         )
-        val facts = listOfNotNull(
-            if (d.has(ShareField.DURATION)) pluralStringResource(R.plurals.share_card_days, d.s.days, d.s.days) else null,
-            if (d.has(ShareField.DATES)) rangeText(d.s) else null,
-        )
-        if (facts.isNotEmpty()) {
-            Text(facts.joinToString("  ·  "), style = MaterialTheme.typography.titleSmall, color = Neon.TextPrimary.copy(alpha = 0.85f))
-        }
+        FactText(d)
         if (d.story) Spacer(Modifier.height(24.dp))
     }
 }
 
-/** Kacheln: jede Kennzahl als kräftiger Farbblock (Bento-Raster). */
+/** Kacheln: jede Kennzahl als kräftiger Farbblock, Werte zentriert und so groß wie möglich. */
 @Composable
 private fun TilesTemplate(d: ShareData) {
-    val compact = d.square
     Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Wordmark(height = 20.dp)
@@ -204,42 +233,51 @@ private fun TilesTemplate(d: ShareData) {
             Headline(d.headline)
         }
         if (d.has(ShareField.CHANGE)) {
-            Tile(Neon.Green, Modifier.fillMaxWidth().weight(1.4f)) {
-                ChangeText(d.s, if (compact) 40.sp else 56.sp, color = Neon.OnNeon)
-                TileLabel(stringResource(R.string.goal_celebrate_change_label))
-            }
+            Tile(Neon.Green, Modifier.fillMaxWidth().weight(1.4f), withKg(d.s.amountText()), d.s.changeWord(), maxSize = 96.sp)
         }
         if (d.has(ShareField.DURATION) || d.has(ShareField.ON_TARGET)) TileRow {
             if (d.has(ShareField.DURATION)) {
-                Tile(Neon.Cyan, Modifier.weight(1f).fillMaxSize()) {
-                    TileValue(d.s.days.toString(), compact)
-                    TileLabel(pluralStringResource(R.plurals.goal_celebrate_days_label, d.s.days))
-                }
+                Tile(
+                    Neon.Cyan,
+                    Modifier.weight(1f).fillMaxSize(),
+                    AnnotatedString(d.s.days.toString()),
+                    pluralStringResource(R.plurals.goal_celebrate_days_label, d.s.days),
+                )
             }
             if (d.has(ShareField.ON_TARGET)) d.s.onTargetRate?.let { rate ->
-                Tile(Neon.Yellow, Modifier.weight(1f).fillMaxSize()) {
-                    TileValue("${(rate * 100).roundToInt()} %", compact)
-                    TileLabel(stringResource(R.string.goal_celebrate_ontarget_label))
-                }
+                Tile(
+                    Neon.Yellow,
+                    Modifier.weight(1f).fillMaxSize(),
+                    AnnotatedString("${(rate * 100).roundToInt()} %"),
+                    stringResource(R.string.goal_celebrate_ontarget_label),
+                )
             }
         }
         if (d.has(ShareField.CHART)) {
-            Tile(Color.White.copy(alpha = 0.10f), Modifier.fillMaxWidth().weight(1.2f)) {
-                WeightChart(d.s.weightPoints, Modifier.fillMaxSize())
+            Box(
+                Modifier.fillMaxWidth().weight(1.3f).clip(RoundedCornerShape(18.dp)).background(Color.White.copy(alpha = 0.10f))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            ) {
+                WeightChart(d.s.weightPoints, Modifier.fillMaxSize(), labels = d.has(ShareField.WEIGHTS))
             }
         }
-        if (d.has(ShareField.WEIGHTS) || d.has(ShareField.DATES)) TileRow {
-            if (d.has(ShareField.WEIGHTS)) {
-                Tile(Neon.Magenta, Modifier.weight(1f).fillMaxSize()) {
-                    TileValue("${d.s.goal.startWeightKg.toInputString()} → ${d.s.endWeightKg.toInputString()}", compact = true)
-                    TileLabel(stringResource(R.string.share_card_weights_label) + " (" + stringResource(R.string.unit_kg) + ")")
-                }
+        if ((d.has(ShareField.WEIGHTS) && !d.has(ShareField.CHART)) || d.has(ShareField.DATES)) TileRow {
+            if (d.has(ShareField.WEIGHTS) && !d.has(ShareField.CHART)) {
+                Tile(
+                    Neon.Magenta,
+                    Modifier.weight(1f).fillMaxSize(),
+                    withKg("${d.s.goal.startWeightKg.toInputString()} → ${d.s.endWeightKg.toInputString()}"),
+                    stringResource(R.string.share_card_weights_label),
+                )
             }
             if (d.has(ShareField.DATES)) {
-                Tile(Neon.Orange, Modifier.weight(1f).fillMaxSize()) {
-                    Text(rangeText(d.s), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Neon.OnNeon)
-                    TileLabel(stringResource(R.string.share_card_range_label))
-                }
+                Tile(
+                    Neon.Orange,
+                    Modifier.weight(1f).fillMaxSize(),
+                    AnnotatedString(rangeText(d.s)),
+                    stringResource(R.string.share_card_range_label),
+                    maxLines = 2,
+                )
             }
         }
     }
@@ -251,32 +289,16 @@ private fun BadgeTemplate(d: ShareData) {
     Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.weight(1f))
         FullRings(d, Modifier.fillMaxWidth(if (d.square) 0.78f else 0.9f), stroke = 7.dp, gap = 3.dp) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 6.dp)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth(0.62f)) {
                 Headline(d.headline, textAlign = TextAlign.Center)
                 if (d.has(ShareField.CHANGE)) {
-                    Text(
-                        signed(d.s.changeKg),
-                        style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.ExtraBold),
-                        color = Neon.TextPrimary,
-                        maxLines = 1,
-                    )
-                    Text(stringResource(R.string.unit_kg), style = MaterialTheme.typography.titleMedium, color = Neon.TextPrimary)
+                    AmountText(d.s, 56.sp, Modifier.fillMaxWidth(), align = TextAlign.Center)
+                    ChangeWord(d.s, small = true)
                 }
             }
         }
         Spacer(Modifier.height(18.dp))
-        val facts = listOfNotNull(
-            if (d.has(ShareField.DURATION)) pluralStringResource(R.plurals.share_card_days, d.s.days, d.s.days) else null,
-            if (d.has(ShareField.DATES)) rangeText(d.s) else null,
-        )
-        if (facts.isNotEmpty()) {
-            Text(
-                facts.joinToString("  ·  "),
-                style = MaterialTheme.typography.titleSmall,
-                color = Neon.TextPrimary.copy(alpha = 0.85f),
-                textAlign = TextAlign.Center,
-            )
-        }
+        FactText(d, center = true)
         Spacer(Modifier.weight(1f))
         Wordmark()
     }
@@ -298,7 +320,13 @@ private fun StickerTemplate(d: ShareData) {
                 FullRings(d, Modifier.size(64.dp), stroke = 5.dp, gap = 2.5.dp)
                 Column {
                     Headline(d.headline)
-                    ChangeText(d.s, 40.sp)
+                    Text(
+                        withKg(d.s.amountText()),
+                        style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.ExtraBold, lineHeight = 1.1.em),
+                        color = Neon.TextPrimary,
+                        maxLines = 1,
+                    )
+                    ChangeWord(d.s, small = true)
                 }
             }
             FactChips(d, center = true)
@@ -329,17 +357,47 @@ private fun Headline(text: String, textAlign: TextAlign? = null) {
     )
 }
 
-/** „−18,2 kg“ mit kleinerer Einheit. */
+/** „1,4 kg“ mit kleinerer Einheit. */
 @Composable
-private fun ChangeText(s: GoalSuccess, size: TextUnit, color: Color = Neon.TextPrimary) {
-    Text(
-        buildAnnotatedString {
-            append(signed(s.changeKg))
-            withStyle(SpanStyle(fontSize = size * 0.42f)) { append(" " + stringResource(R.string.unit_kg)) }
-        },
-        style = MaterialTheme.typography.displayLarge.copy(fontSize = size, lineHeight = size * 1.05f, fontWeight = FontWeight.ExtraBold),
-        color = color,
+private fun withKg(value: String): AnnotatedString {
+    val kg = stringResource(R.string.unit_kg)
+    return buildAnnotatedString {
+        append(value)
+        withStyle(SpanStyle(fontSize = 0.42.em)) { append(" $kg") }
+    }
+}
+
+/** Die Veränderung ohne Vorzeichen, so groß wie möglich (höchstens [maxSize]). */
+@Composable
+private fun AmountText(
+    s: GoalSuccess,
+    maxSize: TextUnit,
+    modifier: Modifier,
+    color: Color = Neon.TextPrimary,
+    align: TextAlign = TextAlign.Start,
+) {
+    BasicText(
+        withKg(s.amountText()),
+        modifier = modifier,
+        style = MaterialTheme.typography.displayLarge.copy(
+            fontWeight = FontWeight.ExtraBold,
+            lineHeight = 1.05.em,
+            color = color,
+            textAlign = align,
+        ),
         maxLines = 1,
+        autoSize = TextAutoSize.StepBased(minFontSize = 20.sp, maxFontSize = maxSize, stepSize = 2.sp),
+    )
+}
+
+/** „abgenommen“ in Grün (bzw. „zugenommen“ / „gehalten“). */
+@Composable
+private fun ChangeWord(s: GoalSuccess, small: Boolean = false) {
+    Text(
+        s.changeWord(),
+        style = if (small) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.Bold,
+        color = Neon.Green,
     )
 }
 
@@ -347,8 +405,8 @@ private fun ChangeText(s: GoalSuccess, size: TextUnit, color: Color = Neon.TextP
 private fun WeightsText(s: GoalSuccess) {
     Text(
         stringResource(R.string.goal_celebrate_route, s.goal.startWeightKg.toInputString(), s.endWeightKg.toInputString()),
-        style = MaterialTheme.typography.titleMedium,
-        color = Neon.TextPrimary.copy(alpha = 0.85f),
+        style = MaterialTheme.typography.titleLarge,
+        color = Neon.TextPrimary.copy(alpha = 0.9f),
     )
 }
 
@@ -368,17 +426,33 @@ private fun FactChips(d: ShareData, center: Boolean = false) {
     }
 }
 
+/** Dauer und Zeitraum als eine ruhige Textzeile. */
+@Composable
+private fun FactText(d: ShareData, center: Boolean = false) {
+    val facts = listOfNotNull(
+        if (d.has(ShareField.DURATION)) pluralStringResource(R.plurals.share_card_days, d.s.days, d.s.days) else null,
+        if (d.has(ShareField.DATES)) rangeText(d.s) else null,
+    )
+    if (facts.isEmpty()) return
+    Text(
+        facts.joinToString("  ·  "),
+        style = MaterialTheme.typography.titleMedium,
+        color = Neon.TextPrimary.copy(alpha = 0.9f),
+        textAlign = if (center) TextAlign.Center else null,
+    )
+}
+
 @Composable
 private fun ShareChip(text: String, color: Color) {
     Text(
         text,
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.Bold,
         color = Neon.OnNeon,
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .background(color)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 14.dp, vertical = 7.dp),
     )
 }
 
@@ -387,29 +461,43 @@ private fun ColumnScope.TileRow(content: @Composable RowScope.() -> Unit) {
     Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp), content = content)
 }
 
+/** Farbkachel: Wert zentriert und so groß, wie die Kachel es zulässt, Bezeichnung darunter. */
 @Composable
-private fun Tile(color: Color, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
+private fun Tile(
+    color: Color,
+    modifier: Modifier,
+    value: AnnotatedString,
+    label: String,
+    maxSize: TextUnit = 64.sp,
+    maxLines: Int = 1,
+) {
     Column(
-        modifier.clip(RoundedCornerShape(18.dp)).background(color).padding(horizontal = 14.dp, vertical = 6.dp),
-        verticalArrangement = Arrangement.Center,
-        content = content,
-    )
-}
-
-@Composable
-private fun TileValue(text: String, compact: Boolean) {
-    Text(
-        text,
-        style = if (compact) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.ExtraBold,
-        color = Neon.OnNeon,
-        maxLines = 1,
-    )
-}
-
-@Composable
-private fun TileLabel(text: String) {
-    Text(text, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = Neon.OnNeon)
+        modifier.clip(RoundedCornerShape(18.dp)).background(color).padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            BasicText(
+                value,
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    lineHeight = 1.1.em,
+                    color = Neon.OnNeon,
+                    textAlign = TextAlign.Center,
+                ),
+                maxLines = maxLines,
+                autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = maxSize, stepSize = 1.sp),
+            )
+        }
+        Text(
+            label,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = Neon.OnNeon.copy(alpha = 0.8f),
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+        )
+    }
 }
 
 @Composable
@@ -418,7 +506,7 @@ private fun FullRings(
     modifier: Modifier,
     stroke: Dp,
     gap: Dp,
-    center: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
+    center: @Composable BoxScope.() -> Unit = {},
 ) {
     val fill = if (d.reached) 1f else d.s.progress.toFloat()
     ConcentricRings(
@@ -455,7 +543,7 @@ internal fun WeightChart(
     lineColor: Color = Neon.Violet,
 ) {
     val measurer = rememberTextMeasurer()
-    val labelStyle: TextStyle = MaterialTheme.typography.labelLarge.copy(color = Neon.TextPrimary, fontWeight = FontWeight.Bold)
+    val labelStyle: TextStyle = MaterialTheme.typography.titleSmall.copy(color = Neon.TextPrimary, fontWeight = FontWeight.Bold)
     val unit = stringResource(R.string.unit_kg)
     Canvas(modifier) {
         if (points.size < 2) return@Canvas
@@ -464,7 +552,8 @@ internal fun WeightChart(
         val min = points.minOf { it.second }
         val range = (points.maxOf { it.second } - min).coerceAtLeast(0.5)
         val padX = 8.dp.toPx()
-        val padY = if (labels) 28.dp.toPx() else 8.dp.toPx()
+        // Bei flachen Diagrammen weniger Rand, sonst kippt die Linie.
+        val padY = minOf(if (labels) 30.dp.toPx() else 8.dp.toPx(), size.height * 0.3f)
         val offsets = points.mapIndexed { i, (date, kg) ->
             val fx = if (spanDays == 0L) i / (points.size - 1f) else (date.toEpochDay() - first) / spanDays.toFloat()
             Offset(

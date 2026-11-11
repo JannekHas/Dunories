@@ -54,7 +54,7 @@ enum class ShareField(val labelRes: Int) {
 
 /**
  * Was aufs teilbare Bild kommt: Design, Format, Hintergrund, Überschrift und Daten.
- * Absolute Gewichte standardmäßig aus – nicht jeder will sie zeigen.
+ * Standardmäßig alle Daten an (Wunsch des Nutzers: mehr Zahlen), jede einzeln abschaltbar.
  */
 data class ShareOptions(
     val template: ShareTemplate = ShareTemplate.POSTER,
@@ -63,7 +63,7 @@ data class ShareOptions(
     val photo: Uri? = null,
     /** Leer = Standard („ZIEL ERREICHT“ bzw. „GESCHAFFT“). */
     val headline: String = "",
-    val fields: Set<ShareField> = setOf(ShareField.CHANGE, ShareField.CHART, ShareField.DURATION, ShareField.ON_TARGET),
+    val fields: Set<ShareField> = ShareField.entries.toSet(),
 ) {
     fun shows(field: ShareField) = field in fields && field in template.fields
 }

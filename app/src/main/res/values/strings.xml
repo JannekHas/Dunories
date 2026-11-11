@@ -279,7 +279,6 @@
     <string name="goal_celebrate_date">Starke Leistung!</string>
     <string name="goal_celebrate_route">%1$s kg → %2$s kg</string>
     <string name="goal_celebrate_progress">%1$s von %2$s kg geschafft</string>
-    <string name="goal_celebrate_change_label">geschafft</string>
     <plurals name="goal_celebrate_days_label">
         <item quantity="one">Tag</item>
         <item quantity="other">Tage</item>
@@ -290,6 +289,9 @@
     <string name="goal_celebrate_close">Schließen</string>
     <string name="goal_share">Erfolg teilen</string>
     <string name="share_data">Daten</string>
+    <string name="change_lost">abgenommen</string>
+    <string name="change_gained">zugenommen</string>
+    <string name="change_kept">gehalten</string>
     <string name="share_opt_change">Veränderung</string>
     <string name="share_opt_dates">Zeitraum</string>
     <string name="share_swipe_hint">Wische für weitere Designs</string>

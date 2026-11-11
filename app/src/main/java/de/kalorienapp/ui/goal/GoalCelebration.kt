@@ -152,7 +152,7 @@ fun GoalCelebrationScreen(
                     gap = 5.dp,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(signed(s.changeKg), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
+                        Text(s.amountText(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
                         Text(stringResource(R.string.unit_kg), style = MaterialTheme.typography.titleSmall, color = Neon.TextSecondary)
                     }
                 }
@@ -180,8 +180,8 @@ fun GoalCelebrationScreen(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 20.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     NeonPill(
-                        signed(s.changeKg) + " " + stringResource(R.string.unit_kg),
-                        stringResource(R.string.goal_celebrate_change_label),
+                        s.amountText() + " " + stringResource(R.string.unit_kg),
+                        s.changeWord(),
                         Neon.Green,
                         Modifier.weight(1f),
                     )
