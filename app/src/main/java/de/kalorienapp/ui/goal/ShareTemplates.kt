@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
@@ -147,7 +148,7 @@ private fun PosterTemplate(d: ShareData) {
                     Box(Modifier.padding(bottom = 8.dp)) { ChangeWord(d.s) }
                 }
             } else {
-                AmountText(d.s, 96.sp, Modifier.fillMaxWidth())
+                AmountText(d.s, if (d.story) 96.sp else 76.sp, Modifier.fillMaxWidth())
                 ChangeWord(d.s)
             }
         }
@@ -233,7 +234,7 @@ private fun TilesTemplate(d: ShareData) {
             Headline(d.headline)
         }
         if (d.has(ShareField.CHANGE)) {
-            Tile(Neon.Green, Modifier.fillMaxWidth().weight(1.4f), withKg(d.s.amountText()), d.s.changeWord(), maxSize = 96.sp)
+            Tile(Neon.Green, Modifier.fillMaxWidth().weight(1.4f), withKg(d.s.amountText()), d.s.changeWord())
         }
         if (d.has(ShareField.DURATION) || d.has(ShareField.ON_TARGET)) TileRow {
             if (d.has(ShareField.DURATION)) {
@@ -461,42 +462,66 @@ private fun ColumnScope.TileRow(content: @Composable RowScope.() -> Unit) {
     Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp), content = content)
 }
 
-/** Farbkachel: Wert zentriert und so groß, wie die Kachel es zulässt, Bezeichnung darunter. */
+/**
+ * Farbkachel, deren Inhalt die Fläche füllt: in hohen Kacheln Wert groß und Bezeichnung darunter,
+ * in flachen Kacheln beides nebeneinander („1 Tag“) – Wunsch des Nutzers: nicht klein und leer wirken.
+ */
 @Composable
 private fun Tile(
     color: Color,
     modifier: Modifier,
     value: AnnotatedString,
     label: String,
-    maxSize: TextUnit = 64.sp,
+    maxSize: TextUnit = 160.sp,
     maxLines: Int = 1,
 ) {
-    Column(
-        modifier.clip(RoundedCornerShape(18.dp)).background(color).padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    BoxWithConstraints(
+        modifier.clip(RoundedCornerShape(18.dp)).background(color).padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+        val valueStyle = MaterialTheme.typography.displayLarge.copy(
+            fontWeight = FontWeight.ExtraBold,
+            lineHeight = 1.0.em,
+            color = Neon.OnNeon,
+            textAlign = TextAlign.Center,
+        )
+        if (maxHeight >= 96.dp) {
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    BasicText(
+                        value,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = valueStyle,
+                        maxLines = maxLines,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = maxSize, stepSize = 2.sp),
+                    )
+                }
+                BasicText(
+                    label,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Neon.OnNeon.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center,
+                    ),
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 28.sp, stepSize = 1.sp),
+                )
+            }
+        } else {
             BasicText(
-                value,
+                buildAnnotatedString {
+                    append(value)
+                    withStyle(SpanStyle(fontSize = 0.45.em, fontWeight = FontWeight.Bold, color = Neon.OnNeon.copy(alpha = 0.8f))) {
+                        append("  $label")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    lineHeight = 1.1.em,
-                    color = Neon.OnNeon,
-                    textAlign = TextAlign.Center,
-                ),
+                style = valueStyle,
                 maxLines = maxLines,
                 autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = maxSize, stepSize = 1.sp),
             )
         }
-        Text(
-            label,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = Neon.OnNeon.copy(alpha = 0.8f),
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-        )
     }
 }
 
@@ -553,7 +578,7 @@ internal fun WeightChart(
         val range = (points.maxOf { it.second } - min).coerceAtLeast(0.5)
         val padX = 8.dp.toPx()
         // Bei flachen Diagrammen weniger Rand, sonst kippt die Linie.
-        val padY = minOf(if (labels) 30.dp.toPx() else 8.dp.toPx(), size.height * 0.3f)
+        val padY = minOf(if (labels) 38.dp.toPx() else 10.dp.toPx(), size.height * 0.3f)
         val offsets = points.mapIndexed { i, (date, kg) ->
             val fx = if (spanDays == 0L) i / (points.size - 1f) else (date.toEpochDay() - first) / spanDays.toFloat()
             Offset(
@@ -576,19 +601,29 @@ internal fun WeightChart(
         drawCircle(Neon.Cyan, strokeWidth.toPx() * 1.8f, offsets.first())
         drawCircle(Neon.Green, strokeWidth.toPx() * 2.1f, offsets.last())
         if (labels) {
-            val gap = 8.dp.toPx()
+            // Abstand = Punkt-Radius + Luft, damit die Zahl nie in den Punkt ragt.
+            val gap = strokeWidth.toPx() * 2.1f + 5.dp.toPx()
             listOf(0, points.lastIndex).forEach { i ->
                 val text = measurer.measure("${points[i].second.toInputString()} $unit", labelStyle)
                 val o = offsets[i]
-                val x = if (i == 0) o.x - padX / 2 else o.x - text.size.width + padX / 2
-                val y = if (o.y < size.height / 2) o.y - text.size.height - gap else o.y + gap
-                drawText(
-                    text,
-                    topLeft = Offset(
-                        x.coerceIn(0f, (size.width - text.size.width).coerceAtLeast(0f)),
-                        y.coerceIn(0f, (size.height - text.size.height).coerceAtLeast(0f)),
-                    ),
-                )
+                val w = text.size.width.toFloat()
+                val h = text.size.height.toFloat()
+                val above = o.y - gap - h
+                val below = o.y + gap
+                val fitsAbove = above >= 0f
+                val fitsBelow = below + h <= size.height
+                val alignedX = (if (i == 0) o.x - padX / 2 else o.x - w + padX / 2).coerceIn(0f, (size.width - w).coerceAtLeast(0f))
+                val topLeft = when {
+                    // bevorzugt über hohen und unter tiefen Punkten
+                    o.y < size.height / 2 && fitsAbove -> Offset(alignedX, above)
+                    o.y >= size.height / 2 && fitsBelow -> Offset(alignedX, below)
+                    fitsAbove -> Offset(alignedX, above)
+                    fitsBelow -> Offset(alignedX, below)
+                    // kein Platz darüber/darunter: neben den Punkt (Start rechts, Ende links)
+                    i == 0 -> Offset(o.x + gap, (o.y - h / 2).coerceIn(0f, (size.height - h).coerceAtLeast(0f)))
+                    else -> Offset(o.x - gap - w, (o.y - h / 2).coerceIn(0f, (size.height - h).coerceAtLeast(0f)))
+                }
+                drawText(text, topLeft = topLeft)
             }
         }
     }
