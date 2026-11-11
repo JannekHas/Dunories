@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,9 +71,14 @@ class GoalViewModel(
 
     fun update(form: GoalFormState) = _uiState.update { it.copy(form = form) }
 
+    /** Schutz gegen Doppeltippen (zwei Speichern-Knöpfe: oben und unten). */
+    private var saving = false
+
     fun save(onSaved: () -> Unit) {
         val state = _uiState.value
         val goal = state.preview?.goal ?: return
+        if (saving) return
+        saving = true
         viewModelScope.launch {
             goalRepository.startGoal(goal.startWeightKg, goal.targetWeightKg, goal.targetDate)
             onSaved()
@@ -96,6 +102,16 @@ fun GoalScreen(
                 navigationIcon = {
                     IconButton(onClick = onDone) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                    }
+                },
+                actions = {
+                    // Ziel setzen von jeder Scrollposition aus, zusätzlich zum Knopf unten.
+                    IconButton(onClick = { viewModel.save(onDone) }, enabled = state.preview != null) {
+                        Icon(
+                            Icons.Filled.Check,
+                            stringResource(R.string.goal_set),
+                            tint = if (state.preview != null) Neon.Cyan else Neon.TextSecondary,
+                        )
                     }
                 },
             )

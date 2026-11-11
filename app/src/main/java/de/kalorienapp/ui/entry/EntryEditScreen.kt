@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +30,7 @@ import de.kalorienapp.R
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.MealTypePicker
 import de.kalorienapp.ui.food.FoodFormFields
+import de.kalorienapp.ui.theme.Neon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +52,14 @@ fun EntryEditScreen(
                     }
                 },
                 actions = {
+                    // Speichern von jeder Scrollposition aus (Tester-Wunsch), zusätzlich zum Knopf unten.
+                    IconButton(onClick = { viewModel.save(onDone) }, enabled = state.form.isValid) {
+                        Icon(
+                            Icons.Filled.Check,
+                            stringResource(R.string.save),
+                            tint = if (state.form.isValid) Neon.Cyan else Neon.TextSecondary,
+                        )
+                    }
                     if (!state.isNew) {
                         IconButton(onClick = { viewModel.delete(onDone) }) {
                             Icon(Icons.Filled.Delete, stringResource(R.string.delete))
