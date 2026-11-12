@@ -2,6 +2,7 @@ package de.kalorienapp.capture
 
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -13,6 +14,9 @@ import android.speech.SpeechRecognizer
  * Spracheingabe, die bei Pausen nicht aufhört: Die Android-Spracherkennung beendet sich nach kurzer
  * Stille von selbst – dann wird sie sofort neu gestartet, bis der Nutzer auf „Fertig“ tippt.
  * Vorläufige Ergebnisse kommen laufend über [onUpdate], damit der Text live mitgeschrieben wird.
+ *
+ * Die Spracherkennung piept bei jedem Ende/Neustart – das klänge wie „Aufnahme beendet“. Deshalb sind
+ * nach dem ersten Start-Ton die Medien-, System- und Benachrichtigungstöne stumm, bis die Aufnahme endet.
  */
 class ContinuousSpeech(
     context: Context,
@@ -32,6 +36,8 @@ class ContinuousSpeech(
     private var fastFailures = 0
     private var lastStart = 0L
     private var preferOffline = true
+    private val audio = appContext.getSystemService(AudioManager::class.java)
+    private val mutedStreams = mutableListOf<Int>()
 
     fun start() {
         if (active) return
@@ -50,6 +56,7 @@ class ContinuousSpeech(
         commitPartial()
         recognizer?.cancel()
         release()
+        unmute()
         onLevel(0f)
         onStopped(false)
     }
@@ -59,6 +66,31 @@ class ContinuousSpeech(
         handler.removeCallbacksAndMessages(null)
         recognizer?.cancel()
         release()
+        unmute()
+    }
+
+    private fun mute() {
+        if (mutedStreams.isNotEmpty() || audio == null) return
+        for (stream in MUTED_STREAMS) {
+            try {
+                if (!audio.isStreamMute(stream)) {
+                    audio.adjustStreamVolume(stream, AudioManager.ADJUST_MUTE, 0)
+                    mutedStreams += stream
+                }
+            } catch (_: SecurityException) {
+                // z. B. „Nicht stören“ – dann bleibt dieser Ton eben an
+            }
+        }
+    }
+
+    private fun unmute() {
+        for (stream in mutedStreams) {
+            try {
+                audio?.adjustStreamVolume(stream, AudioManager.ADJUST_UNMUTE, 0)
+            } catch (_: SecurityException) {
+            }
+        }
+        mutedStreams.clear()
     }
 
     private fun release() {
@@ -99,7 +131,10 @@ class ContinuousSpeech(
     }
 
     private val listener = object : RecognitionListener {
-        override fun onReadyForSpeech(params: Bundle?) {}
+        override fun onReadyForSpeech(params: Bundle?) {
+            // Start-Ton ist gespielt → ab jetzt keine Töne mehr bei Pausen
+            if (active) handler.postDelayed({ if (active) mute() }, 300)
+        }
         override fun onBeginningOfSpeech() {}
         override fun onBufferReceived(buffer: ByteArray?) {}
         override fun onEndOfSpeech() {
@@ -168,7 +203,12 @@ class ContinuousSpeech(
         active = false
         handler.removeCallbacksAndMessages(null)
         release()
+        unmute()
         onLevel(0f)
         onStopped(true)
+    }
+
+    private companion object {
+        val MUTED_STREAMS = listOf(AudioManager.STREAM_MUSIC, AudioManager.STREAM_SYSTEM, AudioManager.STREAM_NOTIFICATION)
     }
 }
