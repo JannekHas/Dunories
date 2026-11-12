@@ -5,6 +5,8 @@
     <!-- Nur für Open Food Facts, Gemini und öffentliche TikTok-/Instagram-Beitragsseiten; keine Analytics. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Spracheingabe beim Beschreiben (nur solange man auf „Sprechen“ getippt hat) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Kalorien-Benachrichtigung, Wiege-Erinnerung, Wochenauswertung -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Nach Neustart Benachrichtigung wieder anzeigen und Erinnerungen neu planen -->
@@ -15,6 +17,9 @@
     <queries>
         <intent>
             <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
         </intent>
     </queries>
 

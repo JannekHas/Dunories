@@ -131,7 +131,7 @@ private fun RefineCard(onRefine: (String) -> Unit) {
                 minLines = 2,
                 modifier = Modifier.fillMaxWidth(),
             )
-            SpeechButton(onText = { spoken -> hint = if (hint.isBlank()) spoken else "$hint $spoken" })
+            SpeechButton(text = hint, onChange = { hint = it }, separator = " ")
             Button(
                 onClick = { onRefine(hint) },
                 enabled = hint.isNotBlank(),

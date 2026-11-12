@@ -1,9 +1,17 @@
 package de.kalorienapp.ui.capture
 
 import android.Manifest
-import android.speech.RecognizerIntent
-import android.content.Intent
-import android.content.ActivityNotFoundException
+import android.speech.SpeechRecognizer
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.material.icons.filled.Check
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import de.kalorienapp.capture.ContinuousSpeech
+import de.kalorienapp.domain.SpeechText
 import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -359,7 +367,7 @@ private fun TextInputContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(stringResource(R.string.capture_describe_intro), style = MaterialTheme.typography.bodyLarge)
-        SpeechButton(onText = { spoken -> onChange(listOf(description.trim(), spoken).filter(String::isNotBlank).joinToString(", ")) })
+        SpeechButton(text = description, onChange = onChange, separator = ", ")
         OutlinedTextField(
             value = description,
             onValueChange = onChange,
@@ -472,41 +480,106 @@ private val CaptureError.messageRes: Int
     }
 
 /**
- * Spracheingabe über die Android-Spracherkennung (wie das Mikrofon der Tastatur; bevorzugt auf dem Gerät).
- * Der erkannte Text landet im Beschreiben-Feld und kann vor dem Schätzen korrigiert werden.
+ * Spracheingabe über die Android-Spracherkennung (bevorzugt auf dem Gerät). Hört bei Pausen weiter zu,
+ * bis man auf „Fertig“ tippt, und schreibt das Erkannte live ins Feld ([text] + Gesprochenes,
+ * getrennt durch [separator]). Der Text kann danach wie getippter Text korrigiert werden.
  */
 @Composable
-internal fun SpeechButton(onText: (String) -> Unit) {
+internal fun SpeechButton(text: String, onChange: (String) -> Unit, separator: String) {
     val context = LocalContext.current
-    var unavailable by remember { mutableStateOf(false) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-            ?.takeIf { it.isNotBlank() }?.let(onText)
-    }
-    val prompt = stringResource(R.string.speech_prompt)
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Button(
-            onClick = {
-                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "de-DE")
-                    putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-                    putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
-                }
-                try {
-                    launcher.launch(intent)
-                } catch (e: ActivityNotFoundException) {
-                    unavailable = true
-                }
+    val currentText by rememberUpdatedState(text)
+    val currentOnChange by rememberUpdatedState(onChange)
+    var listening by remember { mutableStateOf(false) }
+    var level by remember { mutableFloatStateOf(0f) }
+    var problem by remember { mutableStateOf<Int?>(null) }
+    var base by remember { mutableStateOf("") }
+    var heardSomething by remember { mutableStateOf(false) }
+
+    val speech = remember {
+        ContinuousSpeech(
+            context,
+            onUpdate = { segments, partial ->
+                if (segments.isNotEmpty() || partial.isNotBlank()) heardSomething = true
+                currentOnChange(SpeechText.combine(base, segments, partial, separator))
             },
-            colors = ButtonDefaults.buttonColors(containerColor = Neon.Violet, contentColor = Neon.OnNeon),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(painterResource(R.drawable.ic_mic), contentDescription = null)
-            Text(stringResource(R.string.speech_button), modifier = Modifier.padding(start = 8.dp))
+            onLevel = { level = it },
+            onStopped = { failed ->
+                listening = false
+                if (failed && !heardSomething) problem = R.string.speech_failed
+            },
+        )
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) speech.stop()
         }
-        if (unavailable) {
-            Text(stringResource(R.string.speech_unavailable), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            speech.destroy()
+        }
+    }
+
+    fun begin() {
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+            problem = R.string.speech_unavailable
+            return
+        }
+        problem = null
+        heardSomething = false
+        base = currentText
+        listening = true
+        speech.start()
+    }
+
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) begin() else problem = R.string.speech_permission
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (listening) {
+            Button(
+                onClick = { speech.stop() },
+                colors = ButtonDefaults.buttonColors(containerColor = Neon.Green, contentColor = Neon.OnNeon),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Filled.Check, contentDescription = null)
+                Text(stringResource(R.string.speech_done), modifier = Modifier.padding(start = 8.dp))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val pulse by animateFloatAsState(level, label = "speechLevel")
+                Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier
+                            .size(8.dp + 12.dp * pulse)
+                            .clip(CircleShape)
+                            .background(Neon.Violet),
+                    )
+                }
+                Text(
+                    stringResource(R.string.speech_listening),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Neon.TextSecondary,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        } else {
+            Button(
+                onClick = {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                        PackageManager.PERMISSION_GRANTED
+                    ) begin() else permission.launch(Manifest.permission.RECORD_AUDIO)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Neon.Violet, contentColor = Neon.OnNeon),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(painterResource(R.drawable.ic_mic), contentDescription = null)
+                Text(stringResource(R.string.speech_button), modifier = Modifier.padding(start = 8.dp))
+            }
+        }
+        problem?.let {
+            Text(stringResource(it), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
         }
     }
 }
