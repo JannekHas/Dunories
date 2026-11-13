@@ -1,6 +1,7 @@
 package de.kalorienapp.domain
 
 import de.kalorienapp.domain.model.FoodEntry
+import de.kalorienapp.domain.model.Micro
 import de.kalorienapp.domain.model.Nutrients
 
 /** Nährwerte, nach denen die Einträge eines Tages sortiert werden können (Etikett-Reihenfolge). */
@@ -13,6 +14,7 @@ enum class RankedNutrient(val value: (Nutrients) -> Double?) {
     FIBER({ it.fiberG }),
     PROTEIN({ it.proteinG }),
     SALT({ it.saltG }),
+    CAFFEINE({ it.micros[Micro.CAFFEINE] }),
     ;
 
     companion object {

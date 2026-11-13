@@ -163,7 +163,6 @@ private fun AverageCard(stats: PeriodStats, targets: DailyTargets?, sex: Sex?) {
                 AvgRow(stringResource(R.string.summary_activity), stats.averageActivityKcal.toDouble(), null, Neon.Violet, unit = R.string.unit_kcal)
             }
             if (avg.micros.isNotEmpty()) {
-                Text(stringResource(R.string.micros_title), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 6.dp))
                 MicroList(avg.micros, sex)
                 Text(stringResource(R.string.micros_stats_hint), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
             }

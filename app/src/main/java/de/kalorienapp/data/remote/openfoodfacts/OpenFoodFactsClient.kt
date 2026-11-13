@@ -29,7 +29,7 @@ class OpenFoodFactsClient {
 
     private companion object {
         const val FIELDS = "product_name,product_name_de,brands,nutriments," +
-            "product_quantity_unit,serving_quantity,nutrition_data_per"
+            "product_quantity_unit,serving_quantity,nutrition_data_per,categories_tags"
     }
 }
 
@@ -56,6 +56,9 @@ internal object OpenFoodFactsParser {
             brand != null && !name.contains(brand, ignoreCase = true) -> "$name ($brand)"
             else -> name
         }
+        // Kategorien für die Koffein-Schätzung (Wert fehlt bei Kaffee/Cola/Energy Drinks fast immer)
+        val categories = (product["categories_tags"] as? kotlinx.serialization.json.JsonArray).orEmpty()
+            .mapNotNull { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }
         val liquid = product.string("product_quantity_unit")?.lowercase() == "ml" ||
             product.string("nutrition_data_per")?.lowercase() == "100ml"
 
@@ -72,7 +75,7 @@ internal object OpenFoodFactsParser {
                 fiberG = n.number("fiber_100g"),
                 proteinG = n.number("proteins_100g") ?: 0.0,
                 saltG = n.number("salt_100g"),
-                micros = MicroFields.readOpenFoodFacts(n),
+                micros = MicroFields.readOpenFoodFacts(n, categories),
             ),
             source = EntrySource.BARCODE,
         )

@@ -13,8 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,7 +26,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -130,21 +128,49 @@ fun DayNutrientsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item(key = "chips") {
-                // Gewählter Nährwert ist beim Öffnen sichtbar (z. B. „Salz“ ganz rechts)
-                val chips = rememberLazyListState(initialFirstVisibleItemIndex = (state.nutrient.ordinal - 1).coerceAtLeast(0))
-                LaunchedEffect(state.nutrient) { chips.animateScrollToItem((state.nutrient.ordinal - 1).coerceAtLeast(0)) }
-                LazyRow(
-                    state = chips,
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(RankedNutrient.entries) { n ->
-                        FilterChip(
-                            selected = n == state.nutrient,
-                            onClick = { viewModel.select(n) },
-                            label = { Text(stringResource(n.chipRes)) },
-                            colors = neonChipColors(),
-                        )
+                // Vier Haupt-Reiter (+ „Mehr“), darunter klein die Unterwerte des gewählten Reiters (Wunsch des Nutzers)
+                val tab = NutrientTab.of(state.nutrient)
+                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Neon.Glass).padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        NutrientTab.entries.forEach { t ->
+                            val selected = t == tab
+                            Box(
+                                Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (selected) Neon.Cyan else Color.Transparent)
+                                    .clickable { viewModel.select(t.nutrients.first()) }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    stringResource(t.labelRes),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = if (selected) Neon.OnNeon else Neon.TextPrimary,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
+                    if (tab.nutrients.size > 1) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            tab.nutrients.forEachIndexed { index, n ->
+                                FilterChip(
+                                    selected = n == state.nutrient,
+                                    onClick = { viewModel.select(n) },
+                                    label = {
+                                        Text(
+                                            stringResource(if (index == 0 && tab.hasTotal) R.string.rank_total else n.chipRes),
+                                            style = MaterialTheme.typography.labelMedium,
+                                        )
+                                    },
+                                    colors = neonChipColors(),
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -220,8 +246,23 @@ private fun RankedEntryRow(ranked: RankedEntry, nutrient: RankedNutrient, onClic
 @Composable
 private fun valueText(nutrient: RankedNutrient, value: Double): String = when (nutrient) {
     RankedNutrient.KCAL -> stringResource(R.string.kcal_value, value.format())
+    RankedNutrient.CAFFEINE -> stringResource(R.string.mg_value, value.format())
     RankedNutrient.SALT -> stringResource(R.string.grams_value, value.format(2).trimDecimalZero())
     else -> stringResource(R.string.grams_value, value.format(1).trimDecimalZero())
+}
+
+/** Haupt-Reiter; der erste Nährwert ist der Standard, die übrigen erscheinen klein darunter. */
+private enum class NutrientTab(val labelRes: Int, val nutrients: List<RankedNutrient>, val hasTotal: Boolean = false) {
+    KCAL(R.string.rank_kcal, listOf(RankedNutrient.KCAL)),
+    PROTEIN(R.string.protein, listOf(RankedNutrient.PROTEIN)),
+    CARBS(R.string.rank_carbs_short, listOf(RankedNutrient.CARBS, RankedNutrient.SUGAR, RankedNutrient.FIBER), hasTotal = true),
+    FAT(R.string.fat, listOf(RankedNutrient.FAT, RankedNutrient.SATURATED_FAT), hasTotal = true),
+    MORE(R.string.rank_more, listOf(RankedNutrient.SALT, RankedNutrient.CAFFEINE)),
+    ;
+
+    companion object {
+        fun of(n: RankedNutrient) = entries.first { n in it.nutrients }
+    }
 }
 
 val RankedNutrient.chipRes: Int
@@ -234,6 +275,7 @@ val RankedNutrient.chipRes: Int
         RankedNutrient.FIBER -> R.string.nutrient_fiber
         RankedNutrient.PROTEIN -> R.string.protein
         RankedNutrient.SALT -> R.string.nutrient_salt
+        RankedNutrient.CAFFEINE -> R.string.micro_caffeine
     }
 
 private val RankedNutrient.color: Color
@@ -243,4 +285,5 @@ private val RankedNutrient.color: Color
         RankedNutrient.CARBS, RankedNutrient.SUGAR -> Neon.Yellow
         RankedNutrient.PROTEIN -> Neon.Magenta
         RankedNutrient.FIBER, RankedNutrient.SALT -> Neon.Cyan
+        RankedNutrient.CAFFEINE -> Neon.Violet
     }

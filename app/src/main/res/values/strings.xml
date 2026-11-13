@@ -194,6 +194,10 @@
     <string name="rank_kcal">Kalorien</string>
     <string name="rank_saturated_fat">Ges. Fettsäuren</string>
     <string name="rank_sugar">Zucker</string>
+    <string name="rank_total">Gesamt</string>
+    <string name="rank_carbs_short">KH</string>
+    <string name="rank_more">Mehr</string>
+    <string name="mg_value">%1$s mg</string>
     <string name="percent_value">%1$s %%</string>
     <string name="nutrient_details_hide">Weniger anzeigen</string>
     <string name="extra_nutrients_hint">Summe aus allen Einträgen, bei denen der Wert angegeben ist.</string>
@@ -631,8 +635,8 @@
     <string name="quick_remove_combo">Kombi löschen</string>
     <!-- Vitamine & Mineralstoffe -->
     <string name="micros_title">Vitamine &amp; Mineralstoffe</string>
-    <string name="micros_section">Vitamine &amp; Mineralstoffe pro 100 %1$s (optional)</string>
-    <string name="micros_per_serving">Vitamine &amp; Mineralstoffe pro Portion</string>
+    <string name="micros_section">Vitamine, Mineralstoffe &amp; Weitere pro 100 %1$s (optional)</string>
+    <string name="micros_per_serving">Vitamine, Mineralstoffe &amp; Weitere pro Portion</string>
     <string name="micros_stats_hint">Balken: Anteil am DGE-Tageswert. Es zählen nur Lebensmittel mit Angaben (KI, Barcode oder selbst eingetragen) – die echte Zufuhr ist meist etwas höher.</string>
     <string name="micro_vitamin_a">Vitamin A</string>
     <string name="micro_vitamin_c">Vitamin C</string>
@@ -644,6 +648,20 @@
     <string name="micro_magnesium">Magnesium</string>
     <string name="micro_zinc">Zink</string>
     <string name="micro_potassium">Kalium</string>
+    <string name="micro_vitamin_e">Vitamin E</string>
+    <string name="micro_vitamin_k">Vitamin K</string>
+    <string name="micro_vitamin_b6">Vitamin B6</string>
+    <string name="micro_vitamin_b1">Vitamin B1</string>
+    <string name="micro_vitamin_b2">Vitamin B2</string>
+    <string name="micro_iodine">Jod</string>
+    <string name="micro_selenium">Selen</string>
+    <string name="micro_phosphorus">Phosphor</string>
+    <string name="micro_caffeine">Koffein</string>
+    <string name="micro_cholesterol">Cholesterin</string>
+    <string name="micro_omega3">Omega-3</string>
+    <string name="micro_group_vitamins">Vitamine</string>
+    <string name="micro_group_minerals">Mineralstoffe</string>
+    <string name="micro_group_other">Weitere</string>
     <string name="unit_mg">mg</string>
     <string name="unit_ug">µg</string>
     <!-- Nährwerttabelle abfotografieren -->

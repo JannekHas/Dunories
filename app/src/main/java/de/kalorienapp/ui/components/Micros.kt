@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
 import de.kalorienapp.domain.model.Micro
+import de.kalorienapp.domain.model.MicroGroup
 import de.kalorienapp.domain.model.MicroUnit
 import de.kalorienapp.domain.model.Sex
 import de.kalorienapp.ui.theme.Neon
@@ -35,58 +36,96 @@ val Micro.labelRes: Int
         Micro.VITAMIN_D -> R.string.micro_vitamin_d
         Micro.VITAMIN_B12 -> R.string.micro_vitamin_b12
         Micro.FOLATE -> R.string.micro_folate
+        Micro.VITAMIN_E -> R.string.micro_vitamin_e
+        Micro.VITAMIN_K -> R.string.micro_vitamin_k
+        Micro.VITAMIN_B6 -> R.string.micro_vitamin_b6
+        Micro.VITAMIN_B1 -> R.string.micro_vitamin_b1
+        Micro.VITAMIN_B2 -> R.string.micro_vitamin_b2
         Micro.CALCIUM -> R.string.micro_calcium
         Micro.IRON -> R.string.micro_iron
         Micro.MAGNESIUM -> R.string.micro_magnesium
         Micro.ZINC -> R.string.micro_zinc
         Micro.POTASSIUM -> R.string.micro_potassium
+        Micro.IODINE -> R.string.micro_iodine
+        Micro.SELENIUM -> R.string.micro_selenium
+        Micro.PHOSPHORUS -> R.string.micro_phosphorus
+        Micro.CAFFEINE -> R.string.micro_caffeine
+        Micro.CHOLESTEROL -> R.string.micro_cholesterol
+        Micro.OMEGA_3 -> R.string.micro_omega3
     }
 
 @get:androidx.annotation.StringRes
 val Micro.unitRes: Int
-    get() = if (unit == MicroUnit.MICROGRAM) R.string.unit_ug else R.string.unit_mg
+    get() = when (unit) {
+        MicroUnit.MICROGRAM -> R.string.unit_ug
+        MicroUnit.MILLIGRAM -> R.string.unit_mg
+        MicroUnit.GRAM -> R.string.unit_g
+    }
+
+@get:androidx.annotation.StringRes
+val MicroGroup.labelRes: Int
+    get() = when (this) {
+        MicroGroup.VITAMIN -> R.string.micro_group_vitamins
+        MicroGroup.MINERAL -> R.string.micro_group_minerals
+        MicroGroup.OTHER -> R.string.micro_group_other
+    }
 
 /** Menge mit sinnvollen Nachkommastellen (Vitamin D/B12 klein, Kalium groß). */
 fun Micro.formatValue(value: Double): String = value.format(if (value < 10) 1 else 0)
 
 /**
- * Vitamine/Mineralstoffe als Liste. Mit [sex] je Zeile ein Balken zum DGE-Tageswert.
- * Nur angegebene Werte; [showMissing] zeigt die übrigen mit „–“.
+ * Vitamine, Mineralstoffe und Weitere als Liste, je Gruppe mit Überschrift (Vitamine stehen beieinander).
+ * Mit [sex] je Zeile ein Balken zum DGE-Tageswert; bei Obergrenzen (Koffein, Cholesterin) wird er rot,
+ * sobald sie überschritten ist. Nur angegebene Werte; [showMissing] zeigt zusätzlich die wichtigsten
+ * ([Micro.alwaysShown]) mit „–“, auch wenn nichts davon eingetragen ist.
  */
 @Composable
 fun MicroList(values: Map<Micro, Double>, sex: Sex?, modifier: Modifier = Modifier, showMissing: Boolean = false) {
-    val shown = Micro.entries.filter { it in values || showMissing }
+    val shown = Micro.entries.filter { it in values || (showMissing && it.alwaysShown) }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        shown.forEach { micro ->
-            val value = values[micro]
-            val unit = stringResource(micro.unitRes)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(micro.labelRes), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1.3f))
-                Text(
-                    value?.let { "${micro.formatValue(it)} $unit" } ?: "–",
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.weight(1f),
-                )
-                if (sex != null) {
-                    val ratio = ((value ?: 0.0) / micro.reference(sex)).toFloat()
-                    Box(
-                        Modifier.padding(start = 10.dp).weight(1.2f).height(6.dp).clip(RoundedCornerShape(50)).background(Neon.Track),
-                    ) {
-                        Box(
-                            Modifier.fillMaxHeight().fillMaxWidth(ratio.coerceIn(0f, 1f))
-                                .background(if (ratio >= 1f) Neon.Green else Neon.Cyan),
-                        )
-                    }
-                    Text(
-                        "${(ratio * 100).roundToInt()} %",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Neon.TextSecondary,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.width(44.dp),
-                    )
-                }
+        shown.groupBy { it.group }.forEach { (group, micros) ->
+            Text(
+                stringResource(group.labelRes),
+                style = MaterialTheme.typography.labelLarge,
+                color = Neon.TextSecondary,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+            micros.forEach { micro -> MicroRow(micro, values[micro], sex) }
+        }
+    }
+}
+
+@Composable
+private fun MicroRow(micro: Micro, value: Double?, sex: Sex?) {
+    val unit = stringResource(micro.unitRes)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(micro.labelRes), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1.3f))
+        Text(
+            value?.let { "${micro.formatValue(it)} $unit" } ?: "–",
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f),
+        )
+        if (sex != null) {
+            val ratio = ((value ?: 0.0) / micro.reference(sex)).toFloat()
+            val color = when {
+                micro.isLimit && ratio > 1f -> Neon.Red
+                micro.isLimit -> Neon.Orange
+                ratio >= 1f -> Neon.Green
+                else -> Neon.Cyan
             }
+            Box(
+                Modifier.padding(start = 10.dp).weight(1.2f).height(6.dp).clip(RoundedCornerShape(50)).background(Neon.Track),
+            ) {
+                Box(Modifier.fillMaxHeight().fillMaxWidth(ratio.coerceIn(0f, 1f)).background(color))
+            }
+            Text(
+                "${(ratio * 100).roundToInt()} %",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (micro.isLimit && ratio > 1f) Neon.Red else Neon.TextSecondary,
+                textAlign = TextAlign.End,
+                modifier = Modifier.width(44.dp),
+            )
         }
     }
 }

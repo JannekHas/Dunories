@@ -563,11 +563,7 @@ private fun NutrientLegend(summary: DaySummary, sex: Sex?, onClick: (RankedNutri
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 OtherNutrientRow(stringResource(R.string.nutrient_fiber), eaten.fiberG) { onClick(RankedNutrient.FIBER) }
                 OtherNutrientRow(stringResource(R.string.nutrient_salt), eaten.saltG) { onClick(RankedNutrient.SALT) }
-                Text(
-                    stringResource(R.string.micros_title),
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
+                // Gruppen-Überschriften (Vitamine, Mineralstoffe, Weitere) kommen aus der Liste selbst
                 MicroList(eaten.micros, sex, showMissing = true)
                 Text(
                     stringResource(R.string.extra_nutrients_hint),

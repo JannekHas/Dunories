@@ -140,12 +140,19 @@ object WeeklyInputBuilder {
         }
         val withMicros = input.days.filter { it.hasEntries && it.eaten.micros.isNotEmpty() }
         if (withMicros.isNotEmpty()) {
-            appendLine("VITAMINE/MINERALSTOFFE (Ø pro Tag an ${withMicros.size} Tagen mit Angaben; nur Lebensmittel mit Angaben zählen, echte Zufuhr meist höher):")
+            appendLine("VITAMINE/MINERALSTOFFE/WEITERE (Ø pro Tag an ${withMicros.size} Tagen mit Angaben; nur Lebensmittel mit Angaben zählen, echte Zufuhr meist höher):")
             Micro.entries.forEach { micro ->
                 val values = withMicros.mapNotNull { it.eaten.micros[micro] }
                 if (values.isEmpty()) return@forEach
-                val unit = if (micro.unit == MicroUnit.MICROGRAM) "µg" else "mg"
-                appendLine("- ${micro.german()}: ${values.average().r()} $unit (Referenz ${micro.reference(p.sex).r()} $unit)")
+                val unit = when (micro.unit) {
+                    MicroUnit.MICROGRAM -> "µg"
+                    MicroUnit.MILLIGRAM -> "mg"
+                    MicroUnit.GRAM -> "g"
+                }
+                val avg = values.average()
+                val shown = if (avg < 10) "%.1f".format(Locale.GERMANY, avg) else avg.r()
+                val ref = micro.reference(p.sex).let { if (it < 10) "%.1f".format(Locale.GERMANY, it) else it.r() }
+                appendLine("- ${micro.german()}: $shown $unit (${if (micro.isLimit) "Obergrenze" else "Referenz"} $ref $unit)")
             }
             appendLine()
         }
@@ -198,6 +205,17 @@ object WeeklyInputBuilder {
         Micro.MAGNESIUM -> "Magnesium"
         Micro.ZINC -> "Zink"
         Micro.POTASSIUM -> "Kalium"
+        Micro.VITAMIN_E -> "Vitamin E"
+        Micro.VITAMIN_K -> "Vitamin K"
+        Micro.VITAMIN_B6 -> "Vitamin B6"
+        Micro.VITAMIN_B1 -> "Vitamin B1"
+        Micro.VITAMIN_B2 -> "Vitamin B2"
+        Micro.IODINE -> "Jod"
+        Micro.SELENIUM -> "Selen"
+        Micro.PHOSPHORUS -> "Phosphor"
+        Micro.CAFFEINE -> "Koffein"
+        Micro.CHOLESTEROL -> "Cholesterin"
+        Micro.OMEGA_3 -> "Omega-3"
     }
 
     private fun DietTag.german() = when (this) {

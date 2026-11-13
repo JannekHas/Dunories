@@ -172,6 +172,15 @@ private fun MicroFields(form: FoodForm, onChange: (FoodForm) -> Unit, unitLabel:
         }
         if (open) {
             Micro.entries.forEach { micro ->
+                // Gruppen-Überschrift vor dem ersten Wert jeder Gruppe (Vitamine, Mineralstoffe, Weitere)
+                if (micro.ordinal == 0 || Micro.entries[micro.ordinal - 1].group != micro.group) {
+                    Text(
+                        stringResource(micro.group.labelRes),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = de.kalorienapp.ui.theme.Neon.TextSecondary,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
                 NumberField(
                     value = form.microValue(micro),
                     onValueChange = { onChange(form.withMicro(micro, it)) },
