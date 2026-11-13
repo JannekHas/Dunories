@@ -1,5 +1,25 @@
 package de.kalorienapp.ui.stats
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import de.kalorienapp.data.AppSettings
+import de.kalorienapp.domain.model.DietTag
+import de.kalorienapp.domain.model.FoodPreferences
+import de.kalorienapp.domain.model.FoodSuggestion
+import de.kalorienapp.ui.components.neonChipColors
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -158,11 +178,39 @@ private val ReportError.messageRes: Int
 class WeeklyReportViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: WeeklyReportRepository,
+    private val settings: AppSettings,
 ) : ViewModel() {
     private val id: Long = savedStateHandle["id"] ?: 0L
 
     val report: StateFlow<WeeklyReport?> =
         repository.report(id).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val preferences: StateFlow<FoodPreferences> = settings.foodPreferences
+
+    private val _regeneration = MutableStateFlow<ReportGeneration>(ReportGeneration.Idle)
+    val regeneration: StateFlow<ReportGeneration> = _regeneration.asStateFlow()
+
+    fun toggleTag(tag: DietTag) = settings.toggleDietTag(tag)
+
+    fun dislike(name: String) = settings.addDislike(name)
+
+    fun removeDislike(name: String) = settings.removeDislike(name)
+
+    /** Gleicher Zeitraum, neu ausgewertet mit den aktuellen Vorlieben – ersetzt die Auswertung. */
+    fun regenerate() {
+        val r = report.value ?: return
+        if (_regeneration.value == ReportGeneration.Running) return
+        _regeneration.value = ReportGeneration.Running
+        viewModelScope.launch {
+            _regeneration.value = runReport { repository.generate(r.from, r.to, replaceId = r.id) }
+        }
+    }
+
+    /** Export-Text für die eigene KI (Überblick + alle Einträge + Auswertung). */
+    fun exportText(onReady: (String) -> Unit) {
+        val r = report.value ?: return
+        viewModelScope.launch { runCatching { repository.exportText(r) }.onSuccess(onReady) }
+    }
 
     fun delete(onDone: () -> Unit) {
         val report = report.value ?: return
@@ -181,7 +229,40 @@ fun WeeklyReportScreen(
     viewModel: WeeklyReportViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val report by viewModel.report.collectAsStateWithLifecycle()
+    val preferences by viewModel.preferences.collectAsStateWithLifecycle()
+    val regeneration by viewModel.regeneration.collectAsStateWithLifecycle()
     var confirmDelete by remember { mutableStateOf(false) }
+    var showExport by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val copied = stringResource(R.string.export_copied)
+    val shareTitle = stringResource(R.string.export_share_title)
+
+    if (showExport) {
+        ExportDialog(
+            onCopy = {
+                showExport = false
+                viewModel.exportText { text ->
+                    val clipboard = context.getSystemService(ClipboardManager::class.java)
+                    clipboard?.setPrimaryClip(ClipData.newPlainText(shareTitle, text))
+                    scope.launch { snackbar.showSnackbar(copied) }
+                }
+            },
+            onShare = {
+                showExport = false
+                viewModel.exportText { text ->
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, shareTitle)
+                        putExtra(Intent.EXTRA_TEXT, text)
+                    }
+                    context.startActivity(Intent.createChooser(send, shareTitle))
+                }
+            },
+            onDismiss = { showExport = false },
+        )
+    }
 
     if (confirmDelete) {
         AlertDialog(
@@ -201,11 +282,13 @@ fun WeeklyReportScreen(
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
                 actions = {
                     if (report != null) {
+                        IconButton(onClick = { showExport = true }) { Icon(Icons.Filled.Share, stringResource(R.string.export_title)) }
                         IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, stringResource(R.string.delete)) }
                     }
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         val r = report ?: return@Scaffold
         Column(
@@ -234,6 +317,28 @@ fun WeeklyReportScreen(
                     }
                 }
             }
+            if (r.foodsMore.isNotEmpty()) {
+                FoodSection(stringResource(R.string.report_foods_more), r.foodsMore, Neon.Green) { food ->
+                    // „Mag ich nicht“ → wird gemerkt und künftig nicht mehr vorgeschlagen
+                    if (preferences.dislikes(food.name)) {
+                        Text(stringResource(R.string.report_disliked), style = MaterialTheme.typography.labelMedium, color = Neon.TextSecondary)
+                    } else {
+                        TextButton(onClick = { viewModel.dislike(food.name) }) {
+                            Text(stringResource(R.string.report_dislike), color = Neon.Orange)
+                        }
+                    }
+                }
+            }
+            if (r.foodsLess.isNotEmpty()) {
+                FoodSection(stringResource(R.string.report_foods_less), r.foodsLess, Neon.Orange) {}
+            }
+            PreferencesCard(
+                preferences = preferences,
+                regeneration = regeneration,
+                onToggle = viewModel::toggleTag,
+                onRemoveDislike = viewModel::removeDislike,
+                onRegenerate = viewModel::regenerate,
+            )
             r.goalNote?.let { note ->
                 GlassCard(strong = true, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -246,6 +351,113 @@ fun WeeklyReportScreen(
         }
     }
 }
+
+@Composable
+private fun FoodSection(
+    title: String,
+    foods: List<FoodSuggestion>,
+    color: Color,
+    action: @Composable (FoodSuggestion) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium, color = color)
+        foods.forEach { food ->
+            GlassCard(Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(start = 14.dp, top = 10.dp, bottom = 10.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(10.dp).clip(CircleShape).background(color))
+                    Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                        Text(food.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        if (food.reason.isNotBlank()) {
+                            Text(food.reason, style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+                        }
+                    }
+                    action(food)
+                }
+            }
+        }
+    }
+}
+
+/** Gezielte Antworten statt freiem Chat: Ernährungsweise wählen, „mag ich nicht“ verwalten, neu auswerten. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PreferencesCard(
+    preferences: FoodPreferences,
+    regeneration: ReportGeneration,
+    onToggle: (DietTag) -> Unit,
+    onRemoveDislike: (String) -> Unit,
+    onRegenerate: () -> Unit,
+) {
+    GlassCard(strong = true, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.prefs_title), style = MaterialTheme.typography.titleMedium, color = Neon.Violet)
+            Text(stringResource(R.string.prefs_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DietTag.entries.forEach { tag ->
+                    FilterChip(
+                        selected = tag in preferences.tags,
+                        onClick = { onToggle(tag) },
+                        label = { Text(stringResource(tag.labelRes)) },
+                        colors = neonChipColors(),
+                    )
+                }
+            }
+            if (preferences.dislikes.isNotEmpty()) {
+                Text(stringResource(R.string.prefs_dislikes), style = MaterialTheme.typography.labelLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    preferences.dislikes.forEach { name ->
+                        InputChip(
+                            selected = false,
+                            onClick = { onRemoveDislike(name) },
+                            label = { Text(name) },
+                            trailingIcon = { Icon(Icons.Filled.Close, stringResource(R.string.prefs_remove), Modifier.size(16.dp)) },
+                        )
+                    }
+                }
+            }
+            when (regeneration) {
+                ReportGeneration.Running -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.report_running), style = MaterialTheme.typography.bodyMedium)
+                    AiWaitProgress(expectedSeconds = 20, color = Neon.Violet)
+                }
+                else -> Button(
+                    onClick = onRegenerate,
+                    colors = ButtonDefaults.buttonColors(containerColor = Neon.Violet, contentColor = Neon.OnNeon),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(painterResource(R.drawable.ic_sparkle), contentDescription = null)
+                    Text(stringResource(R.string.prefs_regenerate), fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+            if (regeneration is ReportGeneration.Failed) {
+                Text(stringResource(regeneration.error.messageRes), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExportDialog(onCopy: () -> Unit, onShare: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.export_title)) },
+        text = { Text(stringResource(R.string.export_text)) },
+        confirmButton = { TextButton(onClick = onCopy) { Text(stringResource(R.string.export_copy)) } },
+        dismissButton = { TextButton(onClick = onShare) { Text(stringResource(R.string.export_share)) } },
+    )
+}
+
+private val DietTag.labelRes: Int
+    get() = when (this) {
+        DietTag.VEGETARIAN -> R.string.diet_vegetarian
+        DietTag.VEGAN -> R.string.diet_vegan
+        DietTag.NO_PORK -> R.string.diet_no_pork
+        DietTag.NO_FISH -> R.string.diet_no_fish
+        DietTag.LACTOSE_FREE -> R.string.diet_lactose_free
+        DietTag.GLUTEN_FREE -> R.string.diet_gluten_free
+        DietTag.LITTLE_TIME -> R.string.diet_little_time
+        DietTag.LOW_BUDGET -> R.string.diet_low_budget
+    }
 
 @Composable
 private fun BulletSection(title: String, items: List<String>, color: Color) {

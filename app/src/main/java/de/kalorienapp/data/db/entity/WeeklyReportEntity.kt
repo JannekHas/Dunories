@@ -2,6 +2,7 @@ package de.kalorienapp.data.db.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import de.kalorienapp.domain.model.FoodSuggestion
 import de.kalorienapp.domain.model.ReportTip
 import de.kalorienapp.domain.model.WeeklyReport
 import kotlinx.serialization.Serializable
@@ -30,6 +31,8 @@ data class WeeklyReportEntity(
             improvements = c.improvements,
             tips = c.tips.map { ReportTip(it.title, it.text) },
             goalNote = c.goalNote,
+            foodsMore = c.foodsMore.map { FoodSuggestion(it.title, it.text) },
+            foodsLess = c.foodsLess.map { FoodSuggestion(it.title, it.text) },
         )
     }
 
@@ -41,6 +44,8 @@ data class WeeklyReportEntity(
         val improvements: List<String> = emptyList(),
         val tips: List<Tip> = emptyList(),
         val goalNote: String? = null,
+        val foodsMore: List<Tip> = emptyList(),
+        val foodsLess: List<Tip> = emptyList(),
     )
 
     @Serializable
@@ -56,7 +61,10 @@ data class WeeklyReportEntity(
             createdAt = r.createdAt,
             content = json.encodeToString(
                 Content.serializer(),
-                Content(r.headline, r.summary, r.wins, r.improvements, r.tips.map { Tip(it.title, it.text) }, r.goalNote),
+                Content(
+                    r.headline, r.summary, r.wins, r.improvements, r.tips.map { Tip(it.title, it.text) }, r.goalNote,
+                    r.foodsMore.map { Tip(it.name, it.reason) }, r.foodsLess.map { Tip(it.name, it.reason) },
+                ),
             ),
         )
     }

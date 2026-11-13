@@ -3,6 +3,8 @@ package de.kalorienapp.data
 import android.content.Context
 import de.kalorienapp.domain.FastingConfig
 import de.kalorienapp.domain.FastingPlan
+import de.kalorienapp.domain.model.DietTag
+import de.kalorienapp.domain.model.FoodPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -110,6 +112,41 @@ class AppSettings(context: Context) {
         _seenTips.value = emptySet()
     }
 
+    private val _foodPreferences = MutableStateFlow(readFoodPreferences())
+    /** Ernährungsweise + „mag ich nicht“ für die KI-Wochenauswertung. */
+    val foodPreferences: StateFlow<FoodPreferences> = _foodPreferences.asStateFlow()
+
+    fun setFoodPreferences(value: FoodPreferences) {
+        prefs.edit()
+            .putStringSet(KEY_DIET_TAGS, value.tags.map { it.name }.toSet())
+            .putString(KEY_DISLIKES, value.dislikes.joinToString(DISLIKE_SEPARATOR))
+            .apply()
+        _foodPreferences.value = value
+    }
+
+    fun toggleDietTag(tag: DietTag) {
+        val current = _foodPreferences.value
+        setFoodPreferences(current.copy(tags = if (tag in current.tags) current.tags - tag else current.tags + tag))
+    }
+
+    fun addDislike(name: String) {
+        val current = _foodPreferences.value
+        val clean = name.trim()
+        if (clean.isEmpty() || current.dislikes(clean)) return
+        setFoodPreferences(current.copy(dislikes = current.dislikes + clean))
+    }
+
+    fun removeDislike(name: String) {
+        val current = _foodPreferences.value
+        setFoodPreferences(current.copy(dislikes = current.dislikes.filterNot { it.equals(name, ignoreCase = true) }))
+    }
+
+    private fun readFoodPreferences() = FoodPreferences(
+        tags = prefs.getStringSet(KEY_DIET_TAGS, emptySet()).orEmpty()
+            .mapNotNull { name -> DietTag.entries.find { it.name == name } }.toSet(),
+        dislikes = prefs.getString(KEY_DISLIKES, null).orEmpty().split(DISLIKE_SEPARATOR).filter(String::isNotBlank),
+    )
+
     /** Ob schon einmal nach der Benachrichtigungs-Erlaubnis gefragt wurde (nicht bei jedem Start nerven). */
     var notificationPermissionAsked: Boolean
         get() = prefs.getBoolean(KEY_PERMISSION_ASKED, false)
@@ -128,6 +165,9 @@ class AppSettings(context: Context) {
         private const val KEY_FASTING_HOURS = "fasting_custom_hours"
         private const val KEY_FASTING_DAYS = "fasting_days"
         private const val KEY_PERMISSION_ASKED = "notification_permission_asked"
+        private const val KEY_DIET_TAGS = "diet_tags"
+        private const val KEY_DISLIKES = "disliked_foods"
+        private const val DISLIKE_SEPARATOR = "\n"
         private const val KEY_SEEN_TIPS = "seen_tips"
     }
 }

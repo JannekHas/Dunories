@@ -63,7 +63,7 @@ object AppViewModelProvider {
             BodyMeasurementViewModel(container().bodyMeasurementRepository)
         }
         initializer {
-            WeeklyReportViewModel(createSavedStateHandle(), container().weeklyReportRepository)
+            WeeklyReportViewModel(createSavedStateHandle(), container().weeklyReportRepository, container().settings)
         }
         initializer {
             GoalSuccessViewModel(

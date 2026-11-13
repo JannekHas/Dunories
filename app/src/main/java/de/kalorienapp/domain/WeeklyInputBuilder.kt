@@ -5,6 +5,8 @@ import de.kalorienapp.domain.model.BodyMeasurement
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.DayStats
 import de.kalorienapp.domain.model.DayStatus
+import de.kalorienapp.domain.model.DietTag
+import de.kalorienapp.domain.model.FoodPreferences
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.Goal
 import de.kalorienapp.domain.model.GoalPlan
@@ -42,6 +44,8 @@ data class WeeklyInput(
     /** Intervallfasten (null = aus) und Auswertung des Zeitraums. */
     val fasting: FastingConfig? = null,
     val fastingStats: FastingStats? = null,
+    /** Ernährungsweise und „mag ich nicht“ – für passende Lebensmittel-Vorschläge. */
+    val preferences: FoodPreferences = FoodPreferences(),
 )
 
 /**
@@ -74,6 +78,13 @@ object WeeklyInputBuilder {
                 if (plan.limited) append(" (auf gesundes Maximum begrenzt; realistisches Datum ${plan.realisticDate})")
                 appendLine()
             }
+        }
+        val prefs = input.preferences
+        if (!prefs.isEmpty) {
+            appendLine()
+            appendLine("VORLIEBEN (verbindlich für Vorschläge):")
+            if (prefs.tags.isNotEmpty()) appendLine("- Ernährungsweise: " + prefs.tags.sortedBy { it.ordinal }.joinToString { it.german() })
+            if (prefs.dislikes.isNotEmpty()) appendLine("- Mag nicht: " + prefs.dislikes.joinToString())
         }
         appendLine()
         appendLine("TAGE (gegessen / Budget = Ziel + Aktivität):")
@@ -187,6 +198,17 @@ object WeeklyInputBuilder {
         Micro.MAGNESIUM -> "Magnesium"
         Micro.ZINC -> "Zink"
         Micro.POTASSIUM -> "Kalium"
+    }
+
+    private fun DietTag.german() = when (this) {
+        DietTag.VEGETARIAN -> "vegetarisch"
+        DietTag.VEGAN -> "vegan"
+        DietTag.NO_PORK -> "kein Schweinefleisch"
+        DietTag.NO_FISH -> "kein Fisch"
+        DietTag.LACTOSE_FREE -> "laktosefrei"
+        DietTag.GLUTEN_FREE -> "glutenfrei"
+        DietTag.LITTLE_TIME -> "wenig Zeit zum Kochen"
+        DietTag.LOW_BUDGET -> "kleines Budget"
     }
 
     private fun MeasureType.german() = when (this) {

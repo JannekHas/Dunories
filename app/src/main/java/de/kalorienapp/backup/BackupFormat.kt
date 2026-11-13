@@ -38,6 +38,9 @@ object BackupFormat {
         val mealReminders: Boolean = true,
         /** Plan;Beginn in Minuten;eigene Stunden;Fastentage – siehe BackupManager. */
         val fasting: String? = null,
+        /** Ernährungsweise (DietTag-Namen) und „mag ich nicht“ für die KI-Auswertung; null = ältere Sicherung. */
+        val dietTags: List<String>? = null,
+        val dislikedFoods: List<String>? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

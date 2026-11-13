@@ -61,6 +61,24 @@ sealed interface ReportGeneration {
 
 enum class ReportError { NOT_ENOUGH_DATA, NO_API_KEY, QUOTA, OVERLOADED, NETWORK, INVALID }
 
+/** Führt eine Auswertung aus und übersetzt Fehler in [ReportGeneration.Failed]. */
+suspend fun runReport(block: suspend () -> Unit): ReportGeneration = try {
+    block()
+    ReportGeneration.Idle
+} catch (e: NotEnoughDataException) {
+    ReportGeneration.Failed(ReportError.NOT_ENOUGH_DATA)
+} catch (e: GeminiException) {
+    ReportGeneration.Failed(
+        when (e.error) {
+            GeminiError.NO_API_KEY -> ReportError.NO_API_KEY
+            GeminiError.QUOTA -> ReportError.QUOTA
+            GeminiError.OVERLOADED -> ReportError.OVERLOADED
+            GeminiError.NETWORK -> ReportError.NETWORK
+            else -> ReportError.INVALID
+        },
+    )
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class StatsViewModel(
     settings: AppSettings,
@@ -140,22 +158,7 @@ class StatsViewModel(
         _reportGeneration.value = ReportGeneration.Running
         viewModelScope.launch {
             val (from, to) = WeeklyReportRepository.lastSevenDays(LocalDate.now())
-            _reportGeneration.value = try {
-                onDone(reportRepository.generate(from, to).id)
-                ReportGeneration.Idle
-            } catch (e: NotEnoughDataException) {
-                ReportGeneration.Failed(ReportError.NOT_ENOUGH_DATA)
-            } catch (e: GeminiException) {
-                ReportGeneration.Failed(
-                    when (e.error) {
-                        GeminiError.NO_API_KEY -> ReportError.NO_API_KEY
-                        GeminiError.QUOTA -> ReportError.QUOTA
-                        GeminiError.OVERLOADED -> ReportError.OVERLOADED
-                        GeminiError.NETWORK -> ReportError.NETWORK
-                        else -> ReportError.INVALID
-                    },
-                )
-            }
+            _reportGeneration.value = runReport { onDone(reportRepository.generate(from, to).id) }
         }
     }
 

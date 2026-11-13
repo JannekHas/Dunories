@@ -58,6 +58,8 @@ class BackupManager(
                 waterGoalMl = settings.waterGoalMl.value,
                 fastingEnabled = settings.fastingEnabled.value,
                 mealReminders = settings.mealReminders.value,
+                dietTags = settings.foodPreferences.value.tags.map { it.name },
+                dislikedFoods = settings.foodPreferences.value.dislikes,
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
                         .joinToString(";")
@@ -141,6 +143,15 @@ class BackupManager(
         settings.setWaterGoalMl(manifest.settings.waterGoalMl)
         settings.setFastingEnabled(manifest.settings.fastingEnabled)
         settings.setMealReminders(manifest.settings.mealReminders)
+        if (manifest.settings.dietTags != null || manifest.settings.dislikedFoods != null) {
+            settings.setFoodPreferences(
+                de.kalorienapp.domain.model.FoodPreferences(
+                    tags = manifest.settings.dietTags.orEmpty()
+                        .mapNotNull { name -> de.kalorienapp.domain.model.DietTag.entries.find { it.name == name } }.toSet(),
+                    dislikes = manifest.settings.dislikedFoods.orEmpty(),
+                ),
+            )
+        }
         manifest.settings.fasting?.split(';')?.takeIf { it.size == 4 }?.let { (plan, start, hours, days) ->
             val defaults = de.kalorienapp.domain.FastingConfig()
             settings.setFastingConfig(

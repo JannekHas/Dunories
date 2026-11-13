@@ -3,7 +3,11 @@ package de.kalorienapp.domain
 import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DailyTargets
+import de.kalorienapp.domain.model.DietTag
 import de.kalorienapp.domain.model.FoodEntry
+import de.kalorienapp.domain.model.FoodPreferences
+import de.kalorienapp.domain.model.FoodSuggestion
+import de.kalorienapp.domain.model.WeeklyReport
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.domain.model.Profile
@@ -75,6 +79,43 @@ class WeeklyInputBuilderTest {
         assertTrue(text, text.contains("letzte Messung davor: 98,0 kg"))
         assertTrue(text, text.contains("2026-10-16: 97,2 kg"))
         assertTrue(text, text.contains("GEWICHTSZIEL: Abnehmen von 98,5 kg"))
+    }
+
+    @Test
+    fun `vorlieben stehen verbindlich im datenblock`() {
+        val prefs = FoodPreferences(tags = setOf(DietTag.VEGAN, DietTag.LITTLE_TIME), dislikes = listOf("Tofu", "Magerquark"))
+        val text = WeeklyInputBuilder.build(input().copy(preferences = prefs), zone)
+        assertTrue(text, text.contains("VORLIEBEN (verbindlich für Vorschläge):"))
+        assertTrue(text, text.contains("- Ernährungsweise: vegan, wenig Zeit zum Kochen"))
+        assertTrue(text, text.contains("- Mag nicht: Tofu, Magerquark"))
+        assertTrue(WeeklyInputBuilder.build(input(), zone).contains("VORLIEBEN").not())
+    }
+
+    @Test
+    fun `export enthaelt alle eintraege je tag und mahlzeit und die auswertung`() {
+        val report = WeeklyReport(
+            from = from, to = to, headline = "Gute Woche", summary = "Passt.", wins = listOf("Protein"),
+            improvements = emptyList(), tips = emptyList(), goalNote = null,
+            foodsMore = listOf(FoodSuggestion("Linsen", "Ballaststoffe")),
+        )
+        val text = WeeklyExport.build(input(), report, zone)
+        assertTrue(text, text.startsWith("# Meine Ernährungsdaten aus der App Dunories (2026-10-12 bis 2026-10-18)"))
+        assertTrue(text, text.contains("### Montag, 2026-10-12\nFrühstück:\n- Skyr, 500 g: 300 kcal · Fett 0 g · KH 0 g · Eiweiß 0 g"))
+        assertTrue(text, text.contains("### Dienstag, 2026-10-13\nSnacks:\n- skyr, 250 g: 150 kcal"))
+        assertTrue(text, text.contains("### Mittwoch, 2026-10-14\n(nichts eingetragen)"))
+        assertTrue(text, text.contains("Öfter essen: Linsen (Ballaststoffe)"))
+    }
+
+    @Test
+    fun `exportzeile mit zusatzwerten`() {
+        val entry = FoodEntry(
+            date = from, mealType = MealType.BREAKFAST, name = "Haferflocken", amount = 60.0,
+            nutrients = Nutrients(kcal = 225.4, proteinG = 8.1, carbsG = 35.0, fatG = 4.2, saturatedFatG = 0.7, sugarG = 0.6, fiberG = 6.0, saltG = 0.01),
+        )
+        assertEquals(
+            "Haferflocken, 60 g: 225 kcal · Fett 4,2 g (ges. 0,7) · KH 35 g (Zucker 0,6) · Ballaststoffe 6 g · Eiweiß 8,1 g · Salz 0,01 g",
+            WeeklyExport.line(entry),
+        )
     }
 
     @Test

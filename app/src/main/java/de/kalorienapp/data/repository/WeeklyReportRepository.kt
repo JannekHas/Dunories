@@ -47,7 +47,20 @@ class WeeklyReportRepository(
      * @throws NotEnoughDataException bei weniger als [WeeklyInputBuilder.MIN_LOGGED_DAYS] erfassten Tagen
      * @throws de.kalorienapp.data.remote.gemini.GeminiException bei KI-Fehlern
      */
-    suspend fun generate(from: LocalDate, to: LocalDate): WeeklyReport {
+    suspend fun generate(from: LocalDate, to: LocalDate, replaceId: Long = 0): WeeklyReport {
+        val input = collectInput(from, to)
+        val logged = WeeklyInputBuilder.loggedDays(input)
+        if (logged < WeeklyInputBuilder.MIN_LOGGED_DAYS) throw NotEnoughDataException(logged)
+        val report = analyzer.analyze(WeeklyInputBuilder.build(input), from, to).copy(id = replaceId)
+        val id = dao.upsert(WeeklyReportEntity.fromDomain(report))
+        return report.copy(id = if (replaceId != 0L) replaceId else id)
+    }
+
+    /** Text für die eigene KI: Überblick, alle Einträge des Zeitraums und die Auswertung. */
+    suspend fun exportText(report: WeeklyReport): String =
+        de.kalorienapp.domain.WeeklyExport.build(collectInput(report.from, report.to), report)
+
+    private suspend fun collectInput(from: LocalDate, to: LocalDate): WeeklyInput {
         val state = goalRepository.current.first() ?: throw NotEnoughDataException(0)
         val baseInput = WeeklyInput(
             from = from,
@@ -70,12 +83,8 @@ class WeeklyReportRepository(
         val fasting = settings.fastingConfig.value.takeIf { settings.fastingEnabled.value }
         // Nur der Plan, keine „eingehalten“-Auswertung: nachträglich erfasste Einträge sähen wie
         // Essen in der Fastenzeit aus – das wäre falsch und demotivierend (Wunsch des Nutzers).
-        val input = if (fasting == null) baseInput else baseInput.copy(fasting = fasting)
-        val logged = WeeklyInputBuilder.loggedDays(input)
-        if (logged < WeeklyInputBuilder.MIN_LOGGED_DAYS) throw NotEnoughDataException(logged)
-        val report = analyzer.analyze(WeeklyInputBuilder.build(input), from, to)
-        val id = dao.upsert(WeeklyReportEntity.fromDomain(report))
-        return report.copy(id = id)
+        val withPrefs = baseInput.copy(preferences = settings.foodPreferences.value)
+        return if (fasting == null) withPrefs else withPrefs.copy(fasting = fasting)
     }
 
     companion object {
