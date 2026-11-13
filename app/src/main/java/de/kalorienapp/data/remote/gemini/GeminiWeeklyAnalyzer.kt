@@ -51,8 +51,9 @@ Felder:
 - foods_more: 3–6 konkrete Lebensmittel, die öfter auf den Teller sollten (z. B. „Magerquark“, „Linsen“), passend zu
   Ziel und Lücken (Protein, Ballaststoffe, Vitamine …); name = Lebensmittel, reason = 1 kurzer Satz warum.
 - foods_less: 0–4 Lebensmittel AUS DEN EINTRÄGEN, die die Person reduzieren könnte, mit kurzem Grund und Alternative.
-- VORLIEBEN (falls angegeben) sind verbindlich: Schlage nie etwas vor, das gegen die Ernährungsweise verstößt oder als
-  „mag nicht“ markiert ist – auch nicht in tips. Berücksichtige wenig Zeit / kleines Budget bei allen Vorschlägen.
+- VORLIEBEN (falls angegeben) sind verbindlich: Schlage nie etwas vor, das gegen die Ernährungsweise verstößt, unter
+  „isst kein“ steht, eine Allergie/Unverträglichkeit betrifft oder als „mag nicht“ markiert ist – auch nicht in tips.
+  Alltag (wenig Zeit, kleines Budget, Vorkochen) bei allen Vorschlägen berücksichtigen.
 - goal_note: Einschätzung zum Gewichtsziel und Tempo (liegt die Person im Plan? Ist das Zieldatum realistisch?
   ggf. Vorschlag zum Anpassen). null, wenn kein Gewichtsziel gesetzt ist und es nichts zu sagen gibt.
 Gib ausschließlich JSON gemäß Schema zurück.

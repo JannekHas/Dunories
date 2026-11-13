@@ -3,21 +3,14 @@ package de.kalorienapp.ui.stats
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.InputChip
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import de.kalorienapp.data.AppSettings
-import de.kalorienapp.domain.model.DietTag
 import de.kalorienapp.domain.model.FoodPreferences
 import de.kalorienapp.domain.model.FoodSuggestion
-import de.kalorienapp.ui.components.neonChipColors
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.compose.foundation.background
@@ -190,11 +183,7 @@ class WeeklyReportViewModel(
     private val _regeneration = MutableStateFlow<ReportGeneration>(ReportGeneration.Idle)
     val regeneration: StateFlow<ReportGeneration> = _regeneration.asStateFlow()
 
-    fun toggleTag(tag: DietTag) = settings.toggleDietTag(tag)
-
     fun dislike(name: String) = settings.addDislike(name)
-
-    fun removeDislike(name: String) = settings.removeDislike(name)
 
     /** Gleicher Zeitraum, neu ausgewertet mit den aktuellen Vorlieben – ersetzt die Auswertung. */
     fun regenerate() {
@@ -226,6 +215,7 @@ class WeeklyReportViewModel(
 @Composable
 fun WeeklyReportScreen(
     onBack: () -> Unit,
+    onEditPreferences: () -> Unit,
     viewModel: WeeklyReportViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val report by viewModel.report.collectAsStateWithLifecycle()
@@ -335,8 +325,7 @@ fun WeeklyReportScreen(
             PreferencesCard(
                 preferences = preferences,
                 regeneration = regeneration,
-                onToggle = viewModel::toggleTag,
-                onRemoveDislike = viewModel::removeDislike,
+                onEdit = onEditPreferences,
                 onRegenerate = viewModel::regenerate,
             )
             r.goalNote?.let { note ->
@@ -379,42 +368,26 @@ private fun FoodSection(
 }
 
 /** Gezielte Antworten statt freiem Chat: Ernährungsweise wählen, „mag ich nicht“ verwalten, neu auswerten. */
-@OptIn(ExperimentalLayoutApi::class)
+/** Vorlieben kompakt: Zusammenfassung + „Bearbeiten“ (eigene Seite in Ebenen) + neu auswerten. */
 @Composable
 private fun PreferencesCard(
     preferences: FoodPreferences,
     regeneration: ReportGeneration,
-    onToggle: (DietTag) -> Unit,
-    onRemoveDislike: (String) -> Unit,
+    onEdit: () -> Unit,
     onRegenerate: () -> Unit,
 ) {
     GlassCard(strong = true, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.prefs_title), style = MaterialTheme.typography.titleMedium, color = Neon.Violet)
-            Text(stringResource(R.string.prefs_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DietTag.entries.forEach { tag ->
-                    FilterChip(
-                        selected = tag in preferences.tags,
-                        onClick = { onToggle(tag) },
-                        label = { Text(stringResource(tag.labelRes)) },
-                        colors = neonChipColors(),
-                    )
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.prefs_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Neon.Violet,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onEdit) { Text(stringResource(R.string.prefs_edit)) }
             }
-            if (preferences.dislikes.isNotEmpty()) {
-                Text(stringResource(R.string.prefs_dislikes), style = MaterialTheme.typography.labelLarge)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    preferences.dislikes.forEach { name ->
-                        InputChip(
-                            selected = false,
-                            onClick = { onRemoveDislike(name) },
-                            label = { Text(name) },
-                            trailingIcon = { Icon(Icons.Filled.Close, stringResource(R.string.prefs_remove), Modifier.size(16.dp)) },
-                        )
-                    }
-                }
-            }
+            Text(preferencesSummary(preferences), style = MaterialTheme.typography.bodyMedium)
             when (regeneration) {
                 ReportGeneration.Running -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.report_running), style = MaterialTheme.typography.bodyMedium)
@@ -446,18 +419,6 @@ private fun ExportDialog(onCopy: () -> Unit, onShare: () -> Unit, onDismiss: () 
         dismissButton = { TextButton(onClick = onShare) { Text(stringResource(R.string.export_share)) } },
     )
 }
-
-private val DietTag.labelRes: Int
-    get() = when (this) {
-        DietTag.VEGETARIAN -> R.string.diet_vegetarian
-        DietTag.VEGAN -> R.string.diet_vegan
-        DietTag.NO_PORK -> R.string.diet_no_pork
-        DietTag.NO_FISH -> R.string.diet_no_fish
-        DietTag.LACTOSE_FREE -> R.string.diet_lactose_free
-        DietTag.GLUTEN_FREE -> R.string.diet_gluten_free
-        DietTag.LITTLE_TIME -> R.string.diet_little_time
-        DietTag.LOW_BUDGET -> R.string.diet_low_budget
-    }
 
 @Composable
 private fun BulletSection(title: String, items: List<String>, color: Color) {

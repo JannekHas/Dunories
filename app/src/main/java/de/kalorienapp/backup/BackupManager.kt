@@ -58,7 +58,12 @@ class BackupManager(
                 waterGoalMl = settings.waterGoalMl.value,
                 fastingEnabled = settings.fastingEnabled.value,
                 mealReminders = settings.mealReminders.value,
-                dietTags = settings.foodPreferences.value.tags.map { it.name },
+                dietStyle = settings.foodPreferences.value.style.name,
+                excludedFoods = settings.foodPreferences.value.excluded.map { it.name },
+                intolerances = settings.foodPreferences.value.intolerances.map { it.name },
+                cookingTime = settings.foodPreferences.value.cooking.name,
+                budget = settings.foodPreferences.value.budget.name,
+                mealPrep = settings.foodPreferences.value.mealPrep,
                 dislikedFoods = settings.foodPreferences.value.dislikes,
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
@@ -143,14 +148,23 @@ class BackupManager(
         settings.setWaterGoalMl(manifest.settings.waterGoalMl)
         settings.setFastingEnabled(manifest.settings.fastingEnabled)
         settings.setMealReminders(manifest.settings.mealReminders)
-        if (manifest.settings.dietTags != null || manifest.settings.dislikedFoods != null) {
-            settings.setFoodPreferences(
-                de.kalorienapp.domain.model.FoodPreferences(
-                    tags = manifest.settings.dietTags.orEmpty()
-                        .mapNotNull { name -> de.kalorienapp.domain.model.DietTag.entries.find { it.name == name } }.toSet(),
-                    dislikes = manifest.settings.dislikedFoods.orEmpty(),
-                ),
-            )
+        manifest.settings.let { m ->
+            if (m.dietStyle != null || m.dislikedFoods != null) {
+                val d = de.kalorienapp.domain.model.FoodPreferences()
+                settings.setFoodPreferences(
+                    de.kalorienapp.domain.model.FoodPreferences(
+                        style = de.kalorienapp.domain.model.DietStyle.entries.find { it.name == m.dietStyle } ?: d.style,
+                        excluded = m.excludedFoods.orEmpty()
+                            .mapNotNull { n -> de.kalorienapp.domain.model.ExcludedFood.entries.find { it.name == n } }.toSet(),
+                        intolerances = m.intolerances.orEmpty()
+                            .mapNotNull { n -> de.kalorienapp.domain.model.Intolerance.entries.find { it.name == n } }.toSet(),
+                        cooking = de.kalorienapp.domain.model.CookingTime.entries.find { it.name == m.cookingTime } ?: d.cooking,
+                        budget = de.kalorienapp.domain.model.Budget.entries.find { it.name == m.budget } ?: d.budget,
+                        mealPrep = m.mealPrep ?: false,
+                        dislikes = m.dislikedFoods.orEmpty(),
+                    ),
+                )
+            }
         }
         manifest.settings.fasting?.split(';')?.takeIf { it.size == 4 }?.let { (plan, start, hours, days) ->
             val defaults = de.kalorienapp.domain.FastingConfig()

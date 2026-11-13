@@ -3,7 +3,11 @@ package de.kalorienapp.domain
 import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DailyTargets
-import de.kalorienapp.domain.model.DietTag
+import de.kalorienapp.domain.model.Budget
+import de.kalorienapp.domain.model.CookingTime
+import de.kalorienapp.domain.model.DietStyle
+import de.kalorienapp.domain.model.ExcludedFood
+import de.kalorienapp.domain.model.Intolerance
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.FoodPreferences
 import de.kalorienapp.domain.model.FoodSuggestion
@@ -83,10 +87,22 @@ class WeeklyInputBuilderTest {
 
     @Test
     fun `vorlieben stehen verbindlich im datenblock`() {
-        val prefs = FoodPreferences(tags = setOf(DietTag.VEGAN, DietTag.LITTLE_TIME), dislikes = listOf("Tofu", "Magerquark"))
+        val prefs = FoodPreferences(
+            style = DietStyle.PESCETARIAN,
+            // Schwein ist bei pescetarisch ohnehin ausgeschlossen → taucht nicht doppelt auf
+            excluded = setOf(ExcludedFood.PORK, ExcludedFood.SEAFOOD),
+            intolerances = setOf(Intolerance.LACTOSE, Intolerance.PEANUTS),
+            cooking = CookingTime.LITTLE,
+            budget = Budget.SMALL,
+            dislikes = listOf("Tofu", "Magerquark"),
+        )
         val text = WeeklyInputBuilder.build(input().copy(preferences = prefs), zone)
         assertTrue(text, text.contains("VORLIEBEN (verbindlich für Vorschläge):"))
-        assertTrue(text, text.contains("- Ernährungsweise: vegan, wenig Zeit zum Kochen"))
+        assertTrue(text, text.contains("- Ernährungsweise: pescetarisch (kein Fleisch, aber Fisch)"))
+        assertTrue(text, text.contains("- Isst kein: Meeresfrüchte\n"))
+        assertTrue(text, text.contains("- Unverträglichkeiten (meiden): Laktose"))
+        assertTrue(text, text.contains("- ALLERGIEN (strikt ausschließen, auch Spuren): Erdnüsse"))
+        assertTrue(text, text.contains("- Alltag: wenig Zeit zum Kochen, kleines Budget"))
         assertTrue(text, text.contains("- Mag nicht: Tofu, Magerquark"))
         assertTrue(WeeklyInputBuilder.build(input(), zone).contains("VORLIEBEN").not())
     }

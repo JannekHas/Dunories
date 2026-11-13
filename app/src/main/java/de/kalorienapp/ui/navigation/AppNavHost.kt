@@ -96,6 +96,7 @@ import de.kalorienapp.ui.recipes.ShoppingListScreen
 import de.kalorienapp.ui.stats.StatsScreen
 import de.kalorienapp.ui.theme.Neon
 import de.kalorienapp.ui.today.TodayScreen
+import de.kalorienapp.ui.stats.FoodPreferencesScreen
 import de.kalorienapp.ui.today.DayNutrientsScreen
 
 private data class TopLevelDestination(val route: Any, val icon: @Composable () -> ImageVector, val labelRes: Int)
@@ -283,7 +284,13 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                         )
                     }
                     screen<WeeklyReportRoute> {
-                        WeeklyReportScreen(onBack = { navController.popBackStack() })
+                        WeeklyReportScreen(
+                            onBack = { navController.popBackStack() },
+                            onEditPreferences = { navController.navigate(FoodPreferencesRoute) },
+                        )
+                    }
+                    screen<FoodPreferencesRoute> {
+                        FoodPreferencesScreen(onBack = { navController.popBackStack() })
                     }
                     screen<DayRoute> {
                         TodayScreen(

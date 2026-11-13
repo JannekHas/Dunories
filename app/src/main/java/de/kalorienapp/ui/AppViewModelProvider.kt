@@ -42,6 +42,9 @@ object AppViewModelProvider {
             )
         }
         initializer {
+            de.kalorienapp.ui.stats.FoodPreferencesViewModel(container().settings)
+        }
+        initializer {
             DayNutrientsViewModel(createSavedStateHandle(), container().foodEntryRepository)
         }
         initializer {

@@ -3,7 +3,11 @@ package de.kalorienapp.data
 import android.content.Context
 import de.kalorienapp.domain.FastingConfig
 import de.kalorienapp.domain.FastingPlan
-import de.kalorienapp.domain.model.DietTag
+import de.kalorienapp.domain.model.Budget
+import de.kalorienapp.domain.model.CookingTime
+import de.kalorienapp.domain.model.DietStyle
+import de.kalorienapp.domain.model.ExcludedFood
+import de.kalorienapp.domain.model.Intolerance
 import de.kalorienapp.domain.model.FoodPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -113,39 +117,48 @@ class AppSettings(context: Context) {
     }
 
     private val _foodPreferences = MutableStateFlow(readFoodPreferences())
-    /** Ernährungsweise + „mag ich nicht“ für die KI-Wochenauswertung. */
+    /** Ernährungsweise, Allergien, Alltag und „mag ich nicht“ für die KI-Wochenauswertung. */
     val foodPreferences: StateFlow<FoodPreferences> = _foodPreferences.asStateFlow()
 
     fun setFoodPreferences(value: FoodPreferences) {
         prefs.edit()
-            .putStringSet(KEY_DIET_TAGS, value.tags.map { it.name }.toSet())
+            .putString(KEY_DIET_STYLE, value.style.name)
+            .putStringSet(KEY_EXCLUDED, value.excluded.map { it.name }.toSet())
+            .putStringSet(KEY_INTOLERANCES, value.intolerances.map { it.name }.toSet())
+            .putString(KEY_COOKING, value.cooking.name)
+            .putString(KEY_BUDGET, value.budget.name)
+            .putBoolean(KEY_MEAL_PREP, value.mealPrep)
             .putString(KEY_DISLIKES, value.dislikes.joinToString(DISLIKE_SEPARATOR))
             .apply()
         _foodPreferences.value = value
     }
 
-    fun toggleDietTag(tag: DietTag) {
-        val current = _foodPreferences.value
-        setFoodPreferences(current.copy(tags = if (tag in current.tags) current.tags - tag else current.tags + tag))
-    }
+    fun updateFoodPreferences(transform: (FoodPreferences) -> FoodPreferences) =
+        setFoodPreferences(transform(_foodPreferences.value))
 
     fun addDislike(name: String) {
-        val current = _foodPreferences.value
         val clean = name.trim()
-        if (clean.isEmpty() || current.dislikes(clean)) return
-        setFoodPreferences(current.copy(dislikes = current.dislikes + clean))
+        if (clean.isEmpty() || _foodPreferences.value.dislikes(clean)) return
+        updateFoodPreferences { it.copy(dislikes = it.dislikes + clean) }
     }
 
-    fun removeDislike(name: String) {
-        val current = _foodPreferences.value
-        setFoodPreferences(current.copy(dislikes = current.dislikes.filterNot { it.equals(name, ignoreCase = true) }))
-    }
+    fun removeDislike(name: String) =
+        updateFoodPreferences { p -> p.copy(dislikes = p.dislikes.filterNot { it.equals(name, ignoreCase = true) }) }
 
-    private fun readFoodPreferences() = FoodPreferences(
-        tags = prefs.getStringSet(KEY_DIET_TAGS, emptySet()).orEmpty()
-            .mapNotNull { name -> DietTag.entries.find { it.name == name } }.toSet(),
-        dislikes = prefs.getString(KEY_DISLIKES, null).orEmpty().split(DISLIKE_SEPARATOR).filter(String::isNotBlank),
-    )
+    private fun readFoodPreferences(): FoodPreferences {
+        val defaults = FoodPreferences()
+        return FoodPreferences(
+            style = DietStyle.entries.find { it.name == prefs.getString(KEY_DIET_STYLE, null) } ?: defaults.style,
+            excluded = prefs.getStringSet(KEY_EXCLUDED, emptySet()).orEmpty()
+                .mapNotNull { name -> ExcludedFood.entries.find { it.name == name } }.toSet(),
+            intolerances = prefs.getStringSet(KEY_INTOLERANCES, emptySet()).orEmpty()
+                .mapNotNull { name -> Intolerance.entries.find { it.name == name } }.toSet(),
+            cooking = CookingTime.entries.find { it.name == prefs.getString(KEY_COOKING, null) } ?: defaults.cooking,
+            budget = Budget.entries.find { it.name == prefs.getString(KEY_BUDGET, null) } ?: defaults.budget,
+            mealPrep = prefs.getBoolean(KEY_MEAL_PREP, false),
+            dislikes = prefs.getString(KEY_DISLIKES, null).orEmpty().split(DISLIKE_SEPARATOR).filter(String::isNotBlank),
+        )
+    }
 
     /** Ob schon einmal nach der Benachrichtigungs-Erlaubnis gefragt wurde (nicht bei jedem Start nerven). */
     var notificationPermissionAsked: Boolean
@@ -165,7 +178,12 @@ class AppSettings(context: Context) {
         private const val KEY_FASTING_HOURS = "fasting_custom_hours"
         private const val KEY_FASTING_DAYS = "fasting_days"
         private const val KEY_PERMISSION_ASKED = "notification_permission_asked"
-        private const val KEY_DIET_TAGS = "diet_tags"
+        private const val KEY_DIET_STYLE = "diet_style"
+        private const val KEY_EXCLUDED = "diet_excluded"
+        private const val KEY_INTOLERANCES = "diet_intolerances"
+        private const val KEY_COOKING = "diet_cooking"
+        private const val KEY_BUDGET = "diet_budget"
+        private const val KEY_MEAL_PREP = "diet_meal_prep"
         private const val KEY_DISLIKES = "disliked_foods"
         private const val DISLIKE_SEPARATOR = "\n"
         private const val KEY_SEEN_TIPS = "seen_tips"

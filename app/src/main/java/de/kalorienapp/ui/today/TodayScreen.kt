@@ -109,6 +109,8 @@ import de.kalorienapp.domain.Fasting
 import de.kalorienapp.ui.fasting.FastingCard
 import de.kalorienapp.ui.theme.Neon
 import de.kalorienapp.domain.RankedNutrient
+import de.kalorienapp.domain.NutrientLimit
+import de.kalorienapp.domain.NutrientLimits
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -553,16 +555,16 @@ private fun NutrientLegend(summary: DaySummary, sex: Sex?, onClick: (RankedNutri
         MacroLegend(stringResource(R.string.protein), eaten.proteinG, summary.targets.proteinG, MacroColors.protein) { onClick(RankedNutrient.PROTEIN) }
         MacroLegend(stringResource(R.string.carbs), eaten.carbsG, summary.targets.carbsG, MacroColors.carbs) { onClick(RankedNutrient.CARBS) }
         AnimatedVisibility(detailed) {
-            SubNutrientRow(stringResource(R.string.nutrient_sugar), eaten.sugarG, MacroColors.carbs) { onClick(RankedNutrient.SUGAR) }
+            SubNutrientRow(stringResource(R.string.nutrient_sugar), eaten.sugarG, MacroColors.carbs, NutrientLimits.SUGAR) { onClick(RankedNutrient.SUGAR) }
         }
         MacroLegend(stringResource(R.string.fat), eaten.fatG, summary.targets.fatG, MacroColors.fat) { onClick(RankedNutrient.FAT) }
         AnimatedVisibility(detailed) {
-            SubNutrientRow(stringResource(R.string.nutrient_saturated_fat), eaten.saturatedFatG, MacroColors.fat) { onClick(RankedNutrient.SATURATED_FAT) }
+            SubNutrientRow(stringResource(R.string.nutrient_saturated_fat), eaten.saturatedFatG, MacroColors.fat, NutrientLimits.saturatedFat(summary.targets.kcal)) { onClick(RankedNutrient.SATURATED_FAT) }
         }
         AnimatedVisibility(detailed) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                OtherNutrientRow(stringResource(R.string.nutrient_fiber), eaten.fiberG) { onClick(RankedNutrient.FIBER) }
-                OtherNutrientRow(stringResource(R.string.nutrient_salt), eaten.saltG) { onClick(RankedNutrient.SALT) }
+                OtherNutrientRow(stringResource(R.string.nutrient_fiber), eaten.fiberG, NutrientLimits.FIBER) { onClick(RankedNutrient.FIBER) }
+                OtherNutrientRow(stringResource(R.string.nutrient_salt), eaten.saltG, NutrientLimits.SALT) { onClick(RankedNutrient.SALT) }
                 // Gruppen-Überschriften (Vitamine, Mineralstoffe, Weitere) kommen aus der Liste selbst
                 MicroList(eaten.micros, sex, showMissing = true)
                 Text(
@@ -596,7 +598,7 @@ private fun NutrientLegend(summary: DaySummary, sex: Sex?, onClick: (RankedNutri
 
 /** „davon …“-Zeile unter einem Hauptwert: eingerückt, mit Linie in dessen Farbe. */
 @Composable
-private fun SubNutrientRow(label: String, grams: Double?, parentColor: Color, onClick: () -> Unit) {
+private fun SubNutrientRow(label: String, grams: Double?, parentColor: Color, limit: NutrientLimit, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(onClick = onClick).padding(start = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -608,24 +610,37 @@ private fun SubNutrientRow(label: String, grams: Double?, parentColor: Color, on
             color = Neon.TextSecondary,
             modifier = Modifier.padding(start = 14.dp).weight(1f),
         )
-        Text(gramsText(grams), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+        Text(limitText(grams, limit), style = MaterialTheme.typography.bodySmall, color = limitColor(grams, limit, Neon.TextSecondary))
     }
+}
+
+/** „32,1 / 50 g“ – mit Richtwert, damit man sieht, wie viel noch geht. */
+@Composable
+private fun limitText(grams: Double?, limit: NutrientLimit): String =
+    stringResource(R.string.limit_value, grams?.format(1) ?: stringResource(R.string.value_missing), limit.grams.toString())
+
+/** Rot über einer Obergrenze, grün bei erreichtem Mindestziel. */
+private fun limitColor(grams: Double?, limit: NutrientLimit, normal: Color): Color = when {
+    limit.exceeded(grams) -> Neon.Red
+    limit.reached(grams) -> Neon.Green
+    else -> normal
 }
 
 /** Eigenständiger Nährwert ohne Ziel (Ballaststoffe, Salz) mit grauem Punkt. */
 @Composable
-private fun OtherNutrientRow(label: String, grams: Double?, onClick: () -> Unit) {
+private fun OtherNutrientRow(label: String, grams: Double?, limit: NutrientLimit, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(Neon.TextSecondary))
         Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 10.dp).weight(1f))
-        Text(gramsText(grams), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(
+            limitText(grams, limit),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = limitColor(grams, limit, Neon.TextPrimary),
+        )
     }
 }
 
-/** „2,1 g“ oder „–“, wenn der Wert bei keinem Eintrag angegeben ist. */
-@Composable
-private fun gramsText(grams: Double?): String =
-    grams?.let { stringResource(R.string.grams_value, it.format(1)) } ?: stringResource(R.string.value_missing)
 
 /** Legende zu einem Makro-Ring: farbiger Punkt, Name, gegessen / Ziel. */
 @Composable

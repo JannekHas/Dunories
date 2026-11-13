@@ -75,8 +75,8 @@ fun Micro.formatValue(value: Double): String = value.format(if (value < 10) 1 el
 
 /**
  * Vitamine, Mineralstoffe und Weitere als Liste, je Gruppe mit Überschrift (Vitamine stehen beieinander).
- * Mit [sex] je Zeile ein Balken zum DGE-Tageswert; bei Obergrenzen (Koffein, Cholesterin) wird er rot,
- * sobald sie überschritten ist. Nur angegebene Werte; [showMissing] zeigt zusätzlich die wichtigsten
+ * Mit [sex] je Zeile ein Balken zum DGE-Tageswert: blau = noch zu wenig, grün = erreicht, rot = über der
+ * EFSA-Höchstmenge bzw. über der Obergrenze (Koffein, Cholesterin). Nur angegebene Werte; [showMissing] zeigt zusätzlich die wichtigsten
  * ([Micro.alwaysShown]) mit „–“, auch wenn nichts davon eingetragen ist.
  */
 @Composable
@@ -108,8 +108,10 @@ private fun MicroRow(micro: Micro, value: Double?, sex: Sex?) {
         )
         if (sex != null) {
             val ratio = ((value ?: 0.0) / micro.reference(sex)).toFloat()
+            val tooMuch = value != null && micro.tooMuch(value, sex)
+            // blau = noch zu wenig, grün = Empfehlung erreicht, rot = über Höchstmenge/Obergrenze
             val color = when {
-                micro.isLimit && ratio > 1f -> Neon.Red
+                tooMuch -> Neon.Red
                 micro.isLimit -> Neon.Orange
                 ratio >= 1f -> Neon.Green
                 else -> Neon.Cyan
@@ -122,7 +124,7 @@ private fun MicroRow(micro: Micro, value: Double?, sex: Sex?) {
             Text(
                 "${(ratio * 100).roundToInt()} %",
                 style = MaterialTheme.typography.labelSmall,
-                color = if (micro.isLimit && ratio > 1f) Neon.Red else Neon.TextSecondary,
+                color = if (tooMuch) Neon.Red else Neon.TextSecondary,
                 textAlign = TextAlign.End,
                 modifier = Modifier.width(44.dp),
             )

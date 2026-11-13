@@ -5,7 +5,11 @@ import de.kalorienapp.domain.model.BodyMeasurement
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.DayStats
 import de.kalorienapp.domain.model.DayStatus
-import de.kalorienapp.domain.model.DietTag
+import de.kalorienapp.domain.model.Budget
+import de.kalorienapp.domain.model.CookingTime
+import de.kalorienapp.domain.model.DietStyle
+import de.kalorienapp.domain.model.ExcludedFood
+import de.kalorienapp.domain.model.Intolerance
 import de.kalorienapp.domain.model.FoodPreferences
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.Goal
@@ -83,7 +87,23 @@ object WeeklyInputBuilder {
         if (!prefs.isEmpty) {
             appendLine()
             appendLine("VORLIEBEN (verbindlich für Vorschläge):")
-            if (prefs.tags.isNotEmpty()) appendLine("- Ernährungsweise: " + prefs.tags.sortedBy { it.ordinal }.joinToString { it.german() })
+            if (prefs.style != DietStyle.ALL) appendLine("- Ernährungsweise: ${prefs.style.german()}")
+            if (prefs.relevantExcluded.isNotEmpty()) {
+                appendLine("- Isst kein: " + prefs.relevantExcluded.sortedBy { it.ordinal }.joinToString { it.german() })
+            }
+            val (allergies, intolerances) = prefs.intolerances.sortedBy { it.ordinal }.partition { it.allergen }
+            if (intolerances.isNotEmpty()) appendLine("- Unverträglichkeiten (meiden): " + intolerances.joinToString { it.german() })
+            if (allergies.isNotEmpty()) appendLine("- ALLERGIEN (strikt ausschließen, auch Spuren): " + allergies.joinToString { it.german() })
+            val everyday = listOfNotNull(
+                when (prefs.cooking) {
+                    CookingTime.LITTLE -> "wenig Zeit zum Kochen"
+                    CookingTime.LIKES -> "kocht gern und aufwendig"
+                    CookingTime.NORMAL -> null
+                },
+                "kleines Budget".takeIf { prefs.budget == Budget.SMALL },
+                "kocht gern vor (Meal Prep)".takeIf { prefs.mealPrep },
+            )
+            if (everyday.isNotEmpty()) appendLine("- Alltag: " + everyday.joinToString())
             if (prefs.dislikes.isNotEmpty()) appendLine("- Mag nicht: " + prefs.dislikes.joinToString())
         }
         appendLine()
@@ -218,15 +238,36 @@ object WeeklyInputBuilder {
         Micro.OMEGA_3 -> "Omega-3"
     }
 
-    private fun DietTag.german() = when (this) {
-        DietTag.VEGETARIAN -> "vegetarisch"
-        DietTag.VEGAN -> "vegan"
-        DietTag.NO_PORK -> "kein Schweinefleisch"
-        DietTag.NO_FISH -> "kein Fisch"
-        DietTag.LACTOSE_FREE -> "laktosefrei"
-        DietTag.GLUTEN_FREE -> "glutenfrei"
-        DietTag.LITTLE_TIME -> "wenig Zeit zum Kochen"
-        DietTag.LOW_BUDGET -> "kleines Budget"
+    private fun DietStyle.german() = when (this) {
+        DietStyle.ALL -> "isst alles"
+        DietStyle.FLEXITARIAN -> "flexitarisch (wenig Fleisch)"
+        DietStyle.PESCETARIAN -> "pescetarisch (kein Fleisch, aber Fisch)"
+        DietStyle.VEGETARIAN -> "vegetarisch"
+        DietStyle.VEGAN -> "vegan"
+    }
+
+    private fun ExcludedFood.german() = when (this) {
+        ExcludedFood.PORK -> "Schweinefleisch"
+        ExcludedFood.BEEF -> "Rindfleisch"
+        ExcludedFood.POULTRY -> "Geflügel"
+        ExcludedFood.FISH -> "Fisch"
+        ExcludedFood.SEAFOOD -> "Meeresfrüchte"
+    }
+
+    private fun Intolerance.german() = when (this) {
+        Intolerance.LACTOSE -> "Laktose"
+        Intolerance.GLUTEN -> "Gluten"
+        Intolerance.FRUCTOSE -> "Fruktose"
+        Intolerance.HISTAMINE -> "Histamin"
+        Intolerance.NUTS -> "Nüsse"
+        Intolerance.PEANUTS -> "Erdnüsse"
+        Intolerance.EGG -> "Ei"
+        Intolerance.SOY -> "Soja"
+        Intolerance.FISH -> "Fisch"
+        Intolerance.SHELLFISH -> "Krebstiere/Schalentiere"
+        Intolerance.CELERY -> "Sellerie"
+        Intolerance.MUSTARD -> "Senf"
+        Intolerance.SESAME -> "Sesam"
     }
 
     private fun MeasureType.german() = when (this) {

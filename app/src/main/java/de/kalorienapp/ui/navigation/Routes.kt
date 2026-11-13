@@ -35,6 +35,10 @@ data object RecipeImportRoute
 @Serializable
 data class WeeklyReportRoute(val id: Long)
 
+/** Vorlieben für die KI-Auswertung (Ernährungsweise, Allergien, Alltag, mag ich nicht). */
+@Serializable
+data object FoodPreferencesRoute
+
 @Serializable
 data object ShoppingListRoute
 
