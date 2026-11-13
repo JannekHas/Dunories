@@ -96,6 +96,7 @@ import de.kalorienapp.ui.recipes.ShoppingListScreen
 import de.kalorienapp.ui.stats.StatsScreen
 import de.kalorienapp.ui.theme.Neon
 import de.kalorienapp.ui.today.TodayScreen
+import de.kalorienapp.ui.today.DayNutrientsScreen
 
 private data class TopLevelDestination(val route: Any, val icon: @Composable () -> ImageVector, val labelRes: Int)
 
@@ -250,6 +251,9 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onEditEntry = { entry ->
                                 navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
                             },
+                            onNutrientClick = { date, nutrient ->
+                                navController.navigate(DayNutrientsRoute(date.toEpochDay(), nutrient.name))
+                            },
                         )
                     }
                     screen<StatsRoute> {
@@ -270,6 +274,14 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onWeighDialogShown = container.navRequests::weighDialogShown,
                         )
                     }
+                    screen<DayNutrientsRoute> {
+                        DayNutrientsScreen(
+                            onBack = { navController.popBackStack() },
+                            onEditEntry = { entry ->
+                                navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
+                            },
+                        )
+                    }
                     screen<WeeklyReportRoute> {
                         WeeklyReportScreen(onBack = { navController.popBackStack() })
                     }
@@ -281,6 +293,9 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             },
                             onEditEntry = { entry ->
                                 navController.navigate(EntryEditRoute(entryId = entry.id, epochDay = entry.date.toEpochDay()))
+                            },
+                            onNutrientClick = { date, nutrient ->
+                                navController.navigate(DayNutrientsRoute(date.toEpochDay(), nutrient.name))
                             },
                             onBack = { navController.popBackStack() },
                         )

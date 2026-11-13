@@ -50,6 +50,10 @@ data class GoalCelebrationRoute(val goalId: Long)
 @Serializable
 data class GoalShareRoute(val goalId: Long)
 
+/** Einträge eines Tages sortiert nach einem Nährwert ([de.kalorienapp.domain.RankedNutrient]-Name). */
+@Serializable
+data class DayNutrientsRoute(val epochDay: Long, val nutrient: String)
+
 /** Tagesansicht für ein bestimmtes Datum (aus dem Kalender geöffnet). */
 @Serializable
 data class DayRoute(val epochDay: Long)

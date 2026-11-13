@@ -24,6 +24,7 @@ import de.kalorienapp.ui.stats.BodyMeasurementViewModel
 import de.kalorienapp.ui.stats.StatsViewModel
 import de.kalorienapp.ui.stats.WeeklyReportViewModel
 import de.kalorienapp.ui.today.TodayViewModel
+import de.kalorienapp.ui.today.DayNutrientsViewModel
 
 /** Factory für alle ViewModels – holt Abhängigkeiten aus dem [de.kalorienapp.AppContainer]. */
 object AppViewModelProvider {
@@ -39,6 +40,9 @@ object AppViewModelProvider {
                 container().activityEntryRepository,
                 container().statsRepository,
             )
+        }
+        initializer {
+            DayNutrientsViewModel(createSavedStateHandle(), container().foodEntryRepository)
         }
         initializer {
             ProfileViewModel(container().profileRepository, container().weightRepository, container().goalRepository)

@@ -188,6 +188,13 @@
     <string name="activity_list_empty">Noch keine Aktivität eingetragen. Verbrannte Kalorien erhöhen dein Tagesbudget.</string>
     <string name="activity_deleted">„%1$s“ gelöscht</string>
     <string name="nutrient_details_show">Alle Nährwerte</string>
+    <string name="day_nutrients_title">Was steckt drin?</string>
+    <string name="day_nutrients_total">%1$s gesamt: %2$s</string>
+    <string name="day_nutrients_empty">An diesem Tag ist noch nichts eingetragen.</string>
+    <string name="rank_kcal">Kalorien</string>
+    <string name="rank_saturated_fat">Ges. Fettsäuren</string>
+    <string name="rank_sugar">Zucker</string>
+    <string name="percent_value">%1$s %%</string>
     <string name="nutrient_details_hide">Weniger anzeigen</string>
     <string name="extra_nutrients_hint">Summe aus allen Einträgen, bei denen der Wert angegeben ist.</string>
     <string name="grams_value">%1$s g</string>

@@ -108,6 +108,7 @@ import de.kalorienapp.ui.components.labelRes
 import de.kalorienapp.domain.Fasting
 import de.kalorienapp.ui.fasting.FastingCard
 import de.kalorienapp.ui.theme.Neon
+import de.kalorienapp.domain.RankedNutrient
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -125,6 +126,8 @@ fun TodayScreen(
     onDayShown: () -> Unit = {},
     onAddEntry: (date: LocalDate, mealType: MealType?) -> Unit,
     onEditEntry: (FoodEntry) -> Unit,
+    /** Makro/Nährwert angetippt → Einträge des Tages danach sortiert. */
+    onNutrientClick: (date: LocalDate, nutrient: RankedNutrient) -> Unit = { _, _ -> },
     /** Gesetzt, wenn der Tag aus dem Kalender geöffnet wurde. */
     onBack: (() -> Unit)? = null,
     viewModel: TodayViewModel = viewModel(factory = AppViewModelProvider.Factory),
@@ -318,6 +321,7 @@ fun TodayScreen(
                         summary = summary,
                         sex = state.sex,
                         onActivityClick = { showActivityList = true },
+                        onNutrientClick = { onNutrientClick(state.date, it) },
                     )
                 }
             }
@@ -449,6 +453,7 @@ private fun SummaryCard(
     summary: DaySummary,
     sex: Sex?,
     onActivityClick: () -> Unit,
+    onNutrientClick: (RankedNutrient) -> Unit,
 ) {
     val over = summary.remainingKcal < 0
     val budget = (summary.targets.kcal + summary.activityKcal).coerceAtLeast(1)
@@ -508,6 +513,7 @@ private fun SummaryCard(
                 label = stringResource(R.string.summary_eaten),
                 color = Neon.Orange,
                 modifier = Modifier.weight(1f),
+                onClick = { onNutrientClick(RankedNutrient.KCAL) },
             )
             // Aktivität: Tippen öffnet die Übersicht (dort auch „Hinzufügen“).
             NeonPill(
@@ -521,7 +527,7 @@ private fun SummaryCard(
 
         TipSlot(Tip.ACTIVITY, caret = TipCaret.UP_END, after = Tip.MEAL)
         TipSlot(Tip.RINGS, condition = summary.eaten.kcal > 0, after = Tip.ACTIVITY)
-        NutrientLegend(summary, sex)
+        NutrientLegend(summary, sex, onNutrientClick)
     }
 }
 
@@ -540,23 +546,23 @@ private object MacroColors {
  * gesättigte Fettsäuren → Fett), danach Ballaststoffe und Salz.
  */
 @Composable
-private fun NutrientLegend(summary: DaySummary, sex: Sex?) {
+private fun NutrientLegend(summary: DaySummary, sex: Sex?, onClick: (RankedNutrient) -> Unit) {
     var detailed by rememberSaveable { mutableStateOf(false) }
     val eaten = summary.eaten
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        MacroLegend(stringResource(R.string.protein), eaten.proteinG, summary.targets.proteinG, MacroColors.protein)
-        MacroLegend(stringResource(R.string.carbs), eaten.carbsG, summary.targets.carbsG, MacroColors.carbs)
+        MacroLegend(stringResource(R.string.protein), eaten.proteinG, summary.targets.proteinG, MacroColors.protein) { onClick(RankedNutrient.PROTEIN) }
+        MacroLegend(stringResource(R.string.carbs), eaten.carbsG, summary.targets.carbsG, MacroColors.carbs) { onClick(RankedNutrient.CARBS) }
         AnimatedVisibility(detailed) {
-            SubNutrientRow(stringResource(R.string.nutrient_sugar), eaten.sugarG, MacroColors.carbs)
+            SubNutrientRow(stringResource(R.string.nutrient_sugar), eaten.sugarG, MacroColors.carbs) { onClick(RankedNutrient.SUGAR) }
         }
-        MacroLegend(stringResource(R.string.fat), eaten.fatG, summary.targets.fatG, MacroColors.fat)
+        MacroLegend(stringResource(R.string.fat), eaten.fatG, summary.targets.fatG, MacroColors.fat) { onClick(RankedNutrient.FAT) }
         AnimatedVisibility(detailed) {
-            SubNutrientRow(stringResource(R.string.nutrient_saturated_fat), eaten.saturatedFatG, MacroColors.fat)
+            SubNutrientRow(stringResource(R.string.nutrient_saturated_fat), eaten.saturatedFatG, MacroColors.fat) { onClick(RankedNutrient.SATURATED_FAT) }
         }
         AnimatedVisibility(detailed) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                OtherNutrientRow(stringResource(R.string.nutrient_fiber), eaten.fiberG)
-                OtherNutrientRow(stringResource(R.string.nutrient_salt), eaten.saltG)
+                OtherNutrientRow(stringResource(R.string.nutrient_fiber), eaten.fiberG) { onClick(RankedNutrient.FIBER) }
+                OtherNutrientRow(stringResource(R.string.nutrient_salt), eaten.saltG) { onClick(RankedNutrient.SALT) }
                 Text(
                     stringResource(R.string.micros_title),
                     style = MaterialTheme.typography.labelLarge,
@@ -594,9 +600,9 @@ private fun NutrientLegend(summary: DaySummary, sex: Sex?) {
 
 /** „davon …“-Zeile unter einem Hauptwert: eingerückt, mit Linie in dessen Farbe. */
 @Composable
-private fun SubNutrientRow(label: String, grams: Double?, parentColor: Color) {
+private fun SubNutrientRow(label: String, grams: Double?, parentColor: Color, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(start = 4.dp),
+        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(onClick = onClick).padding(start = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.width(2.dp).fillMaxHeight().background(parentColor.copy(alpha = 0.7f)))
@@ -612,8 +618,8 @@ private fun SubNutrientRow(label: String, grams: Double?, parentColor: Color) {
 
 /** Eigenständiger Nährwert ohne Ziel (Ballaststoffe, Salz) mit grauem Punkt. */
 @Composable
-private fun OtherNutrientRow(label: String, grams: Double?) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+private fun OtherNutrientRow(label: String, grams: Double?, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(Neon.TextSecondary))
         Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 10.dp).weight(1f))
         Text(gramsText(grams), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
@@ -627,9 +633,9 @@ private fun gramsText(grams: Double?): String =
 
 /** Legende zu einem Makro-Ring: farbiger Punkt, Name, gegessen / Ziel. */
 @Composable
-private fun MacroLegend(label: String, eatenG: Double, targetG: Int, color: Color) {
+private fun MacroLegend(label: String, eatenG: Double, targetG: Int, color: Color, onClick: () -> Unit) {
     val over = targetG > 0 && eatenG > targetG * 1.05
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small).clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(color))
         Text(
             label,
