@@ -91,6 +91,7 @@ fun WeeklyReportSection(
     generation: ReportGeneration,
     onGenerate: () -> Unit,
     onOpen: (WeeklyReport) -> Unit,
+    onShowAll: () -> Unit,
 ) {
     GlassCard(modifier = Modifier.fillMaxWidth(), strong = true) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -139,24 +140,34 @@ fun WeeklyReportSection(
             if (reports.size > 1) {
                 HorizontalDivider()
                 Text(stringResource(R.string.report_older), style = MaterialTheme.typography.labelLarge)
+                // Kurz halten: nur die zwei vorherigen, alle weiteren auf der eigenen Seite (nach Monaten)
                 reports.drop(1).take(MAX_OLDER).forEach { report ->
-                    TextButton(onClick = { onOpen(report) }, modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { onOpen(report) }
+                            .padding(horizontal = 4.dp, vertical = 6.dp),
+                    ) {
                         Text(
                             reportRange(report.from, report.to) + " · " + report.headline,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Neon.TextPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth(),
                         )
+                        Text(createdText(report), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
                     }
+                }
+                TextButton(onClick = onShowAll, modifier = Modifier.align(Alignment.End)) {
+                    Text(stringResource(R.string.report_show_all, reports.size))
                 }
             }
         }
     }
 }
 
-private const val MAX_OLDER = 8
+private const val MAX_OLDER = 2
 
 private val ReportError.messageRes: Int
     get() = when (this) {
@@ -285,7 +296,10 @@ fun WeeklyReportScreen(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(reportRange(r.from, r.to), style = MaterialTheme.typography.labelLarge, color = Neon.TextSecondary)
+            Column {
+                Text(reportRange(r.from, r.to), style = MaterialTheme.typography.labelLarge, color = Neon.TextSecondary)
+                Text(createdText(r), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+            }
             Text(r.headline, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Neon.Violet)
             Text(r.summary, style = MaterialTheme.typography.bodyLarge)
             if (r.wins.isNotEmpty()) BulletSection(stringResource(R.string.report_wins), r.wins, Neon.Green)

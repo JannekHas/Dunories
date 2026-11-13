@@ -97,6 +97,7 @@ import de.kalorienapp.ui.stats.StatsScreen
 import de.kalorienapp.ui.theme.Neon
 import de.kalorienapp.ui.today.TodayScreen
 import de.kalorienapp.ui.stats.FoodPreferencesScreen
+import de.kalorienapp.ui.stats.AllReportsScreen
 import de.kalorienapp.ui.today.DayNutrientsScreen
 
 private data class TopLevelDestination(val route: Any, val icon: @Composable () -> ImageVector, val labelRes: Int)
@@ -260,6 +261,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     screen<StatsRoute> {
                         StatsScreen(
                             onOpenReport = { navController.navigate(WeeklyReportRoute(it)) },
+                            onShowAllReports = { navController.navigate(AllReportsRoute) },
                             // Tag antippen → Reiter „Heute“ mit diesem Tag (keine eigene Unterseite mehr; Wunsch des Nutzers)
                             onDayClick = { date ->
                                 container.navRequests.showDay(date)
@@ -287,6 +289,12 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                         WeeklyReportScreen(
                             onBack = { navController.popBackStack() },
                             onEditPreferences = { navController.navigate(FoodPreferencesRoute) },
+                        )
+                    }
+                    screen<AllReportsRoute> {
+                        AllReportsScreen(
+                            onBack = { navController.popBackStack() },
+                            onOpen = { navController.navigate(WeeklyReportRoute(it)) },
                         )
                     }
                     screen<FoodPreferencesRoute> {

@@ -526,6 +526,9 @@
     <string name="prefs_regenerate">Mit meinen Vorlieben neu auswerten</string>
     <string name="prefs_text">Die KI richtet ihre Vorschläge danach – bei jeder Auswertung. Tippe einen Bereich an.</string>
     <string name="prefs_edit">Bearbeiten</string>
+    <string name="report_all_title">Alle Auswertungen</string>
+    <string name="report_show_all">Alle Auswertungen (%1$d) ›</string>
+    <string name="report_created">erstellt am %1$s Uhr</string>
     <string name="prefs_empty_summary">Noch nichts angegeben – die KI schlägt alles vor.</string>
     <string name="prefs_none">Nichts angegeben</string>
     <string name="prefs_no_x">kein %1$s</string>

@@ -54,6 +54,7 @@ import kotlin.math.roundToInt
 @Composable
 fun StatsScreen(
     onOpenReport: (Long) -> Unit = {},
+    onShowAllReports: () -> Unit = {},
     onDayClick: (LocalDate) -> Unit = {},
     onAddEntry: () -> Unit = {},
     viewModel: StatsViewModel = viewModel(factory = AppViewModelProvider.Factory),
@@ -104,6 +105,7 @@ fun StatsScreen(
                     generation = generation,
                     onGenerate = { viewModel.generateReport(onOpenReport) },
                     onOpen = { onOpenReport(it.id) },
+                    onShowAll = onShowAllReports,
                 )
             }
         }
