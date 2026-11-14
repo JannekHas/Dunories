@@ -29,6 +29,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,6 +67,7 @@ import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.ui.components.LocalBottomBarPadding
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
+import de.kalorienapp.ui.components.neonChipColors
 import de.kalorienapp.ui.food.trimDecimalZero
 import de.kalorienapp.ui.today.neonColor
 import de.kalorienapp.ui.theme.Neon
@@ -75,6 +77,7 @@ import java.util.Locale
 
 private val dayFormatter = DateTimeFormatter.ofPattern("EEE, d.M.", Locale.GERMAN)
 private val longFormatter = DateTimeFormatter.ofPattern("EEEE, d. MMMM", Locale.GERMAN)
+private val shortFormatter = DateTimeFormatter.ofPattern("d.M.", Locale.GERMAN)
 private const val MILLIS_PER_DAY = 86_400_000L
 
 /** Datum, an dem Plan-Tag [dayIndex] im aktuellen Durchlauf liegt. */
@@ -109,7 +112,8 @@ fun MealPlanSettingsSection(
         val status = when {
             index != null && config.stopAtEnd ->
                 stringResource(R.string.plan_status_ending, index + 1, config.days, config.end.format(dayFormatter))
-            index != null -> stringResource(R.string.plan_status_day, index + 1, config.days)
+            index != null && config.openEnded -> stringResource(R.string.plan_status_open, index + 1, config.days)
+            index != null -> stringResource(R.string.plan_status_until, index + 1, config.days, config.end.format(dayFormatter))
             MealPlanSchedule.isExpired(config, today) -> stringResource(R.string.plan_status_expired, config.end.format(dayFormatter))
             else -> stringResource(R.string.plan_status_before, config.start.format(dayFormatter))
         }
@@ -144,6 +148,24 @@ fun MealPlanScreen(
     val config by viewModel.config.collectAsStateWithLifecycle()
     val items by viewModel.items.collectAsStateWithLifecycle()
     var pickStart by remember { mutableStateOf(false) }
+    var pickEnd by remember { mutableStateOf(false) }
+
+    if (pickEnd) {
+        val state = rememberDatePickerState(initialSelectedDateMillis = config.end.toEpochDay() * MILLIS_PER_DAY)
+        DatePickerDialog(
+            onDismissRequest = { pickEnd = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        state.selectedDateMillis?.let { viewModel.setEnd(LocalDate.ofEpochDay(it / MILLIS_PER_DAY)) }
+                        pickEnd = false
+                    },
+                    enabled = state.selectedDateMillis != null,
+                ) { Text(stringResource(R.string.ok)) }
+            },
+            dismissButton = { TextButton(onClick = { pickEnd = false }) { Text(stringResource(R.string.cancel)) } },
+        ) { DatePicker(state = state) }
+    }
 
     if (pickStart) {
         val state = rememberDatePickerState(initialSelectedDateMillis = config.startEpochDay * MILLIS_PER_DAY)
@@ -180,7 +202,8 @@ fun MealPlanScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Zeitraum: Anzahl Tage und Start
+            // Rhythmus (so viele Tage trägt man ein) und Laufzeit (wie lange er sich wiederholt) – getrennt,
+            // damit klar ist: 30 Tage mit gleichem Wochenessen = nur 7 Tage eintragen (Tester-Feedback).
             GlassCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -193,11 +216,35 @@ fun MealPlanScreen(
                         )
                         StepButton("+", enabled = config.days < MealPlanSettings.MAX_DAYS) { viewModel.setDays(config.days + 1) }
                     }
+                    Text(
+                        pluralStringResource(R.plurals.plan_rhythm_hint, config.days, config.days),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Neon.TextSecondary,
+                    )
+                    HorizontalDivider()
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.plan_start), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                         TextButton(onClick = { pickStart = true }) { Text(config.start.format(longFormatter)) }
                     }
-                    Text(stringResource(R.string.plan_length_hint), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.plan_runs_until), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { pickEnd = true }, enabled = !config.openEnded) {
+                            Text(if (config.openEnded) stringResource(R.string.plan_open_ended) else config.end.format(longFormatter))
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = config.openEnded,
+                            onClick = { viewModel.setOpenEnded(!config.openEnded) },
+                            label = { Text(stringResource(R.string.plan_open_ended)) },
+                            colors = neonChipColors(),
+                        )
+                    }
+                    Text(
+                        stringResource(if (config.openEnded) R.string.plan_open_hint else R.string.plan_length_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Neon.TextSecondary,
+                    )
                 }
             }
             // Import per Foto/Text
@@ -207,11 +254,25 @@ fun MealPlanScreen(
             }
             // Tage
             val byDay = items.groupBy { it.dayIndex }
+            val today = LocalDate.now()
             repeat(config.days) { day ->
+                val (later, more) = MealPlanSchedule.laterDates(config, day, today)
                 DayCard(
                     title = stringResource(R.string.plan_day_title, day + 1, config.dateOf(day).format(dayFormatter)),
+                    repeats = later.takeIf { it.isNotEmpty() }?.let { dates ->
+                        stringResource(R.string.plan_day_repeats, dates.joinToString { it.format(shortFormatter) } + if (more) " …" else "")
+                    },
                     items = byDay[day].orEmpty(),
                     onClick = { onOpenDay(day) },
+                )
+            }
+            if (config.openEnded || config.end.isAfter(config.dateOf(config.days - 1))) {
+                Text(
+                    stringResource(R.string.plan_repeat_after),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Neon.Cyan,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }
             Spacer(Modifier.padding(bottom = LocalBottomBarPadding.current))
@@ -231,7 +292,7 @@ private fun StepButton(symbol: String, enabled: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun DayCard(title: String, items: List<MealPlanItem>, onClick: () -> Unit) {
+private fun DayCard(title: String, repeats: String?, items: List<MealPlanItem>, onClick: () -> Unit) {
     GlassCard(Modifier.fillMaxWidth(), onClick = onClick) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -245,6 +306,7 @@ private fun DayCard(title: String, items: List<MealPlanItem>, onClick: () -> Uni
                 }
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
             }
+            repeats?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Neon.TextSecondary) }
             if (items.isEmpty()) {
                 Text(stringResource(R.string.plan_day_empty), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
             }

@@ -183,6 +183,7 @@ class AppSettings(context: Context) {
             .putInt(KEY_PLAN_DAYS, value.days)
             .putLong(KEY_PLAN_END, value.endEpochDay ?: Long.MIN_VALUE)
             .putBoolean(KEY_PLAN_STOP, value.stopAtEnd)
+            .putBoolean(KEY_PLAN_OPEN, value.openEnded)
             .apply()
         _mealPlan.value = value
     }
@@ -197,6 +198,7 @@ class AppSettings(context: Context) {
             days = prefs.getInt(KEY_PLAN_DAYS, defaults.days).coerceIn(1, MealPlanSettings.MAX_DAYS),
             endEpochDay = prefs.getLong(KEY_PLAN_END, Long.MIN_VALUE).takeIf { it != Long.MIN_VALUE },
             stopAtEnd = prefs.getBoolean(KEY_PLAN_STOP, false),
+            openEnded = prefs.getBoolean(KEY_PLAN_OPEN, false),
         )
     }
 
@@ -233,5 +235,6 @@ class AppSettings(context: Context) {
         private const val KEY_PLAN_DAYS = "meal_plan_days"
         private const val KEY_PLAN_END = "meal_plan_end"
         private const val KEY_PLAN_STOP = "meal_plan_stop_at_end"
+        private const val KEY_PLAN_OPEN = "meal_plan_open_ended"
     }
 }

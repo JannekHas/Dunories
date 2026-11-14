@@ -3,8 +3,9 @@ package de.kalorienapp.domain.model
 import java.time.LocalDate
 
 /**
- * Einstellungen des Ernährungsplans (aus = in der App unsichtbar). Der Plan wiederholt sich alle [days] Tage
- * ab [startEpochDay] und gilt bis [end]; „Verlängern“ schiebt nur das Ende weiter (Rhythmus bleibt).
+ * Einstellungen des Ernährungsplans (aus = in der App unsichtbar). **Rhythmus** und **Laufzeit** sind getrennt
+ * (Tester-Feedback: 30 Tage, jede Woche gleich → nur 7 Tage eintragen): Der Plan wiederholt sich alle [days] Tage
+ * ab [startEpochDay] und gilt bis [end] bzw. ohne Ende ([openEnded]); „Verlängern“ schiebt nur das Ende weiter.
  */
 data class MealPlanSettings(
     val enabled: Boolean = false,
@@ -16,6 +17,8 @@ data class MealPlanSettings(
     val endEpochDay: Long? = null,
     /** „Beenden“ getippt: läuft bis [end] normal weiter, danach automatisch aus (keine Verlängern-Frage mehr). */
     val stopAtEnd: Boolean = false,
+    /** Läuft ohne Ende (keine Verlängern-Frage); [end] spielt dann keine Rolle. */
+    val openEnded: Boolean = false,
 ) {
     val start: LocalDate get() = LocalDate.ofEpochDay(startEpochDay)
 
@@ -87,31 +90,46 @@ data class MealPlanItem(
 object MealPlanSchedule {
     /** Plan-Tag (0-basiert) für [date], sonst null (aus, vor dem Start oder nach dem Ende). */
     fun dayIndex(settings: MealPlanSettings, date: LocalDate): Int? {
-        if (!settings.enabled || date.isBefore(settings.start) || date.isAfter(settings.end)) return null
+        if (!settings.enabled || date.isBefore(settings.start)) return null
+        if (!settings.openEnded && date.isAfter(settings.end)) return null
         return ((date.toEpochDay() - settings.startEpochDay) % settings.days).toInt()
     }
 
     /** Erster Tag des Durchlaufs, in dem [today] liegt (bzw. des ersten/letzten, wenn davor/danach). */
     fun cycleStart(settings: MealPlanSettings, today: LocalDate): LocalDate {
-        val reference = today.toEpochDay().coerceIn(settings.startEpochDay, settings.end.toEpochDay())
+        val last = if (settings.openEnded) maxOf(today.toEpochDay(), settings.startEpochDay) else settings.end.toEpochDay()
+        val reference = today.toEpochDay().coerceIn(settings.startEpochDay, maxOf(last, settings.startEpochDay))
         val offset = (reference - settings.startEpochDay) / settings.days * settings.days
         return settings.start.plusDays(offset)
     }
 
     fun isExpired(settings: MealPlanSettings, today: LocalDate) =
-        settings.enabled && today.isAfter(settings.end)
+        settings.enabled && !settings.openEnded && today.isAfter(settings.end)
 
     /** Frage „Stimmt dein Plan noch?“ – am letzten gültigen Tag und danach (nicht nach „Beenden“). */
     fun askToExtend(settings: MealPlanSettings, today: LocalDate) =
-        settings.enabled && !settings.stopAtEnd && !today.isBefore(settings.end)
+        settings.enabled && !settings.openEnded && !settings.stopAtEnd && !today.isBefore(settings.end)
 
     /** Nach „Beenden“ ist der letzte Tag vorbei → Plan ausschalten (Inhalt bleibt). */
     fun finishIfEnded(settings: MealPlanSettings, today: LocalDate): MealPlanSettings =
-        if (settings.enabled && settings.stopAtEnd && today.isAfter(settings.end)) {
+        if (settings.enabled && !settings.openEnded && settings.stopAtEnd && today.isAfter(settings.end)) {
             settings.copy(enabled = false, stopAtEnd = false)
         } else {
             settings
         }
+
+    /**
+     * Weitere Termine von Plan-Tag [dayIndex] nach dem aktuellen Durchlauf (für „auch 23.11., 30.11. …“),
+     * höchstens [limit]; [more] = es gibt noch weitere.
+     */
+    fun laterDates(settings: MealPlanSettings, dayIndex: Int, today: LocalDate, limit: Int = 2): Pair<List<LocalDate>, Boolean> {
+        val first = cycleStart(settings, today).plusDays(dayIndex.toLong())
+        val dates = generateSequence(first.plusDays(settings.days.toLong())) { it.plusDays(settings.days.toLong()) }
+            .takeWhile { settings.openEnded || !it.isAfter(settings.end) }
+            .take(limit + 1)
+            .toList()
+        return dates.take(limit) to (dates.size > limit)
+    }
 
     /** Um einen Durchlauf verlängern – nach einer Pause so oft, bis heute wieder enthalten ist. */
     fun extend(settings: MealPlanSettings, today: LocalDate): MealPlanSettings {

@@ -52,6 +52,7 @@ object BackupFormat {
         val mealPlanDays: Int? = null,
         val mealPlanEnd: Long? = null,
         val mealPlanStopAtEnd: Boolean? = null,
+        val mealPlanOpenEnded: Boolean? = null,
         val waterEnabled: Boolean? = null,
     )
 

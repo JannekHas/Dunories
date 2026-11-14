@@ -34,11 +34,21 @@ class MealPlanViewModel(private val repository: MealPlanRepository) : ViewModel(
         }
     }
 
-    // Länge/Start ändern beginnt einen neuen ersten Durchlauf (Ende = Start + Länge).
-    fun setDays(days: Int) =
-        repository.updateConfig { it.copy(days = days.coerceIn(1, MealPlanSettings.MAX_DAYS), endEpochDay = null) }
+    /** Rhythmus: so viele Tage trägt man ein, danach beginnt der Plan wieder bei Tag 1. Laufzeit bleibt. */
+    fun setDays(days: Int) = repository.updateConfig { it.copy(days = days.coerceIn(1, MealPlanSettings.MAX_DAYS)) }
 
-    fun setStart(date: LocalDate) = repository.updateConfig { it.copy(startEpochDay = date.toEpochDay(), endEpochDay = null) }
+    /** Neuer Tag 1; ein festes Ende vor dem Start fällt weg. */
+    fun setStart(date: LocalDate) = repository.updateConfig {
+        val end = it.endEpochDay?.takeIf { e -> e >= date.toEpochDay() }
+        it.copy(startEpochDay = date.toEpochDay(), endEpochDay = end)
+    }
+
+    /** Laufzeit: bis [date] (inklusive). */
+    fun setEnd(date: LocalDate) = repository.updateConfig {
+        it.copy(endEpochDay = maxOf(date.toEpochDay(), it.startEpochDay), openEnded = false, stopAtEnd = false)
+    }
+
+    fun setOpenEnded(open: Boolean) = repository.updateConfig { it.copy(openEnded = open, stopAtEnd = false) }
 
     fun delete(item: MealPlanItem) {
         viewModelScope.launch { repository.delete(item.id) }

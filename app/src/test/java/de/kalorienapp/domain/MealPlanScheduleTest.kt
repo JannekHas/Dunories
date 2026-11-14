@@ -68,6 +68,29 @@ class MealPlanScheduleTest {
     }
 
     @Test
+    fun `wochenrhythmus ueber 30 tage braucht nur 7 eingetragene tage`() {
+        val month = week.copy(endEpochDay = monday.plusDays(29).toEpochDay())
+        assertEquals(0, MealPlanSchedule.dayIndex(month, monday.plusDays(21)))
+        assertEquals(1, MealPlanSchedule.dayIndex(month, monday.plusDays(29)))
+        assertNull(MealPlanSchedule.dayIndex(month, monday.plusDays(30)))
+        assertFalse(MealPlanSchedule.askToExtend(month, monday.plusDays(6)))
+        assertTrue(MealPlanSchedule.askToExtend(month, monday.plusDays(29)))
+        val (later, more) = MealPlanSchedule.laterDates(month, 0, monday)
+        assertEquals(listOf(monday.plusDays(7), monday.plusDays(14)), later)
+        assertTrue(more)
+    }
+
+    @Test
+    fun `ohne ende laeuft immer weiter und fragt nie`() {
+        val open = week.copy(openEnded = true)
+        val farAway = monday.plusDays(365)
+        assertEquals(1, MealPlanSchedule.dayIndex(open, farAway))
+        assertFalse(MealPlanSchedule.askToExtend(open, farAway))
+        assertFalse(MealPlanSchedule.isExpired(open, farAway))
+        assertEquals(monday.plusDays(364), MealPlanSchedule.cycleStart(open, farAway))
+    }
+
+    @Test
     fun `eintrag und planpunkt rechnen hin und zurueck`() {
         val entry = FoodEntry(
             date = monday, mealType = MealType.BREAKFAST, name = "Haferflocken", amount = 60.0,

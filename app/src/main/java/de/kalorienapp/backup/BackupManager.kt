@@ -70,6 +70,7 @@ class BackupManager(
                 mealPlanDays = settings.mealPlan.value.days,
                 mealPlanEnd = settings.mealPlan.value.endEpochDay,
                 mealPlanStopAtEnd = settings.mealPlan.value.stopAtEnd,
+                mealPlanOpenEnded = settings.mealPlan.value.openEnded,
                 waterEnabled = settings.waterEnabled.value,
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
@@ -165,6 +166,7 @@ class BackupManager(
                         days = (m.mealPlanDays ?: d.days).coerceIn(1, de.kalorienapp.domain.model.MealPlanSettings.MAX_DAYS),
                         endEpochDay = m.mealPlanEnd,
                         stopAtEnd = m.mealPlanStopAtEnd ?: false,
+                        openEnded = m.mealPlanOpenEnded ?: false,
                     ),
                 )
             }

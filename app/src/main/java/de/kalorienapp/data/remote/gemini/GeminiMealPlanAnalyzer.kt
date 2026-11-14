@@ -22,10 +22,19 @@ import java.util.Base64
 /** Ernährungsplan aus Fotos/Screenshots und/oder Text erkennen (z. B. Plan vom Ernährungsberater). */
 class GeminiMealPlanAnalyzer(private val client: GeminiClient) {
 
-    suspend fun analyze(images: List<ByteArray>, text: String?): List<MealPlanItem> {
+    /** [pdfs] gehen als PDF direkt an Gemini (liest Text und Tabellen selbst). */
+    suspend fun analyze(images: List<ByteArray>, text: String?, pdfs: List<ByteArray> = emptyList()): List<MealPlanItem> {
         val answer = client.generateJson(RESPONSE_SCHEMA, timeoutMs = 180_000) {
             addJsonObject { put("text", PROMPT) }
             text?.takeIf { it.isNotBlank() }?.let { addJsonObject { put("text", "Plan als Text:\n" + it.trim()) } }
+            pdfs.forEach { bytes ->
+                addJsonObject {
+                    putJsonObject("inline_data") {
+                        put("mime_type", PDF_MIME)
+                        put("data", Base64.getEncoder().encodeToString(bytes))
+                    }
+                }
+            }
             images.forEach { bytes ->
                 addJsonObject {
                     putJsonObject("inline_data") {
@@ -41,8 +50,10 @@ class GeminiMealPlanAnalyzer(private val client: GeminiClient) {
     }
 
     private companion object {
+        const val PDF_MIME = "application/pdf"
+
         val PROMPT = """
-Lies den Ernährungsplan aus den Bildern bzw. dem Text aus. Er besteht aus Tagen (z. B. „Tag 1“, „Montag“) mit
+Lies den Ernährungsplan aus den Bildern, PDFs bzw. dem Text aus. Er besteht aus Tagen (z. B. „Tag 1“, „Montag“) mit
 Mahlzeiten (Frühstück, Mittagessen, Abendessen, Snacks/Zwischenmahlzeiten). Gib jeden Tag mit day = 1, 2, 3 … in
 der Reihenfolge des Plans zurück (Montag = 1, wenn Wochentage genannt sind), höchstens ${MealPlanSettings.MAX_DAYS} Tage.
 Steht nur ein Tag ohne Wochentage da, ist es Tag 1. meal: BREAKFAST, LUNCH, DINNER oder SNACK
