@@ -15,14 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
@@ -45,33 +38,11 @@ fun NumberField(
     decimal: Boolean = true,
     imeAction: ImeAction = ImeAction.Next,
 ) {
-    // Eigener Text-Zustand (mit Markierung): steht nur eine vorgefertigte 0 im Feld, wird sie beim
-    // Hineinspringen markiert – Tippen ersetzt sie (aus „6,5“ wird nicht „6,50“), ohne Eingabe bleibt sie.
-    var field by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
-    var selectZero by remember { mutableStateOf(false) }
-    val current = if (field.text == value) field else TextFieldValue(value, TextRange(value.length))
     OutlinedTextField(
-        value = current,
-        onValueChange = { new ->
-            if (selectZero && new.text == current.text) {
-                // Antippen setzt nach dem Fokus noch den Cursor – Markierung der 0 behalten
-                selectZero = false
-                return@OutlinedTextField
-            }
-            selectZero = false
-            val filtered = new.text.filter { it.isDigit() || (decimal && (it == ',' || it == '.')) }
-            field = if (filtered == new.text) new else TextFieldValue(filtered, TextRange(filtered.length))
-            if (filtered != value) onValueChange(filtered)
-        },
+        value = value,
+        onValueChange = { new -> onValueChange(new.filter { it.isDigit() || (decimal && (it == ',' || it == '.')) }) },
         label = { Text(label) },
-        modifier = modifier.onFocusChanged { state ->
-            if (state.isFocused && isZero(current.text)) {
-                field = current.copy(selection = TextRange(0, current.text.length))
-                selectZero = true
-            } else if (!state.isFocused) {
-                selectZero = false
-            }
-        },
+        modifier = modifier,
         singleLine = true,
         isError = isError,
         suffix = suffix?.let { { Text(it) } },
@@ -87,8 +58,6 @@ fun NumberField(
         ),
     )
 }
-
-private fun isZero(text: String) = text.isNotBlank() && text.replace(',', '.').toDoubleOrNull() == 0.0
 
 /** Einfachauswahl als Chips. */
 @OptIn(ExperimentalLayoutApi::class)

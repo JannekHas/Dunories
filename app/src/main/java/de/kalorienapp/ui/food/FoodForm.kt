@@ -47,21 +47,20 @@ data class FoodForm(
 
     val isValid: Boolean
         get() = name.isNotBlank() && amountValue != null &&
-            value(NutrientField.KCAL).parseDecimal() != null &&
             NutrientField.entries.none(::isError) && Micro.entries.none(::isMicroError)
 
     fun withNutrient(field: NutrientField, text: String) = copy(per100 = per100 + (field to text))
 
-    /** Werte pro 100 g/ml; leere Hauptfelder zählen als 0, leere Zusatzfelder als „nicht angegeben“. */
+    /** Werte pro 100 g/ml; leere Felder zählen beim Speichern als 0 (Wunsch des Nutzers: Felder bleiben leer statt „0“). */
     fun per100Nutrients() = Nutrients(
         kcal = number(NutrientField.KCAL) ?: 0.0,
         proteinG = number(NutrientField.PROTEIN) ?: 0.0,
         carbsG = number(NutrientField.CARBS) ?: 0.0,
         fatG = number(NutrientField.FAT) ?: 0.0,
-        saturatedFatG = number(NutrientField.SATURATED_FAT),
-        sugarG = number(NutrientField.SUGAR),
-        fiberG = number(NutrientField.FIBER),
-        saltG = number(NutrientField.SALT),
+        saturatedFatG = number(NutrientField.SATURATED_FAT) ?: 0.0,
+        sugarG = number(NutrientField.SUGAR) ?: 0.0,
+        fiberG = number(NutrientField.FIBER) ?: 0.0,
+        saltG = number(NutrientField.SALT) ?: 0.0,
         micros = micros.mapNotNull { (micro, text) -> text.parseDecimal()?.takeIf { it >= 0 }?.let { micro to it } }.toMap(),
     )
 
@@ -75,15 +74,20 @@ data class FoodForm(
             name = name,
             amount = amount?.toInputString() ?: "",
             unit = unit,
+            // 0 bzw. unbekannt bleibt ein leeres Feld – man tippt nur, was auf dem Etikett steht
             per100 = buildMap {
-                put(NutrientField.KCAL, per100.kcal.toInputString())
-                put(NutrientField.FAT, per100.fatG.toInputString())
-                per100.saturatedFatG?.let { put(NutrientField.SATURATED_FAT, it.toInputString()) }
-                put(NutrientField.CARBS, per100.carbsG.toInputString())
-                per100.sugarG?.let { put(NutrientField.SUGAR, it.toInputString()) }
-                per100.fiberG?.let { put(NutrientField.FIBER, it.toInputString()) }
-                put(NutrientField.PROTEIN, per100.proteinG.toInputString())
-                per100.saltG?.let { put(NutrientField.SALT, it.toInputString(2)) }
+                fun putValue(field: NutrientField, value: Double?, decimals: Int = 1) {
+                    val text = value?.toInputString(decimals) ?: return
+                    if (text.parseDecimal() != 0.0) put(field, text)
+                }
+                putValue(NutrientField.KCAL, per100.kcal)
+                putValue(NutrientField.FAT, per100.fatG)
+                putValue(NutrientField.SATURATED_FAT, per100.saturatedFatG)
+                putValue(NutrientField.CARBS, per100.carbsG)
+                putValue(NutrientField.SUGAR, per100.sugarG)
+                putValue(NutrientField.FIBER, per100.fiberG)
+                putValue(NutrientField.PROTEIN, per100.proteinG)
+                putValue(NutrientField.SALT, per100.saltG, decimals = 2)
             },
             micros = per100.micros.mapValues { (_, v) -> v.toInputString(if (v < 10) 2 else 0) },
         )
