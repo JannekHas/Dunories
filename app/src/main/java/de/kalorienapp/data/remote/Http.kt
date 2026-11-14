@@ -16,6 +16,12 @@ class HttpStatusException(val code: Int, message: String) : IOException(message)
 internal object Http {
     private const val USER_AGENT = "KalorienApp/0.1 (private Android-App)"
 
+    /** Beitragsseiten (TikTok/Instagram-HTML) – riesige Seiten würden sonst den Speicher füllen. */
+    private const val MAX_PAGE_BYTES = 8_000_000
+
+    /** Antworten von Gemini/Open Food Facts. */
+    private const val MAX_API_BYTES = 8_000_000
+
     suspend fun get(url: String, headers: Map<String, String> = emptyMap(), timeoutMs: Int = 15_000): String =
         request(url, "GET", null, headers, timeoutMs)
 
@@ -36,7 +42,7 @@ internal object Http {
                 connection.setRequestProperty("Accept-Language", "de-DE,de;q=0.9,en;q=0.8")
                 val code = connection.responseCode
                 if (code !in 200..299) throw HttpStatusException(code, "HTTP $code")
-                val text = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                val text = connection.inputStream.use { it.readLimited(MAX_PAGE_BYTES) }.decodeToString()
                 connection.url.toString() to text
             } finally {
                 connection.disconnect()
@@ -52,18 +58,7 @@ internal object Http {
             connection.setRequestProperty("User-Agent", BROWSER_USER_AGENT)
             val code = connection.responseCode
             if (code !in 200..299) throw HttpStatusException(code, "HTTP $code")
-            // readNBytes gibt es erst ab API 33 → selbst begrenzt lesen.
-            connection.inputStream.use { input ->
-                val out = java.io.ByteArrayOutputStream()
-                val buffer = ByteArray(16 * 1024)
-                while (true) {
-                    val n = input.read(buffer)
-                    if (n < 0) break
-                    out.write(buffer, 0, n)
-                    if (out.size() > maxBytes) throw IOException("Datei zu groß")
-                }
-                out.toByteArray()
-            }
+            connection.inputStream.use { it.readLimited(maxBytes) }
         } finally {
             connection.disconnect()
         }
@@ -112,11 +107,24 @@ internal object Http {
             }
             val code = connection.responseCode
             val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-            val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+            val text = stream?.use { it.readLimited(MAX_API_BYTES) }?.decodeToString().orEmpty()
             if (code !in 200..299) throw HttpStatusException(code, "HTTP $code")
             return text
         } finally {
             connection.disconnect()
         }
     }
+}
+
+/** Liest höchstens [maxBytes] – sonst [IOException] (statt alles in den Speicher zu laden). */
+internal fun java.io.InputStream.readLimited(maxBytes: Int): ByteArray {
+    val out = java.io.ByteArrayOutputStream()
+    val buffer = ByteArray(16 * 1024)
+    while (true) {
+        val n = read(buffer)
+        if (n < 0) break
+        out.write(buffer, 0, n)
+        if (out.size() > maxBytes) throw IOException("Datei zu groß")
+    }
+    return out.toByteArray()
 }

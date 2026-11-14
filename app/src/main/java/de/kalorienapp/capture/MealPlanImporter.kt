@@ -7,6 +7,7 @@ import de.kalorienapp.domain.model.MealPlanItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import de.kalorienapp.data.remote.readLimited
 
 /** Ernährungsplan aus Fotos/Screenshots und/oder Text → Vorschlag (wird erst nach Bestätigung übernommen). */
 class MealPlanImporter(private val context: Context, private val analyzer: GeminiMealPlanAnalyzer) {
@@ -17,9 +18,13 @@ class MealPlanImporter(private val context: Context, private val analyzer: Gemin
         }
         val pdfBytes = withContext(Dispatchers.IO) {
             pdfs.take(MAX_PDFS).map { uri ->
-                val data = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: throw IOException("PDF nicht lesbar")
-                if (data.size > MAX_PDF_BYTES) throw PdfTooLargeException()
-                data
+                // Begrenzt lesen: eine riesige Datei würde sonst erst komplett in den Speicher geladen.
+                val stream = context.contentResolver.openInputStream(uri) ?: throw IOException("PDF nicht lesbar")
+                try {
+                    stream.use { it.readLimited(MAX_PDF_BYTES) }
+                } catch (e: IOException) {
+                    throw PdfTooLargeException()
+                }
             }
         }
         return analyzer.analyze(bytes, text, pdfBytes)

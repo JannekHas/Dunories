@@ -199,7 +199,21 @@ class RecipeImporter(
         val file = File(context.cacheDir, "import_video.tmp")
         return runCatching {
             context.contentResolver.openInputStream(uri)?.use { input ->
-                file.outputStream().use { output -> input.copyTo(output, 64 * 1024) }
+                file.outputStream().use { output ->
+                    // Höchstens MAX_VIDEO_BYTES kopieren – riesige Dateien nicht erst ganz auf den Speicher schreiben.
+                    val buffer = ByteArray(64 * 1024)
+                    var total = 0L
+                    while (true) {
+                        val n = input.read(buffer)
+                        if (n < 0) break
+                        total += n
+                        if (total > MAX_VIDEO_BYTES) {
+                            file.delete()
+                            return null
+                        }
+                        output.write(buffer, 0, n)
+                    }
+                }
             } ?: return null
             file.takeIf { it.length() in 1..MAX_VIDEO_BYTES } ?: run { file.delete(); null }
         }.getOrNull()

@@ -75,7 +75,8 @@ class MainActivity : ComponentActivity() {
         if (key == handledIntentKey) return
         handledIntentKey = key
         val container = (application as KalorienApplication).container
-        container.shareInbox.accept(intent)
+        // Teilen nur, wenn Rezepte sichtbar sind – sonst könnten fremde Apps den Import trotzdem auslösen.
+        if (BuildConfig.FEATURE_RECIPES) container.shareInbox.accept(intent)
         container.navRequests.accept(intent)
     }
 

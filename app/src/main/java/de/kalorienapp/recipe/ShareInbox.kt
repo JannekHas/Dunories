@@ -11,13 +11,14 @@ import kotlinx.coroutines.flow.asStateFlow
  * Nimmt per Android-Teilen-Menü geteilte Inhalte entgegen (Link, Text, Video, Bilder),
  * bis der Import-Screen sie abholt.
  */
-class ShareInbox {
+class ShareInbox(private val guard: ShareGuard) {
     private val _pending = MutableStateFlow<ImportSource?>(null)
     val pending: StateFlow<ImportSource?> = _pending.asStateFlow()
 
     /** @return true, wenn der Intent etwas Importierbares enthielt. */
     fun accept(intent: Intent?): Boolean {
         val source = parse(intent) ?: return false
+        if (!guard.tryAccept(System.currentTimeMillis())) return false
         _pending.value = source
         return true
     }
@@ -39,17 +40,19 @@ class ShareInbox {
                     ImportSource.Text(listOfNotNull(intent.getStringExtra(Intent.EXTRA_SUBJECT), text).joinToString("\n"))
                 }
             }
-            Intent.ACTION_SEND_MULTIPLE -> intent.streams().takeIf { it.isNotEmpty() }?.let { uris ->
+            Intent.ACTION_SEND_MULTIPLE -> intent.streams().filter(::allowed).takeIf { it.isNotEmpty() }?.let { uris ->
                 if (type.startsWith("video/")) ImportSource.Video(uris.first()) else ImportSource.Images(uris)
             }
             else -> null
         }
     }
 
+    private fun allowed(uri: Uri) = guard.isAllowedFile(uri.scheme, uri.authority)
+
     @Suppress("DEPRECATION")
     private fun Intent.stream(): Uri? =
-        if (Build.VERSION.SDK_INT >= 33) getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-        else getParcelableExtra(Intent.EXTRA_STREAM)
+        (if (Build.VERSION.SDK_INT >= 33) getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        else getParcelableExtra(Intent.EXTRA_STREAM))?.takeIf(::allowed)
 
     @Suppress("DEPRECATION")
     private fun Intent.streams(): List<Uri> =

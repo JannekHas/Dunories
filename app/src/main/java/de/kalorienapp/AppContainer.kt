@@ -18,6 +18,7 @@ import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.data.repository.MealPlanRepository
 import de.kalorienapp.capture.MealPlanImporter
+import de.kalorienapp.recipe.ShareGuard
 import de.kalorienapp.data.remote.gemini.GeminiMealPlanAnalyzer
 import de.kalorienapp.data.repository.GoalRepository
 import de.kalorienapp.data.repository.ProfileRepository
@@ -73,7 +74,7 @@ class AppContainer(context: Context) {
     val mealPlanImporter = MealPlanImporter(context, GeminiMealPlanAnalyzer(gemini))
 
     /** Per Teilen-Menü empfangene Inhalte für den Rezept-Import. */
-    val shareInbox = ShareInbox()
+    val shareInbox = ShareInbox(ShareGuard(BuildConfig.APPLICATION_ID))
     val recipeDrafts = RecipeDraftStore()
 
     val recipeImporter = RecipeImporter(
