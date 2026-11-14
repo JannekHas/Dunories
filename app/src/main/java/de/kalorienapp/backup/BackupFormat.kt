@@ -46,6 +46,11 @@ object BackupFormat {
         val budget: String? = null,
         val mealPrep: Boolean? = null,
         val dislikedFoods: List<String>? = null,
+        /** Ernährungsplan: an/aus, Start (Epoch-Tag), Länge; null = ältere Sicherung. */
+        val mealPlanEnabled: Boolean? = null,
+        val mealPlanStart: Long? = null,
+        val mealPlanDays: Int? = null,
+        val mealPlanEnd: Long? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

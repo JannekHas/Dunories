@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.repository.ActivityEntryRepository
 import de.kalorienapp.data.repository.FoodEntryRepository
+import de.kalorienapp.data.repository.MealPlanRepository
+import de.kalorienapp.domain.model.MealPlanItem
+import de.kalorienapp.domain.model.MealPlanSchedule
 import de.kalorienapp.data.repository.MergeNotice
 import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.data.AppSettings
@@ -65,6 +68,18 @@ data class TodayUiState(
     val isToday: Boolean get() = date == LocalDate.now()
 }
 
+/** Ernährungsplan für den angezeigten Tag (null = Plan aus). */
+data class TodayPlan(
+    /** Plan-Tag (0-basiert) oder null, wenn der Tag außerhalb des Durchlaufs liegt. */
+    val dayIndex: Int?,
+    val days: Int,
+    val byMeal: Map<MealType, List<MealPlanItem>>,
+    /** „Stimmt dein Plan noch?“ (letzter Tag oder abgelaufen, nur für heute). */
+    val askToExtend: Boolean,
+    val expired: Boolean,
+    val end: LocalDate,
+)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodayViewModel(
     savedStateHandle: SavedStateHandle,
@@ -75,6 +90,7 @@ class TodayViewModel(
     private val library: FoodLibraryRepository,
     private val activityRepository: ActivityEntryRepository,
     statsRepository: StatsRepository,
+    private val mealPlan: MealPlanRepository,
 ) : ViewModel() {
 
     /** Tage in Folge im Ziel bis gestern – Erfolgsmoment auf „Heute“ (0 = nichts zeigen). */
@@ -210,6 +226,47 @@ class TodayViewModel(
     fun restore(entry: FoodEntry) {
         viewModelScope.launch { entryRepository.save(entry) }
     }
+
+    // --- Ernährungsplan ---
+
+    val plan: StateFlow<TodayPlan?> = date
+        .flatMapLatest { day ->
+            combine(mealPlan.config, mealPlan.items) { config, items ->
+                if (!config.enabled) return@combine null
+                val index = MealPlanSchedule.dayIndex(config, day)
+                val today = LocalDate.now()
+                TodayPlan(
+                    dayIndex = index,
+                    days = config.days,
+                    byMeal = items.filter { index != null && it.dayIndex == index }.groupBy { it.mealType },
+                    askToExtend = day == today && MealPlanSchedule.askToExtend(config, today),
+                    expired = MealPlanSchedule.isExpired(config, today),
+                    end = config.end,
+                )
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /**
+     * Mahlzeiten „wie geplant“ eintragen (sofort, ohne Zusammenfassen).
+     * [onSaved] bekommt die neuen ids – für „Rückgängig“.
+     */
+    fun applyPlan(meals: List<MealType>, onSaved: (List<Long>) -> Unit) {
+        val plan = plan.value ?: return
+        val now = System.currentTimeMillis()
+        val entries = meals.flatMap { plan.byMeal[it].orEmpty() }
+            .mapIndexed { i, item -> item.toEntry(date.value, now + i) }
+        if (entries.isEmpty()) return
+        viewModelScope.launch { onSaved(entryRepository.insertAll(entries)) }
+    }
+
+    fun undoPlan(ids: List<Long>) {
+        viewModelScope.launch { entryRepository.deleteAll(ids) }
+    }
+
+    fun extendPlan() = mealPlan.updateConfig { MealPlanSchedule.extend(it, LocalDate.now()) }
+
+    fun endPlan() = mealPlan.updateConfig { it.copy(enabled = false) }
 
     /** Gerade zusammengefasster Eintrag (z. B. zweiter Salami-Stick) – Snackbar mit „Rückgängig“. */
     val lastMerge: StateFlow<MergeNotice?> = entryRepository.lastMerge

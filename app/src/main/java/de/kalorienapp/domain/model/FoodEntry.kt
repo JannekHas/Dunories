@@ -19,7 +19,7 @@ enum class MealType {
 }
 
 /** Herkunft eines Eintrags (wird als Text gespeichert – neue Werte brauchen keine Migration). */
-enum class EntrySource { MANUAL, BARCODE, AI_PHOTO, AI_TEXT, RECIPE, LABEL }
+enum class EntrySource { MANUAL, BARCODE, AI_PHOTO, AI_TEXT, RECIPE, LABEL, PLAN }
 
 enum class AmountUnit { GRAM, MILLILITER }
 

@@ -113,7 +113,7 @@ fun ProposalContent(
                     enabled = proposal.canSave,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.proposal_save, proposal.items.size))
+                    Text(stringResource(if (viewModel.planMode) R.string.proposal_save_plan else R.string.proposal_save, proposal.items.size))
                 }
             }
         }
@@ -266,4 +266,5 @@ private val EntrySource.proposalLabelRes: Int
         EntrySource.MANUAL -> R.string.source_manual
         EntrySource.RECIPE -> R.string.source_recipe
         EntrySource.LABEL -> R.string.source_label
+        EntrySource.PLAN -> R.string.source_plan
     }

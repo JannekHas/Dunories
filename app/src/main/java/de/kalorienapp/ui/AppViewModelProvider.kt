@@ -1,5 +1,7 @@
 package de.kalorienapp.ui
 
+import de.kalorienapp.ui.plan.MealPlanImportViewModel
+import de.kalorienapp.ui.plan.MealPlanViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -39,6 +41,7 @@ object AppViewModelProvider {
                 container().foodLibraryRepository,
                 container().activityEntryRepository,
                 container().statsRepository,
+                container().mealPlanRepository,
             )
         }
         initializer {
@@ -124,12 +127,15 @@ object AppViewModelProvider {
         initializer {
             EntryEditViewModel(createSavedStateHandle(), container().foodEntryRepository)
         }
+        initializer { MealPlanViewModel(container().mealPlanRepository) }
+        initializer { MealPlanImportViewModel(container().mealPlanImporter, container().mealPlanRepository) }
         initializer {
             CaptureViewModel(
                 createSavedStateHandle(),
                 container().foodAnalyzer,
                 container().foodEntryRepository,
                 container().foodLibraryRepository,
+                container().mealPlanRepository,
             )
         }
     }

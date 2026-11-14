@@ -96,13 +96,17 @@ fun CaptureScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val step = state.step
     val atCamera = step is CaptureStep.Camera
+    // Im Ernährungsplan führt „Manuell“ zu einem leeren Vorschlag (sonst würde ein Tagebuch-Eintrag entstehen).
+    val manual: (MealType) -> Unit = { meal -> if (viewModel.planMode) viewModel.startManual() else onManualEntry(meal) }
 
     BackHandler(enabled = !atCamera) { viewModel.backToCamera() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(step.titleRes)) },
+                title = {
+                    Text(stringResource(if (viewModel.planMode && (atCamera || step is CaptureStep.Proposal)) R.string.capture_plan_title else step.titleRes))
+                },
                 navigationIcon = {
                     IconButton(onClick = { if (atCamera) onClose() else viewModel.backToCamera() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
@@ -110,7 +114,7 @@ fun CaptureScreen(
                 },
                 actions = {
                     if (step !is CaptureStep.Proposal && !atCamera) {
-                        TextButton(onClick = { onManualEntry(state.mealType) }) {
+                        TextButton(onClick = { manual(state.mealType) }) {
                             Text(stringResource(R.string.capture_manual))
                         }
                     }
@@ -124,7 +128,7 @@ fun CaptureScreen(
         when (step) {
             CaptureStep.Camera -> CameraContent(
                 viewModel,
-                { onManualEntry(state.mealType) },
+                { manual(state.mealType) },
                 contentModifier,
                 labelMode = state.labelMode,
                 onLabelMode = viewModel::setLabelMode,
@@ -159,7 +163,7 @@ fun CaptureScreen(
                 onPrimary = viewModel::photographLabel,
                 secondaryLabel = stringResource(R.string.capture_analyze_with_ai),
                 onSecondary = viewModel::analyzeLastPhotoWithAi,
-                onManual = { onManualEntry(state.mealType) },
+                onManual = { manual(state.mealType) },
                 onNewPhoto = viewModel::backToCamera,
                 modifier = contentModifier,
             )
@@ -168,7 +172,7 @@ fun CaptureScreen(
                 message = stringResource(step.error.messageRes),
                 primaryLabel = stringResource(R.string.capture_retry).takeIf { step.error.retryable },
                 onPrimary = viewModel::retry,
-                onManual = { onManualEntry(state.mealType) },
+                onManual = { manual(state.mealType) },
                 onNewPhoto = viewModel::backToCamera,
                 modifier = contentModifier,
             )
@@ -466,7 +470,7 @@ private val CaptureStep.titleRes: Int
 private val CaptureError.retryable: Boolean
     get() = this != CaptureError.NO_API_KEY && this != CaptureError.REJECTED
 
-private val CaptureError.messageRes: Int
+internal val CaptureError.messageRes: Int
     get() = when (this) {
         CaptureError.NO_API_KEY -> R.string.error_ai_no_key
         CaptureError.REJECTED -> R.string.error_ai_rejected

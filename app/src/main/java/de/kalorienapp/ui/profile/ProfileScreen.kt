@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.profile
 
+import de.kalorienapp.ui.plan.MealPlanSettingsSection
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +28,7 @@ import de.kalorienapp.ui.goal.GoalCard
 @Composable
 fun ProfileScreen(
     onNewGoal: () -> Unit,
+    onOpenPlan: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -38,6 +40,7 @@ fun ProfileScreen(
         TabbedPages(
             tabs = listOf(
                 stringResource(R.string.profile_tab_goals),
+                stringResource(R.string.profile_tab_plan),
                 stringResource(R.string.profile_tab_fasting),
                 stringResource(R.string.profile_tab_notifications),
                 stringResource(R.string.profile_tab_data),
@@ -61,8 +64,9 @@ fun ProfileScreen(
                     SectionTitle(stringResource(R.string.section_targets))
                     TargetAdjustmentsSection(state, viewModel::update)
                 }
-                1 -> FastingSettingsSection()
-                2 -> NotificationSettingsSection()
+                1 -> MealPlanSettingsSection(onOpenPlan)
+                2 -> FastingSettingsSection()
+                3 -> NotificationSettingsSection()
                 else -> BackupSection()
             }
         }

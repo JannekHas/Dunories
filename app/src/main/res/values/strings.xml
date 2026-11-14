@@ -47,6 +47,7 @@
     <!-- Profil -->
     <string name="profile_title">Profil &amp; Ziele</string>
     <string name="profile_tab_goals">Ziele</string>
+    <string name="profile_tab_plan">Plan</string>
     <string name="profile_tab_fasting">Fasten</string>
     <string name="profile_tab_notifications">Hinweise</string>
     <string name="profile_tab_data">Daten</string>
@@ -788,4 +789,60 @@
     <string name="ai_wait_seconds">läuft seit %1$d s</string>
     <string name="ai_wait_slow">Dauert länger als sonst – der KI-Server ist gerade ausgelastet. Es läuft noch, bitte kurz warten.</string>
     <string name="ai_wait_very_slow">Immer noch dabei – die App fragt automatisch zusätzlich bei einem anderen KI-Modell nach.</string>
+    <!-- Ernährungsplan -->
+    <string name="source_plan">Aus deinem Ernährungsplan</string>
+    <string name="capture_plan_title">Zum Plan hinzufügen</string>
+    <string name="proposal_save_plan">Zum Plan hinzufügen (%1$d)</string>
+    <string name="plan_title">Ernährungsplan</string>
+    <string name="plan_enable">Ernährungsplan</string>
+    <string name="plan_enable_text">Trag einmal ein, was du an welchem Tag isst – auf „Heute“ reicht dann ein Tipp auf „Wie geplant“.</string>
+    <string name="plan_status_day">Heute ist Tag %1$d von %2$d</string>
+    <string name="plan_status_before">Startet am %1$s</string>
+    <string name="plan_status_expired">Abgelaufen am %1$s</string>
+    <string name="plan_days_filled">%1$d von %2$d Tagen geplant</string>
+    <string name="plan_edit">Plan bearbeiten</string>
+    <string name="plan_edit_short">Bearbeiten</string>
+    <string name="plan_days">Länge</string>
+    <plurals name="plan_days_count">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tage</item>
+    </plurals>
+    <string name="plan_start">Tag 1 ist am</string>
+    <string name="plan_length_hint">Am letzten Tag fragt die App, ob dein Plan noch stimmt – dann kannst du ihn mit einem Tipp verlängern.</string>
+    <string name="plan_day_title">Tag %1$d · %2$s</string>
+    <string name="plan_day_short">Tag %1$d</string>
+    <string name="plan_day_empty">Noch nichts geplant</string>
+    <string name="plan_day_total">%1$s kcal · P %2$s g · KH %3$s g · F %4$s g</string>
+    <string name="plan_add">Hinzufügen</string>
+    <string name="plan_copy_day">Tag kopieren nach …</string>
+    <string name="plan_copy_to">Kopieren nach (ersetzt den Tag)</string>
+    <string name="plan_clear_day">Tag leeren</string>
+    <string name="plan_import">Plan importieren</string>
+    <string name="plan_import_text">Foto oder Screenshot von deinem Plan wählen oder den Text einfügen – die KI erkennt Tage, Mahlzeiten und Nährwerte. Du prüfst alles, bevor es übernommen wird.</string>
+    <string name="plan_import_photos">Fotos wählen (bis zu 5)</string>
+    <plurals name="plan_import_photos_count">
+        <item quantity="one">%d Foto gewählt</item>
+        <item quantity="other">%d Fotos gewählt</item>
+    </plurals>
+    <string name="plan_import_photos_clear">Fotos entfernen</string>
+    <string name="plan_import_paste">Plan als Text (optional)</string>
+    <string name="plan_import_run">Plan erkennen</string>
+    <plurals name="plan_import_preview">
+        <item quantity="one">%d Tag erkannt – bitte prüfen</item>
+        <item quantity="other">%d Tage erkannt – bitte prüfen</item>
+    </plurals>
+    <string name="plan_import_replace_hint">„Übernehmen“ ersetzt deinen bisherigen Plan. Einzelheiten kannst du danach je Tag bearbeiten.</string>
+    <string name="plan_import_apply">Übernehmen</string>
+    <string name="plan_card_title">Ernährungsplan · Tag %1$d von %2$d</string>
+    <string name="plan_suggestion">Laut Plan: %1$s</string>
+    <string name="plan_apply">Wie geplant</string>
+    <string name="plan_adjust">Anpassen</string>
+    <string name="plan_apply_day">Ganzer Tag wie geplant (%1$d Mahlzeiten)</string>
+    <string name="plan_applied">%1$s nach Plan eingetragen</string>
+    <string name="plan_day_applied">%1$d Mahlzeiten nach Plan eingetragen</string>
+    <string name="plan_ask_extend">Stimmt dein Plan noch?</string>
+    <string name="plan_ask_extend_last">Heute ist der letzte Tag deines Plans.</string>
+    <string name="plan_ask_extend_expired">Dein Plan ist am %1$s abgelaufen.</string>
+    <string name="plan_extend">Verlängern</string>
+    <string name="plan_end">Beenden</string>
 </resources>

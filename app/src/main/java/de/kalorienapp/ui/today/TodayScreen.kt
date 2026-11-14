@@ -97,6 +97,7 @@ import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.FoodEntry
+import de.kalorienapp.domain.model.MealPlanItem
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.domain.model.Sex
@@ -134,6 +135,10 @@ fun TodayScreen(
     onNutrientClick: (date: LocalDate, nutrient: RankedNutrient) -> Unit = { _, _ -> },
     /** Gesetzt, wenn der Tag aus dem Kalender geöffnet wurde. */
     onBack: (() -> Unit)? = null,
+    /** Ernährungsplan bearbeiten. */
+    onOpenPlan: () -> Unit = {},
+    /** Plan-Mahlzeit als bearbeitbaren Vorschlag öffnen („Anpassen“). */
+    onAdjustPlan: (date: LocalDate, mealType: MealType, dayIndex: Int) -> Unit = { _, _, _ -> },
     viewModel: TodayViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -141,6 +146,7 @@ fun TodayScreen(
     val water by viewModel.water.collectAsStateWithLifecycle()
     val fasting by viewModel.fasting.collectAsStateWithLifecycle()
     val streak by viewModel.streak.collectAsStateWithLifecycle()
+    val plan by viewModel.plan.collectAsStateWithLifecycle()
     LaunchedEffect(requestedDay) {
         requestedDay?.let { viewModel.showDate(it); onDayShown() }
     }
@@ -260,6 +266,20 @@ fun TodayScreen(
         }
     }
 
+    // Ernährungsplan: „Wie geplant“ trägt sofort ein, mit „Rückgängig“.
+    val planApplied = stringResource(R.string.plan_applied)
+    val planDayApplied = stringResource(R.string.plan_day_applied)
+    fun applyPlan(meals: List<MealType>) {
+        viewModel.applyPlan(meals) { ids ->
+            scope.launch {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                val message = if (meals.size == 1) planApplied.format(mealLabels[meals.first()]) else planDayApplied.format(meals.size)
+                val result = snackbarHostState.showSnackbar(message, actionLabel = undoLabel, duration = SnackbarDuration.Long)
+                if (result == SnackbarResult.ActionPerformed) viewModel.undoPlan(ids)
+            }
+        }
+    }
+
     fun deleteWithUndo(entry: FoodEntry) {
         viewModel.delete(entry)
         scope.launch {
@@ -365,6 +385,21 @@ fun TodayScreen(
                     WaterCard(water, onAdd = viewModel::addWater, onUndo = viewModel::undoWater, onGoal = viewModel::setWaterGoal)
                 }
             }
+            plan?.let { p ->
+                val open = state.meals.filter { it.entries.isEmpty() && !p.byMeal[it.mealType].isNullOrEmpty() }.map { it.mealType }
+                if (p.dayIndex != null || p.askToExtend) {
+                    item(key = "plan") {
+                        MealPlanCard(
+                            plan = p,
+                            openMeals = open.size,
+                            onApplyDay = { applyPlan(open) },
+                            onExtend = viewModel::extendPlan,
+                            onEdit = onOpenPlan,
+                            onEnd = viewModel::endPlan,
+                        )
+                    }
+                }
+            }
             item(key = "tip_meal") { TipSlot(Tip.MEAL, caret = TipCaret.DOWN_CENTER, after = Tip.ADD) }
             items(state.meals, key = { it.mealType.name }) { group ->
                 val dragged = dragState.entry
@@ -383,6 +418,9 @@ fun TodayScreen(
                     onDelete = ::deleteWithUndo,
                     onToggleFavorite = ::toggleFavorite,
                     onSaveCombo = { comboToSave = group },
+                    planItems = plan?.byMeal?.get(group.mealType).orEmpty(),
+                    onPlanApply = { applyPlan(listOf(group.mealType)) },
+                    onPlanAdjust = { plan?.dayIndex?.let { onAdjustPlan(state.date, group.mealType, it) } },
                 )
             }
             // Nach dem ersten Eintrag einmal erklären, dass man verschieben kann.
@@ -703,6 +741,9 @@ private fun MealCard(
     onDelete: (FoodEntry) -> Unit,
     onToggleFavorite: (FoodEntry) -> Unit,
     onSaveCombo: () -> Unit,
+    planItems: List<MealPlanItem> = emptyList(),
+    onPlanApply: () -> Unit = {},
+    onPlanAdjust: () -> Unit = {},
 ) {
     var menu by remember { mutableStateOf(false) }
     // Karte wächst/schrumpft weich, wenn beim Ziehen die Lücke auf- oder zugeht.
@@ -761,6 +802,10 @@ private fun MealCard(
                     }
                 }
             }
+        }
+        // Ernährungsplan: leere Mahlzeit → „Laut Plan: …“ mit „Wie geplant“ / „Anpassen“.
+        if (group.entries.isEmpty() && planItems.isNotEmpty() && dragState.entry == null) {
+            PlanSuggestionRow(planItems, group.mealType.neonColor, onPlanApply, onPlanAdjust)
         }
         // Gezogene Zeile zieht sich zusammen; an der Landestelle geht eine Lücke in der Farbe der Mahlzeit auf.
         val dragged = dragState.entry
@@ -846,7 +891,7 @@ internal fun entrySubtitle(entry: FoodEntry): String {
 private data class ActivityDialogState(val existing: ActivityEntry?)
 
 /** Neon-Farbe je Mahlzeit. */
-private val MealType.neonColor: Color
+val MealType.neonColor: Color
     get() = when (this) {
         MealType.BREAKFAST -> Neon.Orange
         MealType.LUNCH -> Neon.Green

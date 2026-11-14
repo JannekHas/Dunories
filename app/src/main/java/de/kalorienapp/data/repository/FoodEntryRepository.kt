@@ -27,6 +27,11 @@ class FoodEntryRepository(private val dao: FoodEntryDao) {
 
     suspend fun delete(id: Long) = dao.deleteById(id)
 
+    /** Neue Einträge ohne Zusammenfassen (z. B. „Wie geplant“); @return ihre ids – für „Rückgängig“. */
+    suspend fun insertAll(entries: List<FoodEntry>): List<Long> = dao.insertAll(entries.map(FoodEntryEntity::fromDomain))
+
+    suspend fun deleteAll(ids: List<Long>) = dao.deleteAll(ids)
+
     private val _lastMerge = MutableStateFlow<MergeNotice?>(null)
 
     /** Letztes Zusammenfassen, bis „Heute“ es angezeigt hat. */

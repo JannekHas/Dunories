@@ -228,6 +228,14 @@ components = die einzelnen Zutaten (je mit Name, Menge und Nährwerten pro 100 g
 Nährwerte des Elements = ganzes Gericht pro 100 g. Was eigenständig daneben steht, ist ein eigenes Element
 ohne components: Getränke, Beilagensalat, Dessert, Obst, Snacks. Einzelne Lebensmittel haben keine components."""
 
+        /** Regeln für einzelne Lebensmittel (auch für den Plan-Import). */
+        internal const val FOOD_RULES = """
+Für jede Komponente: kurzer deutscher Name, Menge (g bei festen, ml bei flüssigen Lebensmitteln)
+und typische Nährwerte PRO 100 g bzw. PRO 100 ml – NICHT für die Gesamtmenge.
+Nutze typische Werte aus deutschen Nährwerttabellen. Unbekannte optionale Werte als null.
+$DISH_RULE
+${MicroFields.PROMPT_RULE}"""
+
         private const val COMMON_RULES = """
 Für jede Komponente: kurzer deutscher Name, Menge (g bei festen, ml bei flüssigen Lebensmitteln)
 und typische Nährwerte PRO 100 g bzw. PRO 100 ml – NICHT für die Gesamtmenge.
@@ -266,7 +274,7 @@ Beschreibung: """
         private val REQUIRED = listOf("name", "amount", "unit", "kcal", "fat", "carbs", "protein")
 
         /** Ein Lebensmittel; Gerichte haben zusätzlich `components` (Zutaten, gleiche Felder, nicht verschachtelt). */
-        private fun JsonObjectBuilder.foodObject(withComponents: Boolean) {
+        internal fun JsonObjectBuilder.foodObject(withComponents: Boolean) {
             put("type", "OBJECT")
             putJsonObject("properties") {
                 putJsonObject("name") { put("type", "STRING") }
@@ -339,7 +347,7 @@ internal object GeminiResponseParser {
     }
 
     /** Ein Element; Gerichte mit mind. 2 Zutaten werden aus den Zutaten berechnet (Menge, Nährwerte). */
-    private fun parseItem(item: JsonObject, source: EntrySource): FoodDraft? {
+    internal fun parseItem(item: JsonObject, source: EntrySource): FoodDraft? {
         val name = item.string("name") ?: return null
         val components = (item["components"] as? JsonArray).orEmpty()
             .mapNotNull { it.asObject()?.let { c -> parseFood(c, source) } }

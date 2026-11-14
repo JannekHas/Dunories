@@ -1,5 +1,8 @@
 package de.kalorienapp.ui.navigation
 
+import de.kalorienapp.ui.plan.MealPlanDayScreen
+import de.kalorienapp.ui.plan.MealPlanImportScreen
+import de.kalorienapp.ui.plan.MealPlanScreen
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -256,6 +259,12 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onNutrientClick = { date, nutrient ->
                                 navController.navigate(DayNutrientsRoute(date.toEpochDay(), nutrient.name))
                             },
+                            onOpenPlan = { navController.navigate(MealPlanRoute) },
+                            onAdjustPlan = { date, meal, day ->
+                                navController.navigate(
+                                    CaptureRoute(epochDay = date.toEpochDay(), mealType = meal.name, planDay = day, fromPlan = true),
+                                )
+                            },
                         )
                     }
                     screen<StatsRoute> {
@@ -312,11 +321,47 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onNutrientClick = { date, nutrient ->
                                 navController.navigate(DayNutrientsRoute(date.toEpochDay(), nutrient.name))
                             },
+                            onOpenPlan = { navController.navigate(MealPlanRoute) },
+                            onAdjustPlan = { date, meal, day ->
+                                navController.navigate(
+                                    CaptureRoute(epochDay = date.toEpochDay(), mealType = meal.name, planDay = day, fromPlan = true),
+                                )
+                            },
                             onBack = { navController.popBackStack() },
                         )
                     }
                     screen<ProfileRoute> {
-                        ProfileScreen(onNewGoal = { navController.navigate(GoalRoute) })
+                        ProfileScreen(
+                            onNewGoal = { navController.navigate(GoalRoute) },
+                            onOpenPlan = { navController.navigate(MealPlanRoute) },
+                        )
+                    }
+                    screen<MealPlanRoute> {
+                        MealPlanScreen(
+                            onBack = { navController.popBackStack() },
+                            onOpenDay = { navController.navigate(MealPlanDayRoute(it)) },
+                            onImport = { navController.navigate(MealPlanImportRoute) },
+                        )
+                    }
+                    screen<MealPlanDayRoute> { entry ->
+                        val day = entry.toRoute<MealPlanDayRoute>().dayIndex
+                        val today = java.time.LocalDate.now().toEpochDay()
+                        MealPlanDayScreen(
+                            dayIndex = day,
+                            onBack = { navController.popBackStack() },
+                            onAdd = { meal -> navController.navigate(CaptureRoute(epochDay = today, mealType = meal.name, planDay = day)) },
+                            onEdit = { item ->
+                                navController.navigate(
+                                    CaptureRoute(epochDay = today, mealType = item.mealType.name, planDay = day, planItemId = item.id),
+                                )
+                            },
+                        )
+                    }
+                    screen<MealPlanImportRoute> {
+                        MealPlanImportScreen(
+                            onBack = { navController.popBackStack() },
+                            onDone = { navController.popBackStack() },
+                        )
                     }
                     screen<RecipesRoute> {
                         RecipesScreen(

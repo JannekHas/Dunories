@@ -65,6 +65,10 @@ class BackupManager(
                 budget = settings.foodPreferences.value.budget.name,
                 mealPrep = settings.foodPreferences.value.mealPrep,
                 dislikedFoods = settings.foodPreferences.value.dislikes,
+                mealPlanEnabled = settings.mealPlan.value.enabled,
+                mealPlanStart = settings.mealPlan.value.startEpochDay,
+                mealPlanDays = settings.mealPlan.value.days,
+                mealPlanEnd = settings.mealPlan.value.endEpochDay,
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
                         .joinToString(";")
@@ -148,6 +152,19 @@ class BackupManager(
         settings.setWaterGoalMl(manifest.settings.waterGoalMl)
         settings.setFastingEnabled(manifest.settings.fastingEnabled)
         settings.setMealReminders(manifest.settings.mealReminders)
+        manifest.settings.let { m ->
+            if (m.mealPlanEnabled != null) {
+                val d = de.kalorienapp.domain.model.MealPlanSettings()
+                settings.setMealPlan(
+                    de.kalorienapp.domain.model.MealPlanSettings(
+                        enabled = m.mealPlanEnabled,
+                        startEpochDay = m.mealPlanStart ?: d.startEpochDay,
+                        days = (m.mealPlanDays ?: d.days).coerceIn(1, de.kalorienapp.domain.model.MealPlanSettings.MAX_DAYS),
+                        endEpochDay = m.mealPlanEnd,
+                    ),
+                )
+            }
+        }
         manifest.settings.let { m ->
             if (m.dietStyle != null || m.dislikedFoods != null) {
                 val d = de.kalorienapp.domain.model.FoodPreferences()

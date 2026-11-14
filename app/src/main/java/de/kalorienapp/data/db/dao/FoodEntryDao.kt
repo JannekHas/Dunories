@@ -39,6 +39,12 @@ interface FoodEntryDao {
     @Query("SELECT dateEpochDay, MIN(createdAt) AS firstCreatedAt FROM food_entry WHERE dateEpochDay >= :fromEpochDay GROUP BY dateEpochDay")
     suspend fun firstEntryPerDay(fromEpochDay: Long): List<FirstEntryRow>
 
+    @androidx.room.Insert
+    suspend fun insertAll(entries: List<FoodEntryEntity>): List<Long>
+
+    @Query("DELETE FROM food_entry WHERE id IN (:ids)")
+    suspend fun deleteAll(ids: List<Long>)
+
     @Query("DELETE FROM food_entry WHERE id = :id")
     suspend fun deleteById(id: Long)
 

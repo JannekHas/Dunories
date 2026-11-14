@@ -62,6 +62,18 @@ data class GoalShareRoute(val goalId: Long)
 @Serializable
 data class DayNutrientsRoute(val epochDay: Long, val nutrient: String)
 
+/** Ernährungsplan: Zeitraum und Tage. */
+@Serializable
+data object MealPlanRoute
+
+/** Ein Tag des Ernährungsplans (0-basiert). */
+@Serializable
+data class MealPlanDayRoute(val dayIndex: Int)
+
+/** Plan per Foto/Text importieren. */
+@Serializable
+data object MealPlanImportRoute
+
 /** Tagesansicht für ein bestimmtes Datum (aus dem Kalender geöffnet). */
 @Serializable
 data class DayRoute(val epochDay: Long)
@@ -71,6 +83,12 @@ data class DayRoute(val epochDay: Long)
 data class CaptureRoute(
     val epochDay: Long,
     val mealType: String? = null,
+    /** Ernährungsplan: Plan-Tag (0-basiert), -1 = normales Erfassen. */
+    val planDay: Int = -1,
+    /** Plan-Punkt bearbeiten (wird beim Speichern ersetzt). */
+    val planItemId: Long = 0,
+    /** true = „Anpassen“ auf „Heute“: Plan-Mahlzeit als Vorschlag, gespeichert wird ein normaler Eintrag. */
+    val fromPlan: Boolean = false,
 )
 
 /** entryId = 0 → neuer Eintrag für [epochDay]; mealType = Name eines [de.kalorienapp.domain.model.MealType] oder null. */

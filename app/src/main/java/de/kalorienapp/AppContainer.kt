@@ -16,6 +16,9 @@ import de.kalorienapp.data.repository.ActivityEntryRepository
 import de.kalorienapp.data.repository.BodyMeasurementRepository
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.FoodLibraryRepository
+import de.kalorienapp.data.repository.MealPlanRepository
+import de.kalorienapp.capture.MealPlanImporter
+import de.kalorienapp.data.remote.gemini.GeminiMealPlanAnalyzer
 import de.kalorienapp.data.repository.GoalRepository
 import de.kalorienapp.data.repository.ProfileRepository
 import de.kalorienapp.data.repository.RecipeRepository
@@ -48,6 +51,7 @@ class AppContainer(context: Context) {
     val profileRepository = ProfileRepository(database.profileDao())
     val foodEntryRepository = FoodEntryRepository(foodEntryDao)
     val foodLibraryRepository = FoodLibraryRepository(database.favoriteFoodDao(), foodEntryDao, database.mealComboDao())
+    val mealPlanRepository = MealPlanRepository(database.mealPlanDao(), settings)
     val activityEntryRepository = ActivityEntryRepository(database.activityEntryDao())
     val goalRepository = GoalRepository(database.weightGoalDao(), profileRepository)
     val statsRepository = StatsRepository(database.statsDao(), goalRepository)
@@ -65,6 +69,8 @@ class AppContainer(context: Context) {
         openFoodFacts = OpenFoodFactsClient(),
         gemini = gemini,
     )
+
+    val mealPlanImporter = MealPlanImporter(context, GeminiMealPlanAnalyzer(gemini))
 
     /** Per Teilen-Menü empfangene Inhalte für den Rezept-Import. */
     val shareInbox = ShareInbox()

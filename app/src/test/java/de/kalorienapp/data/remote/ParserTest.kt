@@ -136,3 +136,30 @@ class GeminiResponseParserTest {
         assertEquals(52.0, apple.per100.kcal, 0.001)
     }
 }
+
+class MealPlanParserTest {
+    @Test
+    fun `tage und mahlzeiten werden plan-punkte`() {
+        val json = """{"days":[
+          {"day":1,"meals":[
+            {"meal":"BREAKFAST","items":[{"name":"Haferflocken","amount":60,"unit":"g","kcal":370,"fat":7,"carbs":59,"protein":13.5},
+                                         {"name":"Milch","amount":200,"unit":"ml","kcal":64,"fat":3.5,"carbs":4.8,"protein":3.3}]},
+            {"meal":"LUNCH","items":[{"name":"Spaghetti Bolognese","amount":400,"unit":"g","kcal":130,"fat":5,"carbs":15,"protein":7,
+               "components":[{"name":"Spaghetti","amount":250,"unit":"g","kcal":150,"fat":1,"carbs":30,"protein":5},
+                             {"name":"Soße","amount":150,"unit":"g","kcal":100,"fat":6,"carbs":4,"protein":8}]}]}]},
+          {"day":2,"meals":[{"meal":"snack","items":[{"name":"Apfel","amount":150,"unit":"g","kcal":52,"fat":0.2,"carbs":12,"protein":0.3}]}]},
+          {"day":40,"meals":[{"meal":"SNACK","items":[{"name":"zu weit","amount":1,"unit":"g","kcal":1,"fat":0,"carbs":0,"protein":0}]}]}]}"""
+        val items = de.kalorienapp.data.remote.gemini.MealPlanParser.parse(json)!!
+        assertEquals(4, items.size)
+        val milk = items[1]
+        assertEquals(0, milk.dayIndex)
+        assertEquals(de.kalorienapp.domain.model.MealType.BREAKFAST, milk.mealType)
+        assertEquals(1, milk.position)
+        assertEquals(AmountUnit.MILLILITER, milk.unit)
+        val dish = items[2]
+        assertEquals(2, dish.components.size)
+        assertEquals(400.0, dish.amount, 0.001)
+        assertEquals(1, items[3].dayIndex)
+        assertEquals(de.kalorienapp.domain.model.MealType.SNACK, items[3].mealType)
+    }
+}

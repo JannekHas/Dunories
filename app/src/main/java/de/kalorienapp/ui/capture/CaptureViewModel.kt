@@ -13,6 +13,7 @@ import de.kalorienapp.data.remote.gemini.GeminiError
 import de.kalorienapp.data.remote.gemini.GeminiException
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.FoodLibraryRepository
+import de.kalorienapp.data.repository.MealPlanRepository
 import de.kalorienapp.domain.model.EntrySource
 import de.kalorienapp.domain.model.FavoriteFood
 import de.kalorienapp.domain.model.MealCombo
@@ -78,9 +79,19 @@ class CaptureViewModel(
     private val analyzer: FoodAnalyzer,
     private val repository: FoodEntryRepository,
     private val library: FoodLibraryRepository,
+    private val mealPlan: MealPlanRepository,
 ) : ViewModel() {
 
     private val route = savedStateHandle.toRoute<CaptureRoute>()
+
+    /** Erfasstes landet im Ernährungsplan (Plan-Tag [CaptureRoute.planDay]) statt im Tagebuch. */
+    val planMode: Boolean = route.planDay >= 0 && !route.fromPlan
+
+    /** „Manuell“ im Plan: leeres Lebensmittel im Vorschlag statt des Eintrag-Editors. */
+    fun startManual() {
+        setStep(proposalOf(emptyList()))
+        addItem()
+    }
 
     private val _state = MutableStateFlow(
         CaptureUiState(mealType = MealType.fromRouteArg(route.mealType) ?: MealType.forHour(LocalTime.now().hour)),
@@ -110,6 +121,20 @@ class CaptureViewModel(
     private var lastInput: Input? = null
     private var analysisJob: Job? = null
     private var nextItemId = 1L
+
+    init {
+        // Plan-Punkt bearbeiten bzw. „Anpassen“ auf „Heute“ → gleich als bearbeitbarer Vorschlag.
+        if (route.planDay >= 0 && (route.planItemId != 0L || route.fromPlan)) {
+            viewModelScope.launch {
+                val items = if (route.planItemId != 0L) {
+                    listOfNotNull(mealPlan.get(route.planItemId))
+                } else {
+                    mealPlan.forDay(route.planDay).filter { it.mealType.name == route.mealType }
+                }
+                if (items.isNotEmpty()) setStep(proposalOf(items.map { it.toDraft() }))
+            }
+        }
+    }
 
     fun onPhoto(uri: Uri) = analyze(if (_state.value.labelMode) Input.Label(uri) else Input.Photo(uri))
 
@@ -266,6 +291,12 @@ class CaptureViewModel(
             )
         }
         viewModelScope.launch {
+            if (planMode) {
+                if (route.planItemId != 0L) mealPlan.delete(route.planItemId)
+                mealPlan.addFromEntries(route.planDay, entries)
+                onDone()
+                return@launch
+            }
             // Gleiches von eben (z. B. zweiter Salami-Stick) fließt in den vorhandenen Eintrag ein.
             entries.forEach { repository.add(it) }
             onDone()
@@ -323,18 +354,20 @@ class CaptureViewModel(
         s.copy(step = transform(p))
     }
 
-    private fun Exception.toCaptureError(): CaptureError = when (this) {
-        is GeminiException -> when (error) {
-            GeminiError.NO_API_KEY -> CaptureError.NO_API_KEY
-            GeminiError.REJECTED -> CaptureError.REJECTED
-            GeminiError.NETWORK -> CaptureError.NETWORK
-            GeminiError.QUOTA -> CaptureError.QUOTA
-            GeminiError.OVERLOADED -> CaptureError.OVERLOADED
-            GeminiError.INVALID_RESPONSE -> CaptureError.INVALID_RESPONSE
-            GeminiError.NO_FOOD -> CaptureError.NO_FOOD
-        }
-        is ImageDecoder.DecodeException -> CaptureError.IMAGE
-        is IOException -> CaptureError.NETWORK
-        else -> CaptureError.UNKNOWN
+}
+
+/** Fehler einer KI-/Bildanalyse → Meldung für die UI. */
+internal fun Exception.toCaptureError(): CaptureError = when (this) {
+    is GeminiException -> when (error) {
+        GeminiError.NO_API_KEY -> CaptureError.NO_API_KEY
+        GeminiError.REJECTED -> CaptureError.REJECTED
+        GeminiError.NETWORK -> CaptureError.NETWORK
+        GeminiError.QUOTA -> CaptureError.QUOTA
+        GeminiError.OVERLOADED -> CaptureError.OVERLOADED
+        GeminiError.INVALID_RESPONSE -> CaptureError.INVALID_RESPONSE
+        GeminiError.NO_FOOD -> CaptureError.NO_FOOD
     }
+    is ImageDecoder.DecodeException -> CaptureError.IMAGE
+    is IOException -> CaptureError.NETWORK
+    else -> CaptureError.UNKNOWN
 }

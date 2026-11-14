@@ -9,6 +9,7 @@ import de.kalorienapp.domain.model.DietStyle
 import de.kalorienapp.domain.model.ExcludedFood
 import de.kalorienapp.domain.model.Intolerance
 import de.kalorienapp.domain.model.FoodPreferences
+import de.kalorienapp.domain.model.MealPlanSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -160,6 +161,33 @@ class AppSettings(context: Context) {
         )
     }
 
+    private val _mealPlan = MutableStateFlow(readMealPlan())
+
+    /** Ernährungsplan: an/aus, Start des Durchlaufs, Anzahl Tage. */
+    val mealPlan: StateFlow<MealPlanSettings> = _mealPlan.asStateFlow()
+
+    fun setMealPlan(value: MealPlanSettings) {
+        prefs.edit()
+            .putBoolean(KEY_PLAN_ENABLED, value.enabled)
+            .putLong(KEY_PLAN_START, value.startEpochDay)
+            .putInt(KEY_PLAN_DAYS, value.days)
+            .putLong(KEY_PLAN_END, value.endEpochDay ?: Long.MIN_VALUE)
+            .apply()
+        _mealPlan.value = value
+    }
+
+    fun updateMealPlan(transform: (MealPlanSettings) -> MealPlanSettings) = setMealPlan(transform(_mealPlan.value))
+
+    private fun readMealPlan(): MealPlanSettings {
+        val defaults = MealPlanSettings()
+        return MealPlanSettings(
+            enabled = prefs.getBoolean(KEY_PLAN_ENABLED, false),
+            startEpochDay = prefs.getLong(KEY_PLAN_START, defaults.startEpochDay),
+            days = prefs.getInt(KEY_PLAN_DAYS, defaults.days).coerceIn(1, MealPlanSettings.MAX_DAYS),
+            endEpochDay = prefs.getLong(KEY_PLAN_END, Long.MIN_VALUE).takeIf { it != Long.MIN_VALUE },
+        )
+    }
+
     /** Ob schon einmal nach der Benachrichtigungs-Erlaubnis gefragt wurde (nicht bei jedem Start nerven). */
     var notificationPermissionAsked: Boolean
         get() = prefs.getBoolean(KEY_PERMISSION_ASKED, false)
@@ -187,5 +215,9 @@ class AppSettings(context: Context) {
         private const val KEY_DISLIKES = "disliked_foods"
         private const val DISLIKE_SEPARATOR = "\n"
         private const val KEY_SEEN_TIPS = "seen_tips"
+        private const val KEY_PLAN_ENABLED = "meal_plan_enabled"
+        private const val KEY_PLAN_START = "meal_plan_start"
+        private const val KEY_PLAN_DAYS = "meal_plan_days"
+        private const val KEY_PLAN_END = "meal_plan_end"
     }
 }
