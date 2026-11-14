@@ -147,6 +147,7 @@ fun TodayScreen(
     val fasting by viewModel.fasting.collectAsStateWithLifecycle()
     val streak by viewModel.streak.collectAsStateWithLifecycle()
     val plan by viewModel.plan.collectAsStateWithLifecycle()
+    val waterEnabled by viewModel.waterEnabled.collectAsStateWithLifecycle()
     LaunchedEffect(requestedDay) {
         requestedDay?.let { viewModel.showDate(it); onDayShown() }
     }
@@ -390,7 +391,7 @@ fun TodayScreen(
                     FastingCard(config, state.sex, state.summary?.eaten?.kcal ?: 0.0, outside)
                 }
             }
-            if (BuildConfig.FEATURE_WATER) {
+            if (waterEnabled) {
                 item(key = "water") {
                     WaterCard(water, onAdd = viewModel::addWater, onUndo = viewModel::undoWater, onGoal = viewModel::setWaterGoal)
                 }

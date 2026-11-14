@@ -42,8 +42,13 @@ import de.kalorienapp.ui.components.parseDecimal
 import de.kalorienapp.ui.theme.Neon
 import kotlin.math.roundToInt
 
-/** Getrunken / Ziel; [customGoal] = selbst gesetztes Ziel (sonst automatisch). */
-data class WaterState(val ml: Int = 0, val goalMl: Int = 2500, val customGoal: Boolean = false)
+/**
+ * Getrunken / Ziel; [ml] = über die Karte eingetragenes Wasser, [drinksMl] = Getränke aus dem Tagebuch
+ * (in ml, ohne Alkohol); [customGoal] = selbst gesetztes Ziel (sonst automatisch).
+ */
+data class WaterState(val ml: Int = 0, val goalMl: Int = 2500, val customGoal: Boolean = false, val drinksMl: Int = 0) {
+    val totalMl: Int get() = ml + drinksMl
+}
 
 private fun liters(ml: Int) = (ml / 1000.0).format(2).trimEnd('0').trimEnd(',')
 
@@ -74,9 +79,9 @@ fun WaterCard(
                     Column(Modifier.padding(start = 6.dp)) {
                         Text(stringResource(R.string.water_title), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                         Text(
-                            stringResource(R.string.water_value, liters(state.ml), liters(state.goalMl)),
+                            stringResource(R.string.water_value, liters(state.totalMl), liters(state.goalMl)),
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (state.ml >= state.goalMl) Neon.Green else Neon.TextSecondary,
+                            color = if (state.totalMl >= state.goalMl) Neon.Green else Neon.TextSecondary,
                         )
                     }
                 }
@@ -98,12 +103,19 @@ fun WaterCard(
                 }
             }
             LinearProgressIndicator(
-                progress = { (state.ml.toFloat() / state.goalMl).coerceIn(0f, 1f) },
+                progress = { (state.totalMl.toFloat() / state.goalMl).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)),
                 color = Neon.Blue,
                 trackColor = Neon.Track,
                 drawStopIndicator = {},
             )
+            if (state.drinksMl > 0) {
+                Text(
+                    stringResource(R.string.water_from_drinks, liters(state.drinksMl)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Neon.TextSecondary,
+                )
+            }
         }
     }
 }

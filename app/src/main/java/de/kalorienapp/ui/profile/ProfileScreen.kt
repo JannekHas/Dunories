@@ -63,6 +63,9 @@ fun ProfileScreen(
                     HorizontalDivider()
                     SectionTitle(stringResource(R.string.section_targets))
                     TargetAdjustmentsSection(state, viewModel::update)
+                    HorizontalDivider()
+                    SectionTitle(stringResource(R.string.water_title))
+                    WaterSettingsSection()
                 }
                 1 -> MealPlanSettingsSection(onOpenPlan)
                 2 -> FastingSettingsSection()

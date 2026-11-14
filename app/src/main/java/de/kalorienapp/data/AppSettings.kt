@@ -34,6 +34,16 @@ class AppSettings(context: Context) {
     /** Montags automatisch eine KI-Wochenauswertung erstellen. */
     val weeklyReport: StateFlow<Boolean> = _weeklyReport.asStateFlow()
 
+    private val _waterEnabled = MutableStateFlow(prefs.getBoolean(KEY_WATER_ENABLED, false))
+
+    /** Wasser-Karte auf „Heute“ (und Wasser in der KI-Auswertung); standardmäßig aus. */
+    val waterEnabled: StateFlow<Boolean> = _waterEnabled.asStateFlow()
+
+    fun setWaterEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_WATER_ENABLED, enabled).apply()
+        _waterEnabled.value = enabled
+    }
+
     private val _waterGoalMl = MutableStateFlow(prefs.getInt(KEY_WATER_GOAL, 0).takeIf { it > 0 })
     /** Eigenes Wasser-Tagesziel in ml; null = automatisch aus dem Gewicht. */
     val waterGoalMl: StateFlow<Int?> = _waterGoalMl.asStateFlow()
@@ -201,6 +211,7 @@ class AppSettings(context: Context) {
         private const val KEY_WEIGHT_DAYS = "weight_reminder_days"
         private const val KEY_WEEKLY = "weekly_report"
         private const val KEY_WATER_GOAL = "water_goal_ml"
+        private const val KEY_WATER_ENABLED = "water_enabled"
         private const val KEY_FASTING = "fasting_enabled"
         private const val KEY_MEAL_REMINDERS = "meal_reminders"
         private const val KEY_FASTING_PLAN = "fasting_plan"

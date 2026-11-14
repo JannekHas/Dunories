@@ -75,8 +75,13 @@ class WeeklyReportRepository(
             weights = weightRepository.entries.first(),
             measurements = measurementRepository.all.first(),
         ).let { input ->
-            if (!BuildConfig.FEATURE_WATER) input else input.copy(
-                waterByDay = waterRepository.dailyTotals(from, to),
+            if (!settings.waterEnabled.value) input else input.copy(
+                // Direkt eingetragenes Wasser + Getränke in ml (ohne Alkohol)
+                waterByDay = run {
+                    val direct = waterRepository.dailyTotals(from, to)
+                    val drinks = input.entries.groupBy { it.date }.mapValues { (_, list) -> Water.drinksMl(list) }
+                    (direct.keys + drinks.keys).associateWith { (direct[it] ?: 0) + (drinks[it] ?: 0) }.filterValues { it > 0 }
+                },
                 waterGoalMl = Water.goalMl(settings.waterGoalMl.value, state.profile.weightKg),
             )
         }

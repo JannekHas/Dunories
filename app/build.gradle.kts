@@ -35,7 +35,7 @@ android {
         buildConfigField("float", "TEXT_SCALE", "${providers.gradleProperty("textScale").getOrElse("1.0")}f")
 
         // Sichtbare Bereiche der App – ausgeblendete bleiben im Code und in der Datenbank erhalten
-        val features = mapOf("WATER" to false, "RECIPES" to false)
+        val features = mapOf("RECIPES" to false)
         features.forEach { (name, on) ->
             buildConfigField("boolean", "FEATURE_$name", on.toString())
             resValue("bool", "feature_${name.lowercase()}", on.toString())

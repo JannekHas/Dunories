@@ -52,6 +52,7 @@ object BackupFormat {
         val mealPlanDays: Int? = null,
         val mealPlanEnd: Long? = null,
         val mealPlanStopAtEnd: Boolean? = null,
+        val waterEnabled: Boolean? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

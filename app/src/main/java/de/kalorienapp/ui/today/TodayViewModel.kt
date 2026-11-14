@@ -163,11 +163,24 @@ class TodayViewModel(
     /** Wasser des angezeigten Tages mit Ziel (eigenes oder aus dem Gewicht). */
     val water: StateFlow<WaterState> = date
         .flatMapLatest { day ->
-            combine(waterRepository.totalFor(day), settings.waterGoalMl, goalRepository.current) { ml, custom, state ->
-                WaterState(ml = ml, goalMl = Water.goalMl(custom, state?.profile?.weightKg ?: 70.0), customGoal = custom != null)
+            combine(
+                waterRepository.totalFor(day),
+                settings.waterGoalMl,
+                goalRepository.current,
+                entryRepository.entriesFor(day),
+            ) { ml, custom, state, entries ->
+                WaterState(
+                    ml = ml,
+                    goalMl = Water.goalMl(custom, state?.profile?.weightKg ?: 70.0),
+                    customGoal = custom != null,
+                    drinksMl = Water.drinksMl(entries),
+                )
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WaterState())
+
+    /** Wasser-Karte an (Profil → Ziele → Wasser). */
+    val waterEnabled: StateFlow<Boolean> = settings.waterEnabled
 
     fun addWater(ml: Int) {
         viewModelScope.launch { waterRepository.add(date.value, ml) }
