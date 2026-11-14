@@ -11,4 +11,6 @@ data class FoodDraft(
     val unit: AmountUnit,
     val per100: Nutrients,
     val source: EntrySource,
+    /** Zutaten, wenn die KI ein Gericht erkannt hat (z. B. Spaghetti Bolognese); leer = einzelnes Lebensmittel. */
+    val components: List<FoodDraft> = emptyList(),
 )

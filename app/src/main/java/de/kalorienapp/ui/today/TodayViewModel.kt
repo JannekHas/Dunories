@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.repository.ActivityEntryRepository
 import de.kalorienapp.data.repository.FoodEntryRepository
+import de.kalorienapp.data.repository.MergeNotice
 import de.kalorienapp.data.repository.FoodLibraryRepository
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.repository.GoalRepository
@@ -208,6 +209,15 @@ class TodayViewModel(
 
     fun restore(entry: FoodEntry) {
         viewModelScope.launch { entryRepository.save(entry) }
+    }
+
+    /** Gerade zusammengefasster Eintrag (z. B. zweiter Salami-Stick) – Snackbar mit „Rückgängig“. */
+    val lastMerge: StateFlow<MergeNotice?> = entryRepository.lastMerge
+
+    fun mergeShown() = entryRepository.mergeShown()
+
+    fun undoMerge(notice: MergeNotice) {
+        viewModelScope.launch { entryRepository.undoMerge(notice) }
     }
 
     // --- Aktivitäten (selbst eingetragene verbrannte Kalorien) ---

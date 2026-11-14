@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.MealTypePicker
+import de.kalorienapp.ui.food.DishFormFields
 import de.kalorienapp.ui.food.FoodFormFields
 import de.kalorienapp.ui.theme.Neon
 
@@ -44,7 +46,7 @@ fun EntryEditScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(stringResource(if (state.isNew) R.string.entry_new_title else R.string.entry_edit_title))
+                    Text(stringResource(if (state.dish != null) R.string.dish_edit_title else if (state.isNew) R.string.entry_new_title else R.string.entry_edit_title))
                 },
                 navigationIcon = {
                     IconButton(onClick = onDone) {
@@ -53,11 +55,11 @@ fun EntryEditScreen(
                 },
                 actions = {
                     // Speichern von jeder Scrollposition aus (Tester-Wunsch), zusätzlich zum Knopf unten.
-                    IconButton(onClick = { viewModel.save(onDone) }, enabled = state.form.isValid) {
+                    IconButton(onClick = { viewModel.save(onDone) }, enabled = state.isValid) {
                         Icon(
                             Icons.Filled.Check,
                             stringResource(R.string.save),
-                            tint = if (state.form.isValid) Neon.Cyan else Neon.TextSecondary,
+                            tint = if (state.isValid) Neon.Cyan else Neon.TextSecondary,
                         )
                     }
                     if (!state.isNew) {
@@ -79,17 +81,32 @@ fun EntryEditScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            FoodFormFields(
-                form = state.form,
-                onChange = viewModel::onFormChange,
-                afterName = { MealTypePicker(state.mealType, viewModel::onMealTypeChange) },
-            )
+            val dish = state.dish
+            if (dish != null) {
+                DishFormFields(
+                    dish = dish,
+                    onChange = viewModel::onDishChange,
+                    onAddPart = viewModel::addDishPart,
+                    afterName = { MealTypePicker(state.mealType, viewModel::onMealTypeChange) },
+                )
+            } else {
+                FoodFormFields(
+                    form = state.form,
+                    onChange = viewModel::onFormChange,
+                    afterName = { MealTypePicker(state.mealType, viewModel::onMealTypeChange) },
+                )
+            }
             Button(
                 onClick = { viewModel.save(onDone) },
-                enabled = state.form.isValid,
+                enabled = state.isValid,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.save))
+            }
+            if (state.dish != null) {
+                TextButton(onClick = { viewModel.splitDish(onDone) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.dish_split))
+                }
             }
         }
     }

@@ -39,7 +39,13 @@ data class FoodEntry(
     val createdAt: Long = System.currentTimeMillis(),
     /** Eigene Reihenfolge innerhalb der Mahlzeit (nach Verschieben); null = nach Erfassungszeit. */
     val sortKey: Long? = null,
+    /** Zutaten, wenn der Eintrag ein Gericht ist (z. B. Spaghetti Bolognese); leer = einzelnes Lebensmittel. */
+    val components: List<DishComponent> = emptyList(),
+    /** Zuletzt per Zusammenfassen ergänzt (z. B. dritter Salami-Stick); null = nie. */
+    val lastAddedAt: Long? = null,
 ) {
+    val isDish: Boolean get() = components.isNotEmpty()
+
     /** Sortierschlüssel in der Tagesansicht. */
     val orderKey: Long get() = sortKey ?: createdAt
 }

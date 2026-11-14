@@ -8,6 +8,8 @@ import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.domain.model.EntrySource
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
+import de.kalorienapp.domain.model.Nutrients
+import de.kalorienapp.ui.food.DishForm
 import de.kalorienapp.ui.food.FoodForm
 import de.kalorienapp.ui.navigation.EntryEditRoute
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +25,11 @@ data class EntryEditState(
     val isNew: Boolean = true,
     val mealType: MealType = MealType.SNACK,
     val form: FoodForm = FoodForm(),
-)
+    /** Gericht mit Zutaten; null = einzelnes Lebensmittel in [form]. */
+    val dish: DishForm? = null,
+) {
+    val isValid: Boolean get() = dish?.isValid ?: form.isValid
+}
 
 class EntryEditViewModel(
     savedStateHandle: SavedStateHandle,
@@ -49,6 +55,7 @@ class EntryEditViewModel(
                     isNew = false,
                     mealType = entry.mealType,
                     form = FoodForm.of(entry.name, amount, entry.unit, entry.nutrients.amountToPer100(amount)),
+                    dish = entry.takeIf { it.isDish }?.let { DishForm.of(it.name, it.components) { nextPartId++ } },
                 )
             } else {
                 EntryEditState(
@@ -59,7 +66,13 @@ class EntryEditViewModel(
         }
     }
 
+    private var nextPartId = 1L
+
     fun onFormChange(form: FoodForm) = _state.update { it.copy(form = form) }
+
+    fun onDishChange(dish: DishForm) = _state.update { it.copy(dish = dish) }
+
+    fun addDishPart() = _state.update { s -> s.copy(dish = s.dish?.withNewPart(nextPartId++)) }
 
     fun onMealTypeChange(value: MealType) = _state.update { it.copy(mealType = value) }
 
@@ -68,23 +81,66 @@ class EntryEditViewModel(
 
     fun save(onDone: () -> Unit) {
         val current = _state.value
-        val form = current.form
-        val total = form.totalNutrients()
-        if (!form.isValid || total == null || saving) return
+        if (!current.isValid || saving) return
+        val dish = current.dish
+        val entry = if (dish != null) {
+            base(current).copy(
+                name = dish.name.trim(),
+                amount = dish.totalAmount,
+                unit = dish.unit,
+                nutrients = dish.totalNutrients(),
+                components = dish.components(),
+            )
+        } else {
+            val form = current.form
+            val total = form.totalNutrients() ?: return
+            base(current).copy(name = form.name.trim(), amount = form.amountValue, unit = form.unit, nutrients = total)
+        }
         saving = true
-        val entry = FoodEntry(
-            id = existing?.id ?: 0,
-            date = existing?.date ?: LocalDate.ofEpochDay(route.epochDay),
-            mealType = current.mealType,
-            name = form.name.trim(),
-            amount = form.amountValue,
-            unit = form.unit,
-            nutrients = total,
-            source = existing?.source ?: EntrySource.MANUAL,
-            createdAt = existing?.createdAt ?: System.currentTimeMillis(),
-        )
         viewModelScope.launch {
-            repository.save(entry)
+            // Neue Einträge können in einen gleichen von eben einfließen (Zusammenfassen), bearbeitete nicht.
+            if (existing == null) repository.add(entry) else repository.save(entry)
+            onDone()
+        }
+    }
+
+    /** Vorhandener Eintrag (Reihenfolge, Erfassungszeit bleiben) bzw. Grundgerüst für einen neuen. */
+    private fun base(current: EntryEditState): FoodEntry {
+        val old = existing ?: return FoodEntry(
+            date = LocalDate.ofEpochDay(route.epochDay),
+            mealType = current.mealType,
+            name = "",
+            amount = null,
+            nutrients = Nutrients.ZERO,
+            source = EntrySource.MANUAL,
+        )
+        // Andere Mahlzeit → hinten anstellen statt an der alten Position einsortieren.
+        return old.copy(mealType = current.mealType, sortKey = old.sortKey.takeIf { current.mealType == old.mealType })
+    }
+
+    /** Gericht in einzelne Einträge aufteilen (z. B. wenn die KI zu viel zusammengefasst hat). */
+    fun splitDish(onDone: () -> Unit) {
+        val old = existing ?: return
+        val dish = _state.value.dish ?: return
+        if (saving) return
+        saving = true
+        val mealType = _state.value.mealType
+        val parts = dish.components().mapIndexed { index, c ->
+            FoodEntry(
+                date = old.date,
+                mealType = mealType,
+                name = c.name,
+                amount = c.amount,
+                unit = c.unit,
+                nutrients = c.nutrients,
+                source = old.source,
+                createdAt = old.createdAt + index,
+                sortKey = old.sortKey?.takeIf { mealType == old.mealType }?.plus(index),
+            )
+        }
+        viewModelScope.launch {
+            repository.delete(old.id)
+            repository.saveAll(parts)
             onDone()
         }
     }

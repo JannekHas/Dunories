@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import de.kalorienapp.data.db.DishComponentCodec
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.EntrySource
 import de.kalorienapp.domain.model.FoodEntry
@@ -36,6 +37,10 @@ data class FoodEntryEntity(
     val micros: String? = null,
     /** Reihenfolge innerhalb der Mahlzeit nach Verschieben; null = Erfassungszeit. */
     val sortKey: Long? = null,
+    /** Zutaten, wenn der Eintrag ein Gericht ist (JSON, siehe [DishComponentCodec]); null = kein Gericht. */
+    val components: String? = null,
+    /** Zuletzt per Zusammenfassen ergänzt; null = nie. */
+    val lastAddedAt: Long? = null,
 ) {
     fun toDomain() = FoodEntry(
         id = id,
@@ -58,6 +63,8 @@ data class FoodEntryEntity(
         source = source,
         createdAt = createdAt,
         sortKey = sortKey,
+        components = DishComponentCodec.decode(components),
+        lastAddedAt = lastAddedAt,
     )
 
     companion object {
@@ -80,6 +87,8 @@ data class FoodEntryEntity(
             createdAt = e.createdAt,
             micros = Micro.encode(e.nutrients.micros),
             sortKey = e.sortKey,
+            components = DishComponentCodec.encode(e.components),
+            lastAddedAt = e.lastAddedAt,
         )
     }
 }

@@ -157,6 +157,17 @@
     <string name="proposal_item_summary">%1$s %2$s · %3$s kcal</string>
     <string name="proposal_amount_missing">Menge fehlt</string>
     <string name="proposal_total">Gesamt: %1$s kcal</string>
+    <string name="dish_name">Gericht</string>
+    <string name="dish_edit_title">Gericht bearbeiten</string>
+    <string name="dish_amount">Gesamtmenge</string>
+    <string name="dish_amount_hint">Ändert alle Zutaten anteilig – z. B. wenn du nur die Hälfte gegessen hast.</string>
+    <string name="dish_components">Zutaten</string>
+    <string name="dish_add_component">Zutat hinzufügen</string>
+    <string name="dish_remove_component">Zutat entfernen</string>
+    <string name="dish_split">In einzelne Einträge aufteilen</string>
+    <string name="dish_source_line">%1$s · Gericht aus %2$d Zutaten</string>
+    <string name="entry_dish_prefix">%1$d Zutaten · %2$s</string>
+    <string name="entry_merged">%1$s zusammengefasst – jetzt %2$s %3$s</string>
     <string name="proposal_save">Eintragen (%1$d)</string>
     <string name="source_barcode">Barcode · Open Food Facts</string>
     <string name="source_ai_photo">KI-Schätzung aus Foto</string>

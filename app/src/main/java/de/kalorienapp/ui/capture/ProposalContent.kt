@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,8 @@ import de.kalorienapp.domain.model.sum
 import de.kalorienapp.ui.components.MealTypePicker
 import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
+import de.kalorienapp.ui.food.DishForm
+import de.kalorienapp.ui.food.DishFormFields
 import de.kalorienapp.ui.food.FoodForm
 import de.kalorienapp.ui.food.FoodFormFields
 import de.kalorienapp.ui.food.trimDecimalZero
@@ -84,6 +87,9 @@ fun ProposalContent(
                     expanded = item.id == proposal.expandedId,
                     onToggle = { viewModel.toggleExpanded(item.id) },
                     onChange = { viewModel.updateItem(item.id, it) },
+                    onDishChange = { viewModel.updateDish(item.id, it) },
+                    onAddDishPart = { viewModel.addDishPart(item.id) },
+                    onSplitDish = { viewModel.splitDish(item.id) },
                     onRemove = { viewModel.removeItem(item.id) },
                 )
             }
@@ -97,7 +103,7 @@ fun ProposalContent(
 
         Surface(tonalElevation = 3.dp) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                val total = proposal.items.mapNotNull { it.form.totalNutrients() }.sum()
+                val total = proposal.items.mapNotNull { it.totalNutrients() }.sum()
                 Text(
                     stringResource(R.string.proposal_total, total.kcal.format()),
                     style = MaterialTheme.typography.titleMedium,
@@ -172,10 +178,17 @@ private fun ProposalItemCard(
     expanded: Boolean,
     onToggle: () -> Unit,
     onChange: (FoodForm) -> Unit,
+    onDishChange: (DishForm) -> Unit,
+    onAddDishPart: () -> Unit,
+    onSplitDish: () -> Unit,
     onRemove: () -> Unit,
 ) {
     val form = item.form
-    val total = form.totalNutrients()
+    val dish = item.dish
+    val total = item.totalNutrients()
+    val name = dish?.name ?: form.name
+    val amount = if (dish != null) dish.totalAmount.takeIf { it > 0 } else form.amountValue
+    val unitRes = (dish?.unit ?: form.unit).labelRes
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -186,15 +199,15 @@ private fun ProposalItemCard(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    form.name.ifBlank { stringResource(R.string.proposal_unnamed) },
+                    name.ifBlank { stringResource(R.string.proposal_unnamed) },
                     style = MaterialTheme.typography.titleMedium,
                 )
-                val unit = stringResource(form.unit.labelRes)
-                if (total != null && form.amountValue != null) {
+                val unit = stringResource(unitRes)
+                if (total != null && amount != null) {
                     Text(
                         stringResource(
                             R.string.proposal_item_summary,
-                            form.amountValue!!.format(1).trimDecimalZero(),
+                            amount.format(1).trimDecimalZero(),
                             unit,
                             total.kcal.format(),
                         ),
@@ -208,7 +221,11 @@ private fun ProposalItemCard(
                     )
                 }
                 Text(
-                    stringResource(item.source.proposalLabelRes),
+                    if (dish != null) {
+                        stringResource(R.string.dish_source_line, stringResource(item.source.proposalLabelRes), dish.parts.size)
+                    } else {
+                        stringResource(item.source.proposalLabelRes)
+                    },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -224,7 +241,19 @@ private fun ProposalItemCard(
         }
         if (expanded) {
             HorizontalDivider()
-            FoodFormFields(form = form, onChange = onChange, modifier = Modifier.padding(16.dp))
+            if (dish != null) {
+                DishFormFields(
+                    dish = dish,
+                    onChange = onDishChange,
+                    onAddPart = onAddDishPart,
+                    modifier = Modifier.padding(16.dp),
+                )
+                TextButton(onClick = onSplitDish, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                    Text(stringResource(R.string.dish_split))
+                }
+            } else {
+                FoodFormFields(form = form, onChange = onChange, modifier = Modifier.padding(16.dp))
+            }
         }
     }
 }

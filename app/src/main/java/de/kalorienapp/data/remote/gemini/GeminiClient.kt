@@ -11,12 +11,15 @@ import de.kalorienapp.data.remote.lenientJson
 import de.kalorienapp.data.remote.number
 import de.kalorienapp.data.remote.string
 import de.kalorienapp.domain.model.AmountUnit
+import de.kalorienapp.domain.model.Dish
+import de.kalorienapp.domain.model.DishComponent
 import de.kalorienapp.domain.model.EntrySource
 import de.kalorienapp.domain.model.FoodDraft
 import de.kalorienapp.domain.model.Nutrients
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonArrayBuilder
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
@@ -218,15 +221,23 @@ class GeminiClient(
         const val FALLBACK_MODEL = "gemini-flash-lite-latest"
         private const val HEDGE_DELAY_MS = 8_000L
 
+        /** Gerichte als EIN Element mit Zutaten (Wunsch des Nutzers: „Heute“ soll nicht volllaufen). */
+        private const val DISH_RULE = """Gerichte: Was zusammen ein Gericht bildet (z. B. Spaghetti Bolognese = Nudeln + Soße, Burger,
+Bowl, Curry mit Reis, Müsli mit Milch, belegtes Brot), ist EIN Element: name = Name des Gerichts,
+components = die einzelnen Zutaten (je mit Name, Menge und Nährwerten pro 100 g/ml), amount = Gesamtmenge,
+Nährwerte des Elements = ganzes Gericht pro 100 g. Was eigenständig daneben steht, ist ein eigenes Element
+ohne components: Getränke, Beilagensalat, Dessert, Obst, Snacks. Einzelne Lebensmittel haben keine components."""
+
         private const val COMMON_RULES = """
 Für jede Komponente: kurzer deutscher Name, Menge (g bei festen, ml bei flüssigen Lebensmitteln)
 und typische Nährwerte PRO 100 g bzw. PRO 100 ml – NICHT für die Gesamtmenge.
 Nutze typische Werte aus deutschen Nährwerttabellen. Unbekannte optionale Werte als null.
+$DISH_RULE
 ${MicroFields.PROMPT_RULE}
 Gib ausschließlich JSON gemäß Schema zurück."""
 
         private const val PHOTO_PROMPT = """Analysiere dieses Foto einer Mahlzeit.
-Erkenne alle sichtbaren Lebensmittel und Getränke als einzelne Komponenten und schätze die Menge auf dem Foto.
+Erkenne alle sichtbaren Gerichte, Lebensmittel und Getränke und schätze die Menge auf dem Foto.
 Wenn kein Essen oder Getränk zu sehen ist, gib eine leere Liste zurück.$COMMON_RULES"""
 
         private const val HINT_PROMPT = """Hinweis des Nutzers zu diesem Foto – er hat Vorrang vor dem, was du auf dem Bild
@@ -243,7 +254,7 @@ Vitamine und Mineralstoffe nur, wenn sie auf dem Etikett stehen (umgerechnet in 
 Ist keine Nährwerttabelle zu sehen, gib eine leere Liste zurück.
 Gib ausschließlich JSON gemäß Schema zurück."""
 
-        private const val TEXT_PROMPT = """Zerlege die beschriebene Mahlzeit in einzelne Lebensmittel-Komponenten.
+        private const val TEXT_PROMPT = """Erfasse die beschriebene Mahlzeit als Gerichte und einzelne Lebensmittel.
 Fehlt eine Mengenangabe, schätze eine übliche Portion.$COMMON_RULES
 Beschreibung: """
 
@@ -254,30 +265,43 @@ Beschreibung: """
         ) + MicroFields.KEYS.values
         private val REQUIRED = listOf("name", "amount", "unit", "kcal", "fat", "carbs", "protein")
 
+        /** Ein Lebensmittel; Gerichte haben zusätzlich `components` (Zutaten, gleiche Felder, nicht verschachtelt). */
+        private fun JsonObjectBuilder.foodObject(withComponents: Boolean) {
+            put("type", "OBJECT")
+            putJsonObject("properties") {
+                putJsonObject("name") { put("type", "STRING") }
+                putJsonObject("amount") { put("type", "NUMBER") }
+                putJsonObject("unit") {
+                    put("type", "STRING")
+                    putJsonArray("enum") { add("g"); add("ml") }
+                }
+                FIELD_ORDER.drop(3).forEach { field ->
+                    putJsonObject(field) {
+                        put("type", "NUMBER")
+                        if (field !in REQUIRED) put("nullable", true)
+                    }
+                }
+                if (withComponents) {
+                    putJsonObject("components") {
+                        put("type", "ARRAY")
+                        put("nullable", true)
+                        putJsonObject("items") { foodObject(withComponents = false) }
+                    }
+                }
+            }
+            putJsonArray("required") { REQUIRED.forEach { add(it) } }
+            putJsonArray("propertyOrdering") {
+                FIELD_ORDER.forEach { add(it) }
+                if (withComponents) add("components")
+            }
+        }
+
         private val RESPONSE_SCHEMA: JsonObject = buildJsonObject {
             put("type", "OBJECT")
             putJsonObject("properties") {
                 putJsonObject("items") {
                     put("type", "ARRAY")
-                    putJsonObject("items") {
-                        put("type", "OBJECT")
-                        putJsonObject("properties") {
-                            putJsonObject("name") { put("type", "STRING") }
-                            putJsonObject("amount") { put("type", "NUMBER") }
-                            putJsonObject("unit") {
-                                put("type", "STRING")
-                                putJsonArray("enum") { add("g"); add("ml") }
-                            }
-                            FIELD_ORDER.drop(3).forEach { field ->
-                                putJsonObject(field) {
-                                    put("type", "NUMBER")
-                                    if (field !in REQUIRED) put("nullable", true)
-                                }
-                            }
-                        }
-                        putJsonArray("required") { REQUIRED.forEach { add(it) } }
-                        putJsonArray("propertyOrdering") { FIELD_ORDER.forEach { add(it) } }
-                    }
+                    putJsonObject("items") { foodObject(withComponents = true) }
                 }
             }
             putJsonArray("required") { add("items") }
@@ -311,10 +335,33 @@ internal object GeminiResponseParser {
     fun parseItems(text: String, source: EntrySource): List<FoodDraft>? {
         val obj = runCatching { lenientJson.parseToJsonElement(cleanJson(text)).asObject() }.getOrNull() ?: return null
         val items = obj["items"] as? JsonArray ?: return null
-        return items.mapNotNull { element ->
-            val item = element.asObject() ?: return@mapNotNull null
-            val name = item.string("name") ?: return@mapNotNull null
-            FoodDraft(
+        return items.mapNotNull { element -> parseItem(element.asObject() ?: return@mapNotNull null, source) }
+    }
+
+    /** Ein Element; Gerichte mit mind. 2 Zutaten werden aus den Zutaten berechnet (Menge, Nährwerte). */
+    private fun parseItem(item: JsonObject, source: EntrySource): FoodDraft? {
+        val name = item.string("name") ?: return null
+        val components = (item["components"] as? JsonArray).orEmpty()
+            .mapNotNull { it.asObject()?.let { c -> parseFood(c, source) } }
+            .filter { (it.amount ?: 0.0) > 0 }
+        if (components.size >= 2) {
+            val dish = components.map { DishComponent(it.name, it.amount!!, it.unit, it.per100) }
+            val total = Dish.totalAmount(dish)
+            return FoodDraft(
+                name = name,
+                amount = total,
+                unit = Dish.unit(dish),
+                per100 = Dish.total(dish).amountToPer100(total),
+                source = source,
+                components = components,
+            )
+        }
+        return parseFood(item, source)
+    }
+
+    private fun parseFood(item: JsonObject, source: EntrySource): FoodDraft? {
+        val name = item.string("name") ?: return null
+        return FoodDraft(
                 name = name,
                 amount = item.number("amount")?.takeIf { it > 0 },
                 unit = if (item.string("unit")?.lowercase() == "ml") AmountUnit.MILLILITER else AmountUnit.GRAM,
@@ -331,7 +378,6 @@ internal object GeminiResponseParser {
                 ),
                 source = source,
             )
-        }
     }
 
     internal fun JsonObject.nonNegative(key: String) = number(key)?.coerceAtLeast(0.0)

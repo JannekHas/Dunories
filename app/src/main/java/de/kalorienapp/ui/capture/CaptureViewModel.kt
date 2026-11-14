@@ -20,6 +20,8 @@ import de.kalorienapp.domain.model.FrequentFood
 import de.kalorienapp.domain.model.FoodDraft
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
+import de.kalorienapp.domain.model.Nutrients
+import de.kalorienapp.ui.food.DishForm
 import de.kalorienapp.ui.food.FoodForm
 import de.kalorienapp.ui.navigation.CaptureRoute
 import kotlinx.coroutines.CancellationException
@@ -37,7 +39,17 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 /** Eine Komponente im Vorschlag (bearbeitbar, erst nach Bestätigung gespeichert). */
-data class ProposalItem(val id: Long, val form: FoodForm, val source: EntrySource)
+data class ProposalItem(
+    val id: Long,
+    val form: FoodForm,
+    val source: EntrySource,
+    /** Gericht mit Zutaten (z. B. Spaghetti Bolognese); null = einzelnes Lebensmittel in [form]. */
+    val dish: DishForm? = null,
+) {
+    val isValid: Boolean get() = dish?.isValid ?: form.isValid
+
+    fun totalNutrients(): Nutrients? = dish?.totalNutrients() ?: form.totalNutrients()
+}
 
 enum class CaptureError { NO_API_KEY, REJECTED, NETWORK, QUOTA, OVERLOADED, INVALID_RESPONSE, NO_FOOD, IMAGE, UNKNOWN }
 
@@ -49,7 +61,7 @@ sealed interface CaptureStep {
     data class QuickPick(val selected: Set<String> = emptySet()) : CaptureStep
     data class Failed(val error: CaptureError) : CaptureStep
     data class Proposal(val items: List<ProposalItem>, val expandedId: Long?) : CaptureStep {
-        val canSave: Boolean get() = items.isNotEmpty() && items.all { it.form.isValid }
+        val canSave: Boolean get() = items.isNotEmpty() && items.all { it.isValid }
     }
 }
 
@@ -188,6 +200,26 @@ class CaptureViewModel(
         p.copy(items = p.items.map { if (it.id == id) it.copy(form = form) else it })
     }
 
+    fun updateDish(id: Long, dish: DishForm) = updateProposal { p ->
+        p.copy(items = p.items.map { if (it.id == id) it.copy(dish = dish) else it })
+    }
+
+    fun addDishPart(id: Long) = updateProposal { p ->
+        p.copy(items = p.items.map { if (it.id == id && it.dish != null) it.copy(dish = it.dish.withNewPart(nextItemId++)) else it })
+    }
+
+    /** Gericht doch lieber als einzelne Einträge (KI hat zu viel zusammengefasst). */
+    fun splitDish(id: Long) = updateProposal { p ->
+        p.copy(
+            items = p.items.flatMap { item ->
+                val dish = item.dish
+                if (item.id != id || dish == null) listOf(item)
+                else dish.parts.map { ProposalItem(nextItemId++, it.form, item.source) }
+            },
+            expandedId = null,
+        )
+    }
+
     fun removeItem(id: Long) = updateProposal { p -> p.copy(items = p.items.filterNot { it.id == id }) }
 
     fun addItem() = updateProposal { p ->
@@ -208,6 +240,19 @@ class CaptureViewModel(
         val date = LocalDate.ofEpochDay(route.epochDay)
         val now = System.currentTimeMillis()
         val entries = proposal.items.mapIndexedNotNull { index, item ->
+            item.dish?.let { dish ->
+                return@mapIndexedNotNull FoodEntry(
+                    date = date,
+                    mealType = current.mealType,
+                    name = dish.name.trim(),
+                    amount = dish.totalAmount,
+                    unit = dish.unit,
+                    nutrients = dish.totalNutrients(),
+                    source = item.source,
+                    createdAt = now + index,
+                    components = dish.components(),
+                )
+            }
             val total = item.form.totalNutrients() ?: return@mapIndexedNotNull null
             FoodEntry(
                 date = date,
@@ -221,7 +266,8 @@ class CaptureViewModel(
             )
         }
         viewModelScope.launch {
-            entries.forEach { repository.save(it) }
+            // Gleiches von eben (z. B. zweiter Salami-Stick) fließt in den vorhandenen Eintrag ein.
+            entries.forEach { repository.add(it) }
             onDone()
         }
     }
@@ -257,7 +303,8 @@ class CaptureViewModel(
 
     private fun proposalOf(drafts: List<FoodDraft>): CaptureStep.Proposal {
         val items = drafts.map { d ->
-            ProposalItem(nextItemId++, FoodForm.of(d.name, d.amount, d.unit, d.per100), d.source)
+            val dish = d.takeIf { it.components.size >= 2 }?.let { DishForm.ofDraft(it) { nextItemId++ } }
+            ProposalItem(nextItemId++, FoodForm.of(d.name, d.amount, d.unit, d.per100), d.source, dish)
         }
         // Einzelne Komponente (z. B. Barcode) direkt aufgeklappt, damit die Menge sofort eingetragen werden kann.
         return CaptureStep.Proposal(items, expandedId = items.singleOrNull()?.id)

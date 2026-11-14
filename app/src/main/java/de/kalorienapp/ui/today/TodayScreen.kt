@@ -95,6 +95,7 @@ import de.kalorienapp.R
 import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DaySummary
+import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.ui.AppViewModelProvider
@@ -111,6 +112,7 @@ import de.kalorienapp.ui.theme.Neon
 import de.kalorienapp.domain.RankedNutrient
 import de.kalorienapp.domain.NutrientLimit
 import de.kalorienapp.domain.NutrientLimits
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -235,6 +237,26 @@ fun TodayScreen(
                 duration = SnackbarDuration.Short,
             )
             if (result == SnackbarResult.ActionPerformed) viewModel.restoreAll(previous)
+        }
+    }
+
+    // Gleiches von eben wurde zusammengefasst → kurz sagen, mit „Rückgängig“ (dann doch einzeln).
+    val mergedMessage = stringResource(R.string.entry_merged)
+    val mergedUnits = AmountUnit.entries.associateWith { stringResource(it.labelRes) }
+    LaunchedEffect(Unit) {
+        viewModel.lastMerge.filterNotNull().collect { notice ->
+            viewModel.mergeShown()
+            // Eigener Scope: das Zurücksetzen der Meldung darf die Snackbar nicht abbrechen
+            scope.launch {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                val amount = notice.merged.amount?.format(1)?.removeSuffix(",0").orEmpty()
+                val result = snackbarHostState.showSnackbar(
+                    message = mergedMessage.format(notice.merged.name, amount, mergedUnits[notice.merged.unit]),
+                    actionLabel = undoLabel,
+                    duration = SnackbarDuration.Long,
+                )
+                if (result == SnackbarResult.ActionPerformed) viewModel.undoMerge(notice)
+            }
         }
     }
 
@@ -815,7 +837,9 @@ internal fun entrySubtitle(entry: FoodEntry): String {
     val n = entry.nutrients
     val macros = stringResource(R.string.entry_macros, n.proteinG.format(), n.carbsG.format(), n.fatG.format())
     val unit = stringResource(entry.unit.labelRes)
-    return entry.amount?.let { stringResource(R.string.entry_amount_prefix, it.format(), unit, macros) } ?: macros
+    val line = entry.amount?.let { stringResource(R.string.entry_amount_prefix, it.format(), unit, macros) } ?: macros
+    // Gericht: „2 Zutaten · 450 g · P …“
+    return if (entry.isDish) stringResource(R.string.entry_dish_prefix, entry.components.size, line) else line
 }
 
 /** Offener Aktivitäts-Dialog; existing == null → neue Aktivität. */

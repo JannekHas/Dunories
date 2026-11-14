@@ -106,4 +106,33 @@ class GeminiResponseParserTest {
         assertNull(GeminiResponseParser.parse(wrap("Ich kann das nicht erkennen."), EntrySource.AI_PHOTO))
         assertNull(GeminiResponseParser.parse("""{"error":{"code":500}}""", EntrySource.AI_PHOTO))
     }
+
+    @Test
+    fun `gericht mit zutaten wird aus den zutaten berechnet, getraenk bleibt einzeln`() {
+        val json = """{"items":[
+            {"name":"Spaghetti Bolognese","amount":400,"unit":"g","kcal":999,"fat":0,"carbs":0,"protein":0,
+             "components":[
+               {"name":"Spaghetti gekocht","amount":250,"unit":"g","kcal":150,"fat":1,"carbs":30,"protein":5},
+               {"name":"Bolognese-Soße","amount":200,"unit":"g","kcal":100,"fat":6,"carbs":4,"protein":8,"salt":1}]},
+            {"name":"Cola Zero","amount":330,"unit":"ml","kcal":0.3,"fat":0,"carbs":0,"protein":0,"components":null}]}"""
+        val drafts = GeminiResponseParser.parse(wrap(json), EntrySource.AI_PHOTO)!!
+        assertEquals(2, drafts.size)
+        val dish = drafts[0]
+        assertEquals(2, dish.components.size)
+        assertEquals(450.0, dish.amount!!, 0.001)
+        // (250 × 150 + 200 × 100) / 450 = 127,8 kcal pro 100 g – nicht die 999 der KI
+        assertEquals(127.78, dish.per100.kcal, 0.01)
+        assertEquals(AmountUnit.GRAM, dish.unit)
+        assertTrue(drafts[1].components.isEmpty())
+        assertEquals(AmountUnit.MILLILITER, drafts[1].unit)
+    }
+
+    @Test
+    fun `gericht mit nur einer zutat wird ein normales lebensmittel`() {
+        val json = """{"items":[{"name":"Apfel","amount":150,"unit":"g","kcal":52,"fat":0.2,"carbs":12,"protein":0.3,
+            "components":[{"name":"Apfel","amount":150,"unit":"g","kcal":52,"fat":0.2,"carbs":12,"protein":0.3}]}]}"""
+        val apple = GeminiResponseParser.parse(wrap(json), EntrySource.AI_PHOTO)!!.single()
+        assertTrue(apple.components.isEmpty())
+        assertEquals(52.0, apple.per100.kcal, 0.001)
+    }
 }
