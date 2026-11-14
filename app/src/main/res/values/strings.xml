@@ -50,7 +50,7 @@
     <string name="profile_tab_plan">Plan</string>
     <string name="profile_tab_fasting">Fasten</string>
     <string name="profile_tab_notifications">Hinweise</string>
-    <string name="profile_tab_data">Daten</string>
+    <string name="profile_tab_settings">Einstellungen</string>
     <string name="profile_autosave_hint">Änderungen werden automatisch gespeichert.</string>
     <string name="section_body">Körperdaten</string>
     <string name="section_goal">Ziel</string>

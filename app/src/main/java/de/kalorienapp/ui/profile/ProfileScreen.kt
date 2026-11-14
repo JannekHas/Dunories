@@ -42,8 +42,7 @@ fun ProfileScreen(
                 stringResource(R.string.profile_tab_goals),
                 stringResource(R.string.profile_tab_plan),
                 stringResource(R.string.profile_tab_fasting),
-                stringResource(R.string.profile_tab_notifications),
-                stringResource(R.string.profile_tab_data),
+                stringResource(R.string.profile_tab_settings),
             ),
             modifier = Modifier.fillMaxSize().padding(padding),
         ) { page ->
@@ -69,8 +68,14 @@ fun ProfileScreen(
                 }
                 1 -> MealPlanSettingsSection(onOpenPlan)
                 2 -> FastingSettingsSection()
-                3 -> NotificationSettingsSection()
-                else -> BackupSection()
+                // Einstellungen: Hinweise und darunter Datensicherung (4 statt 5 Reiter – Wunsch des Nutzers)
+                else -> {
+                    SectionTitle(stringResource(R.string.profile_tab_notifications))
+                    NotificationSettingsSection()
+                    HorizontalDivider()
+                    SectionTitle(stringResource(R.string.section_backup))
+                    BackupSection()
+                }
             }
         }
     }
