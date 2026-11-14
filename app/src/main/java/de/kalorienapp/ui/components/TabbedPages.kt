@@ -1,26 +1,37 @@
 package de.kalorienapp.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.ui.theme.Neon
 import kotlinx.coroutines.launch
@@ -28,8 +39,9 @@ import kotlinx.coroutines.launch
 /**
  * Reiter oben + seitlich wischbare Seiten; jede Seite scrollt für sich.
  * Damit lange Screens (Statistik, Profil) in überschaubare Teile zerfallen.
+ * Die Reiter teilen sich die Breite nach Textlänge – sonst würde ein langer wie „Einstellungen“
+ * neben kurzen („Ziele“, „Plan“) abgeschnitten.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TabbedPages(
     tabs: List<String>,
@@ -39,27 +51,36 @@ fun TabbedPages(
 ) {
     val scope = rememberCoroutineScope()
     Column(modifier) {
-        PrimaryTabRow(
-            selectedTabIndex = pagerState.currentPage,
-            containerColor = Color.Transparent,
-            contentColor = Neon.Cyan,
-            indicator = {
-                TabRowDefaults.PrimaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(pagerState.currentPage, matchContentSize = true),
-                    color = Neon.Cyan,
-                )
-            },
-        ) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
             tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = pagerState.currentPage == index,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                    selectedContentColor = Neon.Cyan,
-                    unselectedContentColor = Neon.TextSecondary,
-                    text = { Text(title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                )
+                val selected = pagerState.currentPage == index
+                val color by animateColorAsState(if (selected) Neon.Cyan else Neon.TextSecondary, label = "tab")
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        // Textlänge + fester Anteil für den Rand
+                        .weight(title.length + 6f)
+                        .height(48.dp)
+                        .selectable(selected = selected, role = Role.Tab) {
+                            scope.launch { pagerState.animateScrollToPage(index) }
+                        },
+                ) {
+                    Spacer(Modifier.weight(1f))
+                    Column(Modifier.width(IntrinsicSize.Max), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(title, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1, softWrap = false)
+                        Spacer(Modifier.height(10.dp))
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(3.dp)
+                                .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                                .background(if (selected) Neon.Cyan else Color.Transparent),
+                        )
+                    }
+                }
             }
         }
+        HorizontalDivider(color = Neon.TextSecondary.copy(alpha = 0.25f))
         HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { index ->
             Column(
                 modifier = Modifier
