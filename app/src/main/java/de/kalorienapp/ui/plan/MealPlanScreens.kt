@@ -107,6 +107,8 @@ fun MealPlanSettingsSection(
         val today = LocalDate.now()
         val index = MealPlanSchedule.dayIndex(config, today)
         val status = when {
+            index != null && config.stopAtEnd ->
+                stringResource(R.string.plan_status_ending, index + 1, config.days, config.end.format(dayFormatter))
             index != null -> stringResource(R.string.plan_status_day, index + 1, config.days)
             MealPlanSchedule.isExpired(config, today) -> stringResource(R.string.plan_status_expired, config.end.format(dayFormatter))
             else -> stringResource(R.string.plan_status_before, config.start.format(dayFormatter))

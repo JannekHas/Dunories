@@ -844,5 +844,7 @@
     <string name="plan_ask_extend_last">Heute ist der letzte Tag deines Plans.</string>
     <string name="plan_ask_extend_expired">Dein Plan ist am %1$s abgelaufen.</string>
     <string name="plan_extend">Verlängern</string>
+    <string name="plan_ending">Plan endet nach heute – heute gilt er noch.</string>
+    <string name="plan_status_ending">Tag %1$d von %2$d · endet am %3$s</string>
     <string name="plan_end">Beenden</string>
 </resources>

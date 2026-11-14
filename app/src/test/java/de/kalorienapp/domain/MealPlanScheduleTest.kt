@@ -54,6 +54,20 @@ class MealPlanScheduleTest {
     }
 
     @Test
+    fun `beenden laesst den letzten tag laufen und schaltet danach aus`() {
+        val lastDay = monday.plusDays(6)
+        val ending = week.copy(stopAtEnd = true)
+        assertEquals(6, MealPlanSchedule.dayIndex(ending, lastDay))
+        assertFalse(MealPlanSchedule.askToExtend(ending, lastDay))
+        assertEquals(ending, MealPlanSchedule.finishIfEnded(ending, lastDay))
+        val off = MealPlanSchedule.finishIfEnded(ending, lastDay.plusDays(1))
+        assertFalse(off.enabled)
+        assertFalse(off.stopAtEnd)
+        // ohne „Beenden“ bleibt er an (und fragt weiter)
+        assertTrue(MealPlanSchedule.finishIfEnded(week, lastDay.plusDays(1)).enabled)
+    }
+
+    @Test
     fun `eintrag und planpunkt rechnen hin und zurueck`() {
         val entry = FoodEntry(
             date = monday, mealType = MealType.BREAKFAST, name = "Haferflocken", amount = 60.0,

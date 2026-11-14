@@ -14,6 +14,10 @@ import java.time.LocalDate
 
 /** Ernährungsplan bearbeiten: Schalter, Zeitraum, Tage mit ihren Lebensmitteln. */
 class MealPlanViewModel(private val repository: MealPlanRepository) : ViewModel() {
+    init {
+        repository.finishIfEnded()
+    }
+
     val config: StateFlow<MealPlanSettings> = repository.config
 
     val items: StateFlow<List<MealPlanItem>> =
@@ -24,9 +28,9 @@ class MealPlanViewModel(private val repository: MealPlanRepository) : ViewModel(
         // Beim Einschalten nach einer Pause mit dem heutigen Tag als Tag 1 starten.
         val restart = enabled && MealPlanSchedule.dayIndex(current.copy(enabled = true), today) == null
         if (restart) {
-            current.copy(enabled = enabled, startEpochDay = today.toEpochDay(), endEpochDay = null)
+            current.copy(enabled = enabled, startEpochDay = today.toEpochDay(), endEpochDay = null, stopAtEnd = false)
         } else {
-            current.copy(enabled = enabled)
+            current.copy(enabled = enabled, stopAtEnd = false)
         }
     }
 

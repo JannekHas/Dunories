@@ -5,11 +5,13 @@ import de.kalorienapp.data.db.dao.MealPlanDao
 import de.kalorienapp.data.db.entity.MealPlanItemEntity
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealPlanItem
+import de.kalorienapp.domain.model.MealPlanSchedule
 import de.kalorienapp.domain.model.MealPlanSettings
 import de.kalorienapp.domain.model.MealType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
 
 /** Ernährungsplan: Inhalt in der DB (`meal_plan_item`), Schalter/Zeitraum in [AppSettings]. */
 class MealPlanRepository(private val dao: MealPlanDao, private val settings: AppSettings) {
@@ -20,6 +22,13 @@ class MealPlanRepository(private val dao: MealPlanDao, private val settings: App
     fun setConfig(value: MealPlanSettings) = settings.setMealPlan(value)
 
     fun updateConfig(transform: (MealPlanSettings) -> MealPlanSettings) = settings.updateMealPlan(transform)
+
+    /** Nach „Beenden“ und abgelaufenem letzten Tag automatisch ausschalten. */
+    fun finishIfEnded(today: LocalDate = LocalDate.now()) {
+        val current = config.value
+        val next = MealPlanSchedule.finishIfEnded(current, today)
+        if (next != current) settings.setMealPlan(next)
+    }
 
     suspend fun forDay(dayIndex: Int): List<MealPlanItem> = dao.forDay(dayIndex).map { it.toDomain() }
 

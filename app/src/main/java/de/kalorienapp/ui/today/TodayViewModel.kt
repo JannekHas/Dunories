@@ -229,6 +229,10 @@ class TodayViewModel(
 
     // --- Ernährungsplan ---
 
+    init {
+        mealPlan.finishIfEnded()
+    }
+
     val plan: StateFlow<TodayPlan?> = date
         .flatMapLatest { day ->
             combine(mealPlan.config, mealPlan.items) { config, items ->
@@ -266,7 +270,10 @@ class TodayViewModel(
 
     fun extendPlan() = mealPlan.updateConfig { MealPlanSchedule.extend(it, LocalDate.now()) }
 
-    fun endPlan() = mealPlan.updateConfig { it.copy(enabled = false) }
+    /** „Beenden“: heute läuft normal zu Ende, ab morgen ist der Plan aus (Inhalt bleibt). */
+    fun endPlan() = mealPlan.updateConfig { it.copy(stopAtEnd = true) }
+
+    fun undoEndPlan() = mealPlan.updateConfig { it.copy(stopAtEnd = false) }
 
     /** Gerade zusammengefasster Eintrag (z. B. zweiter Salami-Stick) – Snackbar mit „Rückgängig“. */
     val lastMerge: StateFlow<MergeNotice?> = entryRepository.lastMerge

@@ -280,6 +280,16 @@ fun TodayScreen(
         }
     }
 
+    val planEnding = stringResource(R.string.plan_ending)
+    fun endPlanWithUndo() {
+        viewModel.endPlan()
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            val result = snackbarHostState.showSnackbar(planEnding, actionLabel = undoLabel, duration = SnackbarDuration.Long)
+            if (result == SnackbarResult.ActionPerformed) viewModel.undoEndPlan()
+        }
+    }
+
     fun deleteWithUndo(entry: FoodEntry) {
         viewModel.delete(entry)
         scope.launch {
@@ -395,7 +405,7 @@ fun TodayScreen(
                             onApplyDay = { applyPlan(open) },
                             onExtend = viewModel::extendPlan,
                             onEdit = onOpenPlan,
-                            onEnd = viewModel::endPlan,
+                            onEnd = ::endPlanWithUndo,
                         )
                     }
                 }

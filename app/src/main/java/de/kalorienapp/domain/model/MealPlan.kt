@@ -14,6 +14,8 @@ data class MealPlanSettings(
     val days: Int = 7,
     /** Letzter gültiger Tag; null = Ende des ersten Durchlaufs. */
     val endEpochDay: Long? = null,
+    /** „Beenden“ getippt: läuft bis [end] normal weiter, danach automatisch aus (keine Verlängern-Frage mehr). */
+    val stopAtEnd: Boolean = false,
 ) {
     val start: LocalDate get() = LocalDate.ofEpochDay(startEpochDay)
 
@@ -99,14 +101,22 @@ object MealPlanSchedule {
     fun isExpired(settings: MealPlanSettings, today: LocalDate) =
         settings.enabled && today.isAfter(settings.end)
 
-    /** Frage „Stimmt dein Plan noch?“ – am letzten gültigen Tag und danach. */
+    /** Frage „Stimmt dein Plan noch?“ – am letzten gültigen Tag und danach (nicht nach „Beenden“). */
     fun askToExtend(settings: MealPlanSettings, today: LocalDate) =
-        settings.enabled && !today.isBefore(settings.end)
+        settings.enabled && !settings.stopAtEnd && !today.isBefore(settings.end)
+
+    /** Nach „Beenden“ ist der letzte Tag vorbei → Plan ausschalten (Inhalt bleibt). */
+    fun finishIfEnded(settings: MealPlanSettings, today: LocalDate): MealPlanSettings =
+        if (settings.enabled && settings.stopAtEnd && today.isAfter(settings.end)) {
+            settings.copy(enabled = false, stopAtEnd = false)
+        } else {
+            settings
+        }
 
     /** Um einen Durchlauf verlängern – nach einer Pause so oft, bis heute wieder enthalten ist. */
     fun extend(settings: MealPlanSettings, today: LocalDate): MealPlanSettings {
         var end = settings.end.toEpochDay() + settings.days
         while (end < today.toEpochDay()) end += settings.days
-        return settings.copy(endEpochDay = end)
+        return settings.copy(endEpochDay = end, stopAtEnd = false)
     }
 }
