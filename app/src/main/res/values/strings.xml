@@ -829,7 +829,7 @@
     <string name="plan_copy_to">Kopieren nach (ersetzt den Tag)</string>
     <string name="plan_clear_day">Tag leeren</string>
     <string name="plan_import">Plan importieren</string>
-    <string name="plan_import_text">Fotografier deinen Plan, wähl Fotos/Screenshots oder eine PDF – oder füg den Text ein. Die KI erkennt Tage, Mahlzeiten und Nährwerte. Du prüfst alles, bevor es übernommen wird.</string>
+    <string name="plan_import_text">Fotografier deinen Plan, wähl Fotos/Screenshots oder eine PDF – oder füg den Text ein bzw. sprich ihn ein. Die KI erkennt Tage, Mahlzeiten und Nährwerte. Du prüfst alles, bevor es übernommen wird.</string>
     <string name="plan_import_camera">Foto machen</string>
     <string name="plan_import_photos">Fotos</string>
     <string name="plan_import_pdf">PDF</string>
@@ -844,7 +844,7 @@
         <item quantity="other">%d Fotos</item>
     </plurals>
     <string name="plan_import_photos_clear">Entfernen</string>
-    <string name="plan_import_paste">Plan als Text (optional)</string>
+    <string name="plan_import_paste">Plan als Text – tippen, einfügen oder einsprechen</string>
     <string name="plan_import_run">Plan erkennen</string>
     <plurals name="plan_import_preview">
         <item quantity="one">%d Tag erkannt – bitte prüfen</item>
@@ -863,6 +863,10 @@
     <string name="plan_ask_extend_last">Heute ist der letzte Tag deines Plans.</string>
     <string name="plan_ask_extend_expired">Dein Plan ist am %1$s abgelaufen.</string>
     <string name="plan_extend">Verlängern</string>
+    <string name="changelog_title">Neu in Dunories</string>
+    <string name="changelog_version">Version %1$s</string>
+    <string name="changelog_close">Alles klar, los geht\'s</string>
+    <string name="changelog_open">Was ist neu?</string>
     <string name="water_enable">Wasser tracken</string>
     <string name="water_enable_text">Zeigt auf „Heute“ eine Wasser-Karte. Getränke, die du in ml einträgst (z. B. Diet-Limo, Kaffee, Tee), zählen automatisch mit – Alkohol nicht. Das Ziel tippst du auf der Karte an.</string>
     <string name="water_from_drinks">davon %1$s l aus Getränken</string>

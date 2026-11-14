@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.repository.ActivityEntryRepository
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.data.repository.MealPlanRepository
+import de.kalorienapp.BuildConfig
+import de.kalorienapp.domain.Changelog
+import de.kalorienapp.ui.changelog.ChangelogUi
 import de.kalorienapp.domain.model.MealPlanItem
 import de.kalorienapp.domain.model.MealPlanSchedule
 import de.kalorienapp.data.repository.MergeNotice
@@ -178,6 +181,13 @@ class TodayViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WaterState())
+
+    /** Ungelesene Patchnotes (versionCodes, neueste zuerst) – „Neu in Dunories“ auf „Heute“. */
+    val unseenChangelog: StateFlow<List<Int>> = settings.changelogSeen
+        .map { seen -> Changelog.unseen(seen, BuildConfig.VERSION_CODE, ChangelogUi.VERSIONS.map { it.code }) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun changelogRead() = settings.markChangelogSeen(BuildConfig.VERSION_CODE)
 
     /** Wasser-Karte an (Profil → Ziele → Wasser). */
     val waterEnabled: StateFlow<Boolean> = settings.waterEnabled

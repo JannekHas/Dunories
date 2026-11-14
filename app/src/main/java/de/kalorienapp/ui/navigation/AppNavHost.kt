@@ -237,6 +237,8 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     screen<OnboardingRoute> {
                         OnboardingScreen(
                             onFinished = {
+                                // Neue Nutzer bekommen keine Patchnotes der Version, mit der sie anfangen.
+                                container.settings.markChangelogSeen(de.kalorienapp.BuildConfig.VERSION_CODE)
                                 navUnlockedAt = System.currentTimeMillis() + 800
                                 navController.navigate(TodayRoute) {
                                     popUpTo<OnboardingRoute> { inclusive = true }

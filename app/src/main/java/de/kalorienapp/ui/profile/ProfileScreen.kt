@@ -1,6 +1,14 @@
 package de.kalorienapp.ui.profile
 
 import de.kalorienapp.ui.plan.MealPlanSettingsSection
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.fillMaxWidth
+import de.kalorienapp.ui.changelog.ChangelogDialog
+import de.kalorienapp.ui.changelog.ChangelogUi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -75,6 +83,14 @@ fun ProfileScreen(
                     HorizontalDivider()
                     SectionTitle(stringResource(R.string.section_backup))
                     BackupSection()
+                    HorizontalDivider()
+                    var showChangelog by remember { mutableStateOf(false) }
+                    OutlinedButton(onClick = { showChangelog = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.changelog_open))
+                    }
+                    if (showChangelog) {
+                        ChangelogDialog(ChangelogUi.VERSIONS.takeLast(1), onClose = { showChangelog = false })
+                    }
                 }
             }
         }

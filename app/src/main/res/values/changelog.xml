@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Patchnotes für das Fenster „Neu in Dunories“ (ui/changelog). Je Version ein Array, Einträge: Emoji|Titel|Text.
+     Neue Version: Array anlegen und in ChangelogUi.VERSIONS eintragen. -->
+<resources>
+    <string-array name="changelog_6">
+        <item>📋|Ernährungsplan: Wiederholen und Laufzeit|Oben steht jetzt „Wiederholt sich alle 7 Tage“ – du trägst nur diese Tage ein, danach beginnt der Plan wieder bei Tag 1. Darunter stellst du ein, wie lange er läuft: bis zu einem Datum oder ohne Ende. Isst du jede Woche gleich, reichen also 7 Tage, auch wenn der Plan einen Monat geht. Danke Tristan!</item>
+        <item>📷|Plan per Kamera, PDF oder Sprache|Beim „Plan importieren“ kannst du deinen Plan jetzt direkt fotografieren, eine PDF wählen oder ihn einsprechen – zusätzlich zu Fotos und Text. Alles lässt sich kombinieren.</item>
+        <item>✨|Was ist neu?|Nach jedem Update zeigt dir Dunories einmal kurz, was neu ist – so wie jetzt. Später findest du es unter Profil → Einstellungen → „Was ist neu?“.</item>
+        <item>🔧|Kleinigkeit|Die Reiter in der Statistik (Ernährung | Kalender | KI) sind wieder gleich breit.</item>
+    </string-array>
+</resources>

@@ -60,6 +60,7 @@ import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.domain.model.sum
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.capture.CaptureError
+import de.kalorienapp.ui.capture.SpeechButton
 import de.kalorienapp.ui.capture.messageRes
 import de.kalorienapp.ui.capture.toCaptureError
 import de.kalorienapp.ui.components.AiWaitProgress
@@ -235,6 +236,8 @@ fun MealPlanImportScreen(
                     TextButtonRow(stringResource(R.string.plan_import_photos_clear)) { viewModel.clearFiles() }
                 }
             }
+            // Einsprechen wie beim Beschreiben: live mitlesen, endet erst mit „Fertig“
+            if (!state.running) SpeechButton(text = state.text, onChange = viewModel::setText, separator = ", ")
             OutlinedTextField(
                 value = state.text,
                 onValueChange = viewModel::setText,

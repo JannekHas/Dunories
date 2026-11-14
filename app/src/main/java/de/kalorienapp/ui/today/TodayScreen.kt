@@ -98,6 +98,8 @@ import de.kalorienapp.domain.model.DaySummary
 import de.kalorienapp.domain.model.AmountUnit
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealPlanItem
+import de.kalorienapp.ui.changelog.ChangelogDialog
+import de.kalorienapp.ui.changelog.ChangelogUi
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.domain.model.Sex
@@ -148,6 +150,11 @@ fun TodayScreen(
     val streak by viewModel.streak.collectAsStateWithLifecycle()
     val plan by viewModel.plan.collectAsStateWithLifecycle()
     val waterEnabled by viewModel.waterEnabled.collectAsStateWithLifecycle()
+    // Nach einem Update einmal „Neu in Dunories“ zeigen (nur auf dem echten „Heute“, nicht im Kalender-Tag)
+    val unseenChangelog by viewModel.unseenChangelog.collectAsStateWithLifecycle()
+    if (onBack == null && unseenChangelog.isNotEmpty()) {
+        ChangelogDialog(ChangelogUi.byCodes(unseenChangelog), onClose = viewModel::changelogRead)
+    }
     LaunchedEffect(requestedDay) {
         requestedDay?.let { viewModel.showDate(it); onDayShown() }
     }

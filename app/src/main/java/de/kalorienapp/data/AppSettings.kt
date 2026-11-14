@@ -171,6 +171,16 @@ class AppSettings(context: Context) {
         )
     }
 
+    private val _changelogSeen = MutableStateFlow(prefs.getInt(KEY_CHANGELOG_SEEN, 0).takeIf { it > 0 })
+
+    /** versionCode, dessen Patchnotes zuletzt gelesen wurden (null = noch nie). */
+    val changelogSeen: StateFlow<Int?> = _changelogSeen.asStateFlow()
+
+    fun markChangelogSeen(versionCode: Int) {
+        prefs.edit().putInt(KEY_CHANGELOG_SEEN, versionCode).apply()
+        _changelogSeen.value = versionCode
+    }
+
     private val _mealPlan = MutableStateFlow(readMealPlan())
 
     /** Ernährungsplan: an/aus, Start des Durchlaufs, Anzahl Tage. */
@@ -231,6 +241,7 @@ class AppSettings(context: Context) {
         private const val DISLIKE_SEPARATOR = "\n"
         private const val KEY_SEEN_TIPS = "seen_tips"
         private const val KEY_PLAN_ENABLED = "meal_plan_enabled"
+        private const val KEY_CHANGELOG_SEEN = "changelog_seen_version"
         private const val KEY_PLAN_START = "meal_plan_start"
         private const val KEY_PLAN_DAYS = "meal_plan_days"
         private const val KEY_PLAN_END = "meal_plan_end"
