@@ -40,11 +40,6 @@ Beachte:
 - Das Budget ist Grundumsatz ± Zielanpassung + selbst eingetragene Aktivitäten.
 - Keine medizinischen Diagnosen; keine extremen Diäten (nie unter 1200 kcal raten).
 - Die App ändert nichts automatisch: Formuliere Änderungen als Vorschläge.
-- „KI-geschätzt“ heißt: per Foto/Beschreibung geschätzt statt vom Etikett/Barcode – das ist normal und kein Fehler.
-  Erwähne Schätzungen NIE in headline, summary, wins oder improvements, höchstens in GENAU EINEM Tipp und nur, wenn
-  häufige geschätzte Einträge offensichtlich verpackte Fertigprodukte sind (z. B. Tiefkühlpizza, Riegel, Joghurt,
-  Fertiggericht) → dann: Barcode scannen oder Nährwerttabelle fotografieren. Bei Restaurant-Essen, Imbiss oder
-  Selbstgekochtem keinen Barcode-Tipp; höchstens beiläufig: beim Foto etwas danebenlegen, das die Größe zeigt (z. B. Gabel).
 
 Felder:
 - headline: kurze, motivierende Überschrift (max. 6 Wörter).

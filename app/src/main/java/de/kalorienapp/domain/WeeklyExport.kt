@@ -14,6 +14,16 @@ import kotlin.math.roundToInt
  * KI-Wochenauswertung, **alle** Einträge des Zeitraums und die Auswertung der App.
  */
 object WeeklyExport {
+    /**
+     * Export an eine andere KI mit Anteil KI-geschätzter kcal – nur hier, nie in der eigenen Wochenauswertung
+     * (Entscheidung des Nutzers Nov. 2026). [ESTIMATE_NOTE] erklärt der anderen KI, was das heißt.
+     */
+    const val EXPORT_ESTIMATES = true
+
+    const val ESTIMATE_NOTE = "Hinweis zu „KI-geschätzt“: Diese Einträge hat Dunories per Foto vom Essen oder per " +
+        "Beschreibung von einer KI schätzen lassen statt sie von der Nährwerttabelle oder per Barcode zu übernehmen – " +
+        "ihre Werte können also etwas ungenauer sein. Das ist normal und kein Fehler; Restaurant-, Imbiss- und " +
+        "selbstgekochte Gerichte haben keinen Barcode, dort bitte nicht zum Scannen raten."
 
     fun build(input: WeeklyInput, report: WeeklyReport?, zone: ZoneId = ZoneId.systemDefault()): String = buildString {
         appendLine("# Meine Ernährungsdaten aus der App Dunories (${input.from} bis ${input.to})")
@@ -23,9 +33,13 @@ object WeeklyExport {
                 "beantworte meine Fragen dazu und hilf mir, mein Ziel zu erreichen. " +
                 "Nährwerte gelten jeweils für die eingetragene Menge; Tage ohne Einträge sind unbekannt, nicht „nichts gegessen“.",
         )
+        if (EXPORT_ESTIMATES) {
+            appendLine()
+            appendLine(ESTIMATE_NOTE)
+        }
         appendLine()
         appendLine("## Überblick")
-        appendLine(WeeklyInputBuilder.build(input, zone))
+        appendLine(WeeklyInputBuilder.build(input, zone, estimates = EXPORT_ESTIMATES))
         appendLine()
         appendLine("## Alle Einträge")
         val byDay = input.entries.groupBy { it.date }

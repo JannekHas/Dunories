@@ -77,10 +77,11 @@ class WeeklyInputBuilderTest {
     fun `ki geschaetzte eintraege werden gekennzeichnet`() {
         val base = input()
         val estimated = base.entries.map { if (it.name == "Chips") it.copy(source = de.kalorienapp.domain.model.EntrySource.AI_PHOTO) else it }
-        val text = WeeklyInputBuilder.build(base.copy(entries = estimated), zone)
+        // Nur im Export an eine andere KI, nicht für die eigene Auswertung
+        val text = WeeklyInputBuilder.build(base.copy(entries = estimated), zone, estimates = true)
         assertTrue(text, text.contains("Chips: 1× , zusammen 950 kcal (KI-geschätzt)"))
         assertTrue(text, text.contains("% KI-geschätzt)"))
-        assertTrue(text, !WeeklyInputBuilder.build(base, zone).contains("(KI-geschätzt)"))
+        assertTrue(!WeeklyInputBuilder.build(base.copy(entries = estimated), zone).contains("geschätzt"))
     }
 
     @Test
@@ -143,6 +144,8 @@ class WeeklyInputBuilderTest {
         assertTrue(text, text.contains("### Dienstag, 2026-10-13\nSnacks:\n- skyr, 250 g: 150 kcal"))
         assertTrue(text, text.contains("### Mittwoch, 2026-10-14\n(nichts eingetragen)"))
         assertTrue(text, text.contains("Öfter essen: Linsen (Ballaststoffe)"))
+        // Der anderen KI wird erklärt, was „KI-geschätzt“ heißt
+        assertTrue(text, text.contains("Hinweis zu „KI-geschätzt“"))
     }
 
     @Test

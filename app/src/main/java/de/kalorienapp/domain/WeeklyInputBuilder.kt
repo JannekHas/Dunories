@@ -76,7 +76,12 @@ object WeeklyInputBuilder {
 
     fun loggedDays(input: WeeklyInput) = input.days.count { it.hasEntries }
 
-    fun build(input: WeeklyInput, zone: ZoneId = ZoneId.systemDefault()): String = buildString {
+    /**
+     * @param estimates Anteil KI-geschätzter kcal kennzeichnen („davon x % KI-geschätzt“). Die eigene
+     * Wochenauswertung bekommt das bewusst nicht (Nutzer Nov. 2026: Barcode-Tipps passten nicht zu Döner & Co.),
+     * nur der Export an eine andere KI.
+     */
+    fun build(input: WeeklyInput, zone: ZoneId = ZoneId.systemDefault(), estimates: Boolean = false): String = buildString {
         val p = input.profile
         val year = input.to.year
         appendLine("ZEITRAUM: ${input.from} bis ${input.to} (${input.days.size} Tage, davon ${loggedDays(input)} mit Einträgen)")
@@ -152,14 +157,17 @@ object WeeklyInputBuilder {
         appendLine()
         val entries = input.entries
         if (entries.isNotEmpty()) {
-            appendLine("MAHLZEITEN (Ø kcal pro erfasstem Tag; Anteil KI-geschätzt = per Foto/Beschreibung geschätzt statt Etikett/Barcode):")
+            appendLine(
+                if (estimates) "MAHLZEITEN (Ø kcal pro erfasstem Tag; Anteil KI-geschätzt = per Foto/Beschreibung geschätzt statt Etikett/Barcode):"
+                else "MAHLZEITEN (Ø kcal pro erfasstem Tag):",
+            )
             val logged = loggedDays(input).coerceAtLeast(1)
             MealType.entries.forEach { meal ->
                 val list = entries.filter { it.mealType == meal }
                 val kcal = list.sumOf { it.nutrients.kcal }
                 val estimated = list.filter { it.isEstimate }.sumOf { it.nutrients.kcal }
                 append("- ${meal.german()}: ${(kcal / logged).roundToInt()} kcal")
-                if (kcal > 0 && estimated > 0) append(" (davon ${(estimated / kcal * 100).roundToInt()} % KI-geschätzt)")
+                if (estimates && kcal > 0 && estimated > 0) append(" (davon ${(estimated / kcal * 100).roundToInt()} % KI-geschätzt)")
                 appendLine()
             }
             appendLine()
@@ -169,7 +177,7 @@ object WeeklyInputBuilder {
                 .sortedByDescending { it.third }
                 .take(TOP_FOODS)
                 .forEach { (list, count, kcal) ->
-                    val note = if (list.all { it.isEstimate }) " (KI-geschätzt)" else ""
+                    val note = if (estimates && list.all { it.isEstimate }) " (KI-geschätzt)" else ""
                     appendLine("- ${list.first().name.trim()}: ${count}× , zusammen ${kcal.roundToInt()} kcal$note")
                 }
             appendLine()

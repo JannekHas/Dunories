@@ -10,7 +10,7 @@ class EstimateMentionsTest {
     private val day = LocalDate.of(2026, 11, 9)
 
     @Test
-    fun `schaetzungen nur in einem tipp`() {
+    fun `schaetzungen kommen in der auswertung nicht vor`() {
         val report = WeeklyReport(
             from = day, to = day.plusDays(6),
             headline = "Starke Basis",
@@ -27,7 +27,7 @@ class EstimateMentionsTest {
         val clean = EstimateMentions.clean(report)
         assertEquals("Gute Woche. Weiter so!", clean.summary)
         assertEquals(listOf("Mehr Protein"), clean.improvements)
-        assertEquals(listOf("Protein", "Präzision"), clean.tips.map { it.title })
+        assertEquals(listOf("Protein"), clean.tips.map { it.title })
         assertEquals("Starke Basis", clean.headline)
     }
 
