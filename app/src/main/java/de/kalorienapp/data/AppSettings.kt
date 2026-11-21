@@ -77,6 +77,16 @@ class AppSettings(context: Context) {
         _bodyAnalysis.value = enabled
     }
 
+    private val _measures = MutableStateFlow(prefs.getBoolean(KEY_MEASURES, false))
+
+    /** Körpermaße (Taille, Hüfte, Brust, Oberarm, Oberschenkel) unter Statistik → Körper; standardmäßig aus. */
+    val measuresEnabled: StateFlow<Boolean> = _measures.asStateFlow()
+
+    fun setMeasuresEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_MEASURES, enabled).apply()
+        _measures.value = enabled
+    }
+
     private val _waterGoalMl = MutableStateFlow(prefs.getInt(KEY_WATER_GOAL, 0).takeIf { it > 0 })
     /** Eigenes Wasser-Tagesziel in ml; null = automatisch aus dem Gewicht. */
     val waterGoalMl: StateFlow<Int?> = _waterGoalMl.asStateFlow()
@@ -302,6 +312,7 @@ class AppSettings(context: Context) {
         private const val KEY_PROTEIN_ONLY = "protein_only"
         private const val KEY_WEIGHT_ENABLED = "weight_enabled"
         private const val KEY_BODY_ANALYSIS = "body_analysis"
+        private const val KEY_MEASURES = "measures"
         private const val KEY_FASTING = "fasting_enabled"
         private const val KEY_MEAL_REMINDERS = "meal_reminders"
         private const val KEY_FASTING_PLAN = "fasting_plan"

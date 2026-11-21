@@ -40,9 +40,8 @@ enum class MeasureType(
         /** Werte der Körperanalyse in Eingabe-Reihenfolge (wie auf den meisten Waagen-Ausdrucken). */
         val ANALYSIS: List<MeasureType> = entries.filter { it.analysis }
 
-        /** Körpermaße (Umfänge); Körperfett nur, wenn die Körperanalyse aus ist. */
-        fun measures(analysisEnabled: Boolean): List<MeasureType> =
-            entries.filter { !it.analysis || (it == BODY_FAT && !analysisEnabled) }
+        /** Körpermaße (Umfänge). Körperfett gehört seit Nov. 2026 zum Gewicht bzw. zur Körperanalyse. */
+        val MEASURES: List<MeasureType> = entries.filter { !it.analysis }
     }
 }
 

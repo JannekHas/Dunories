@@ -27,10 +27,11 @@ class BodyAnalysisParserTest {
     }
 
     @Test
-    fun `koerperfett wandert mit koerperanalyse zur analyse`() {
-        assertTrue(MeasureType.BODY_FAT in MeasureType.measures(analysisEnabled = false))
-        assertTrue(MeasureType.BODY_FAT !in MeasureType.measures(analysisEnabled = true))
-        assertTrue(MeasureType.MUSCLE_MASS !in MeasureType.measures(analysisEnabled = false))
+    fun `koerperfett gehoert nicht zu den koerpermassen`() {
+        // Körperfett gehört nie zu den Körpermaßen (Gewicht-Dialog bzw. Körperanalyse)
+        assertTrue(MeasureType.BODY_FAT !in MeasureType.MEASURES)
+        assertTrue(MeasureType.MUSCLE_MASS !in MeasureType.MEASURES)
+        assertEquals(5, MeasureType.MEASURES.size)
         assertEquals(6, MeasureType.ANALYSIS.size)
     }
 }

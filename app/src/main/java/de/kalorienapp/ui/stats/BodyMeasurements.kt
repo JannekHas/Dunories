@@ -70,8 +70,8 @@ class BodyMeasurementViewModel(
     private val repository: BodyMeasurementRepository,
     settings: AppSettings,
 ) : ViewModel() {
-    /** Körperanalyse an → Körperfett wandert aus den Körpermaßen in die Körperanalyse. */
     val analysisEnabled: StateFlow<Boolean> = settings.bodyAnalysisEnabled
+    val measuresEnabled: StateFlow<Boolean> = settings.measuresEnabled
 
     /** Messungen je Art, älteste zuerst. */
     val byType: StateFlow<Map<MeasureType, List<BodyMeasurement>>> = repository.all
@@ -120,8 +120,9 @@ private val measuredFormatter = DateTimeFormatter.ofPattern("d. MMM yyyy", Local
 @Composable
 fun BodyMeasurementsSection(viewModel: BodyMeasurementViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
     val byType by viewModel.byType.collectAsStateWithLifecycle()
-    val analysis by viewModel.analysisEnabled.collectAsStateWithLifecycle()
-    val types = MeasureType.measures(analysis)
+    val enabled by viewModel.measuresEnabled.collectAsStateWithLifecycle()
+    if (!enabled) return
+    val types = MeasureType.MEASURES
     var showDialog by remember { mutableStateOf(false) }
 
     if (showDialog) {

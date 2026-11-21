@@ -1,5 +1,8 @@
 package de.kalorienapp.ui.stats
 
+import de.kalorienapp.domain.model.MeasureType
+import de.kalorienapp.domain.model.BodyMeasurement
+import de.kalorienapp.data.repository.BodyMeasurementRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.AppSettings
@@ -45,6 +48,8 @@ data class StatsUiState(
     val weightTrend: List<TrendPoint> = emptyList(),
     /** Aktuelles Profilgewicht – Vorbelegung, solange noch kein Eintrag existiert. */
     val profileWeightKg: Double? = null,
+    /** Körperfett-Messungen (vom Gewicht-Dialog oder der Körperanalyse), älteste zuerst. */
+    val bodyFat: List<BodyMeasurement> = emptyList(),
     /** Erreichte Gewichtsziele, neueste zuerst. */
     val reachedGoals: List<WeightGoal> = emptyList(),
     val sex: Sex? = null,
@@ -86,7 +91,13 @@ class StatsViewModel(
     private val weightRepository: WeightRepository,
     private val goalRepository: GoalRepository,
     private val reportRepository: WeeklyReportRepository,
+    private val measurementRepository: BodyMeasurementRepository,
 ) : ViewModel() {
+
+    /** Reiter „Körper“: sobald Gewicht, Körperanalyse oder Körpermaße an ist (drei unabhängige Schalter). */
+    val bodyPageVisible: StateFlow<Boolean> =
+        combine(settings.weightEnabled, settings.bodyAnalysisEnabled, settings.measuresEnabled) { w, a, m -> w || a || m }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, settings.weightEnabled.value)
 
     private val _reportGeneration = MutableStateFlow<ReportGeneration>(ReportGeneration.Idle)
     val reportGeneration: StateFlow<ReportGeneration> = _reportGeneration.asStateFlow()
@@ -100,9 +111,10 @@ class StatsViewModel(
                 statsRepository.days(today.minusDays(p.days - 1L), today),
                 weightRepository.entries,
                 goalRepository.current,
-                goalRepository.reachedGoals,
+                combine(goalRepository.reachedGoals, measurementRepository.all) { reached, all -> reached to all },
                 reportRepository.reports,
-            ) { days, weights, goalState, reached, reports ->
+            ) { days, weights, goalState, reachedAndMeasures, reports ->
+                val (reached, measures) = reachedAndMeasures
                 StatsUiState(
                     period = p,
                     stats = StatsCalculator.period(days),
@@ -111,6 +123,7 @@ class StatsViewModel(
                     weightTrend = WeightTrend.compute(weights),
                     profileWeightKg = goalState?.profile?.weightKg,
                     reachedGoals = reached,
+                    bodyFat = measures.filter { it.type == MeasureType.BODY_FAT }.sortedBy { it.measuredAt },
                     sex = goalState?.profile?.sex,
                     reports = reports,
                 )
@@ -148,8 +161,13 @@ class StatsViewModel(
     }
 
     /** Neue Messung mit aktuellem Zeitpunkt – überschreibt nichts. */
-    fun addWeight(weightKg: Double) {
-        viewModelScope.launch { weightRepository.save(WeightEntry(measuredAt = Instant.now(), weightKg = weightKg)) }
+    /** Gewicht und optional Körperfett mit demselben Zeitpunkt speichern (Körperfett als eigene Messung). */
+    fun addWeight(weightKg: Double, bodyFatPercent: Double? = null) {
+        val now = Instant.now()
+        viewModelScope.launch {
+            weightRepository.save(WeightEntry(measuredAt = now, weightKg = weightKg))
+            bodyFatPercent?.let { measurementRepository.add(listOf(BodyMeasurement(type = MeasureType.BODY_FAT, value = it, measuredAt = now))) }
+        }
     }
 
     /** KI-Auswertung der letzten 7 Tage; bei Erfolg wird sie geöffnet. */

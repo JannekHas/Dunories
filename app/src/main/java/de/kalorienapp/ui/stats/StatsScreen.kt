@@ -71,7 +71,8 @@ fun StatsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val generation by viewModel.reportGeneration.collectAsStateWithLifecycle()
     // Ernährung | Kalender | Körper | KI – „Körper“ nur, wenn Gewicht getrackt wird.
-    val pages = if (LocalWeightEnabled.current) StatsPage.entries else StatsPage.entries - StatsPage.BODY
+    val bodyVisible by viewModel.bodyPageVisible.collectAsStateWithLifecycle()
+    val pages = if (bodyVisible) StatsPage.entries else StatsPage.entries - StatsPage.BODY
     val pagerState = rememberPagerState { pages.size }
     LaunchedEffect(openWeighDialog, pages) {
         if (openWeighDialog && StatsPage.BODY in pages) pagerState.scrollToPage(pages.indexOf(StatsPage.BODY))

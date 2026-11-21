@@ -725,6 +725,12 @@
     <string name="measure_bmr">Grundumsatz (Waage)</string>
     <string name="unit_level"></string>
     <string name="body_analysis_enable">Körperanalyse</string>
+    <string name="measures_enable">Körpermaße</string>
+    <string name="measures_enable_text">Taille, Hüfte, Brust, Oberarm und Oberschenkel messen und als Verlauf unter Statistik → Körper sehen.</string>
+    <string name="weight_body_fat_optional">Körperfett (freiwillig)</string>
+    <string name="chart_weight">Gewicht</string>
+    <string name="chart_body_fat">Körperfett</string>
+    <string name="body_fat_caption">Körperfett aus deinen Messungen (beim Gewicht oder in der Körperanalyse eingetragen)</string>
     <string name="body_analysis_enable_text">Für Waagen mit Körperanalyse: Körperfett, Muskelmasse, Körperwasser, viszerales Fett, Knochenmasse und Grundumsatz unter Statistik → Körper – eintippen, fotografieren oder einsprechen.</string>
     <string name="body_analysis_title">Körperanalyse</string>
     <string name="body_analysis_empty">Noch keine Körperanalyse. Trag die Werte deiner Waage ein – am besten immer zur selben Tageszeit, z. B. morgens vor dem Frühstück, denn sie schwanken stark mit Trinken und Essen.</string>
@@ -951,7 +957,7 @@
     <string name="protein_only_enable_text">Kalorien, Kohlenhydrate und Fett verschwinden überall – nur dein Protein zählt. Eingetragen wird weiter alles, beim Zurückschalten siehst du sofort wieder alle Werte.</string>
     <string name="protein_only_target">%1$d g Protein</string>
     <string name="weight_enable">Gewicht tracken</string>
-    <string name="weight_enable_text">Gewicht, Körpermaße und Wiege-Erinnerung. Aus: Alles rund ums Gewicht verschwindet – ein laufendes Gewichtsziel rechnet unsichtbar mit deinem letzten Gewicht weiter.</string>
+    <string name="weight_enable_text">Gewicht mit Verlauf, Körperfett und Wiege-Erinnerung. Aus: Alles rund ums Gewicht verschwindet – ein laufendes Gewichtsziel rechnet unsichtbar mit deinem letzten Gewicht weiter.</string>
     <string name="water_enable">Wasser tracken</string>
     <string name="water_enable_text">Zeigt auf „Heute“ eine Wasser-Karte. Getränke, die du in ml einträgst (z. B. Diet-Limo, Kaffee, Tee), zählen automatisch mit – Alkohol nicht. Das Ziel tippst du auf der Karte an.</string>
     <string name="water_from_drinks">davon %1$s l aus Getränken</string>

@@ -66,6 +66,7 @@ object AppViewModelProvider {
                 container().weightRepository,
                 container().goalRepository,
                 container().weeklyReportRepository,
+                container().bodyMeasurementRepository,
             )
         }
         initializer {

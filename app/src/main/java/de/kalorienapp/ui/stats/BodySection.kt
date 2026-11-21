@@ -1,5 +1,11 @@
 package de.kalorienapp.ui.stats
 
+import androidx.compose.runtime.saveable.rememberSaveable
+import de.kalorienapp.ui.components.neonChipColors
+import androidx.compose.material3.FilterChip
+import de.kalorienapp.domain.model.MeasureType
+import de.kalorienapp.domain.model.BodyMeasurement
+import de.kalorienapp.ui.components.LocalWeightEnabled
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -93,23 +99,28 @@ fun BodySection(
     if (showWeightDialog) {
         WeightDialog(
             initialKg = state.weights.lastOrNull()?.weightKg ?: state.profileWeightKg,
-            onSave = { kg -> viewModel.addWeight(kg); showWeightDialog = false },
+            onSave = { kg, fat -> viewModel.addWeight(kg, fat); showWeightDialog = false },
             onDismiss = { showWeightDialog = false },
         )
     }
 
     run {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            TipSlot(Tip.WEIGHT)
-            WeightSection(
-                entries = state.weights,
-                trend = state.weightTrend,
-                onAdd = { showWeightDialog = true },
-                onDelete = viewModel::deleteWeight,
-            )
+            // Drei unabhängige Schalter: Gewicht, Körperanalyse, Körpermaße – hier steht nur, was an ist.
+            val weightOn = LocalWeightEnabled.current
+            if (weightOn) {
+                TipSlot(Tip.WEIGHT)
+                WeightSection(
+                    entries = state.weights,
+                    trend = state.weightTrend,
+                    bodyFat = state.bodyFat,
+                    onAdd = { showWeightDialog = true },
+                    onDelete = viewModel::deleteWeight,
+                )
+            }
             BodyAnalysisSection(onAdd = onAddAnalysis)
             BodyMeasurementsSection()
-            if (state.reachedGoals.isNotEmpty()) {
+            if (weightOn && state.reachedGoals.isNotEmpty()) {
                 HorizontalDivider()
                 Text(stringResource(R.string.goal_history_title), style = MaterialTheme.typography.titleLarge)
                 state.reachedGoals.forEach { goal ->
@@ -121,7 +132,19 @@ fun BodySection(
 }
 
 @Composable
-private fun WeightSection(entries: List<WeightEntry>, trend: List<TrendPoint>, onAdd: () -> Unit, onDelete: (WeightEntry) -> Unit) {
+private fun WeightSection(
+    entries: List<WeightEntry>,
+    trend: List<TrendPoint>,
+    bodyFat: List<BodyMeasurement>,
+    onAdd: () -> Unit,
+    onDelete: (WeightEntry) -> Unit,
+) {
+    // Umschalter Gewicht | Körperfett – nur sinnvoll ab zwei Körperfett-Werten.
+    var showFat by rememberSaveable { mutableStateOf(false) }
+    val fatChart = showFat && bodyFat.size >= 2
+    val zone = ZoneId.systemDefault()
+    // Körperfett je Tag (letzte Messung des Tages) – steht an der Gewichtsmessung desselben Tages.
+    val fatByDay = bodyFat.groupBy { it.measuredAt.atZone(zone).toLocalDate() }.mapValues { (_, list) -> list.maxBy { it.measuredAt }.value }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -142,7 +165,25 @@ private fun WeightSection(entries: List<WeightEntry>, trend: List<TrendPoint>, o
             Text(stringResource(R.string.weight_empty), style = MaterialTheme.typography.bodyMedium, color = Neon.TextSecondary)
             return@Column
         }
-        Row(verticalAlignment = Alignment.Bottom) {
+        if (bodyFat.size >= 2) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = !showFat,
+                    onClick = { showFat = false },
+                    label = { Text(stringResource(R.string.chart_weight)) },
+                    colors = neonChipColors(),
+                )
+                FilterChip(
+                    selected = showFat,
+                    onClick = { showFat = true },
+                    label = { Text(stringResource(R.string.chart_body_fat)) },
+                    colors = neonChipColors(),
+                )
+            }
+        }
+        if (fatChart) {
+            BodyFatChart(bodyFat)
+        } else Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 stringResource(R.string.weight_value, latest.weightKg.toInputString()),
                 style = MaterialTheme.typography.displaySmall,
@@ -158,7 +199,7 @@ private fun WeightSection(entries: List<WeightEntry>, trend: List<TrendPoint>, o
                 )
             }
         }
-        trend.lastOrNull()?.let { last ->
+        if (!fatChart) trend.lastOrNull()?.let { last ->
             val perWeek = WeightTrend.weeklyChange(trend)
             Text(
                 if (perWeek == null) {
@@ -170,9 +211,11 @@ private fun WeightSection(entries: List<WeightEntry>, trend: List<TrendPoint>, o
                 color = Neon.Violet,
             )
         }
-        WeightLineChart(entries, trend, Modifier.fillMaxWidth())
-        if (entries.size >= 2) {
-            Text(stringResource(R.string.weight_trend_caption), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+        if (!fatChart) {
+            WeightLineChart(entries, trend, Modifier.fillMaxWidth())
+            if (entries.size >= 2) {
+                Text(stringResource(R.string.weight_trend_caption), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+            }
         }
         entries.takeLast(10).reversed().forEach { entry ->
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -181,7 +224,12 @@ private fun WeightSection(entries: List<WeightEntry>, trend: List<TrendPoint>, o
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f),
                 )
-                Text(stringResource(R.string.weight_value, entry.weightKg.toInputString()), style = MaterialTheme.typography.bodyMedium)
+                val fat = fatByDay[entry.measuredAt.atZone(zone).toLocalDate()]
+                Text(
+                    stringResource(R.string.weight_value, entry.weightKg.toInputString()) +
+                        (fat?.let { " · " + it.toInputString() + " %" } ?: ""),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
                 IconButton(onClick = { onDelete(entry) }) {
                     Icon(Icons.Filled.Delete, stringResource(R.string.delete), tint = Neon.TextSecondary)
                 }
@@ -190,27 +238,61 @@ private fun WeightSection(entries: List<WeightEntry>, trend: List<TrendPoint>, o
     }
 }
 
+/** Körperfett-Verlauf (statt Gewicht): letzter Wert groß, Veränderung, Linie über alle Messungen. */
 @Composable
-private fun WeightDialog(initialKg: Double?, onSave: (Double) -> Unit, onDismiss: () -> Unit) {
+private fun BodyFatChart(bodyFat: List<BodyMeasurement>) {
+    val latest = bodyFat.last().value
+    val diff = latest - bodyFat.first().value
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(latest.toInputString() + " %", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+        Text(
+            (if (diff > 0) "+" else "") + diff.format(1) + " %",
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (diff <= 0) Neon.Green else Neon.Orange,
+            modifier = Modifier.padding(start = 12.dp, bottom = 6.dp),
+        )
+    }
+    // Gleiche Linie wie beim Gewicht, nur ohne Trend.
+    WeightLineChart(bodyFat.map { WeightEntry(measuredAt = it.measuredAt, weightKg = it.value) }, emptyList(), Modifier.fillMaxWidth())
+    Text(stringResource(R.string.body_fat_caption), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+}
+
+@Composable
+private fun WeightDialog(initialKg: Double?, onSave: (Double, Double?) -> Unit, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf(initialKg?.toInputString().orEmpty()) }
+    var fatText by remember { mutableStateOf("") }
     val value = text.parseDecimal()?.takeIf { it in 30.0..300.0 }
+    // Körperfett freiwillig: leer = nicht gemessen
+    val fat = fatText.parseDecimal()?.takeIf(MeasureType.BODY_FAT::isValid)
+    val fatError = fatText.isNotBlank() && fat == null
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.weight_add_title)) },
         text = {
-            NumberField(
-                value = text,
-                onValueChange = { text = it },
-                label = stringResource(R.string.profile_weight),
-                suffix = stringResource(R.string.unit_kg),
-                isError = text.isNotBlank() && value == null,
-                errorText = stringResource(R.string.error_weight),
-                imeAction = ImeAction.Done,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                NumberField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = stringResource(R.string.profile_weight),
+                    suffix = stringResource(R.string.unit_kg),
+                    isError = text.isNotBlank() && value == null,
+                    errorText = stringResource(R.string.error_weight),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                NumberField(
+                    value = fatText,
+                    onValueChange = { fatText = it },
+                    label = stringResource(R.string.weight_body_fat_optional),
+                    suffix = stringResource(R.string.unit_percent),
+                    isError = fatError,
+                    errorText = stringResource(R.string.error_number),
+                    imeAction = ImeAction.Done,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         },
         confirmButton = {
-            TextButton(onClick = { value?.let(onSave) }, enabled = value != null) { Text(stringResource(R.string.save)) }
+            TextButton(onClick = { value?.let { onSave(it, fat) } }, enabled = value != null && !fatError) { Text(stringResource(R.string.save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )

@@ -78,6 +78,7 @@ fun ProfileScreen(
                     ProteinOnlySection()
                     WeightTrackingSection()
                     BodyAnalysisSettingSection()
+                    MeasuresSettingSection()
                     WaterSettingsSection()
                 }
                 1 -> MealPlanSettingsSection(onOpenPlan)

@@ -26,15 +26,17 @@ class WaterSettingsViewModel(private val settings: AppSettings) : ViewModel() {
 
     val bodyAnalysisEnabled = settings.bodyAnalysisEnabled
 
+    val measuresEnabled = settings.measuresEnabled
+
+    fun setMeasuresEnabled(enabled: Boolean) = settings.setMeasuresEnabled(enabled)
+
     fun setBodyAnalysisEnabled(enabled: Boolean) = settings.setBodyAnalysisEnabled(enabled)
 }
 
-/** „Körperanalyse“ (Bioimpedanz-Waage) – nur sichtbar, wenn Gewicht getrackt wird. */
+/** „Körperanalyse“ (Bioimpedanz-Waage) – unabhängig von „Gewicht tracken“ (Nutzer, Nov. 2026). */
 @Composable
 fun BodyAnalysisSettingSection(viewModel: WaterSettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
-    val weight by viewModel.weightEnabled.collectAsStateWithLifecycle()
     val enabled by viewModel.bodyAnalysisEnabled.collectAsStateWithLifecycle()
-    if (!weight) return
     SettingSwitchRow(
         stringResource(R.string.body_analysis_enable),
         stringResource(R.string.body_analysis_enable_text),
@@ -62,4 +64,16 @@ fun ProteinOnlySection(viewModel: WaterSettingsViewModel = viewModel(factory = A
 fun WaterSettingsSection(viewModel: WaterSettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
     val enabled by viewModel.enabled.collectAsStateWithLifecycle()
     SettingSwitchRow(stringResource(R.string.water_enable), stringResource(R.string.water_enable_text), enabled, viewModel::setEnabled)
+}
+
+/** „Körpermaße“ (Umfänge) – standardmäßig aus, unabhängig von Gewicht und Körperanalyse. */
+@Composable
+fun MeasuresSettingSection(viewModel: WaterSettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
+    val enabled by viewModel.measuresEnabled.collectAsStateWithLifecycle()
+    SettingSwitchRow(
+        stringResource(R.string.measures_enable),
+        stringResource(R.string.measures_enable_text),
+        enabled,
+        viewModel::setMeasuresEnabled,
+    )
 }
