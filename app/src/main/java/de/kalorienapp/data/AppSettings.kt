@@ -144,10 +144,47 @@ class AppSettings(context: Context) {
         _seenTips.value = updated
     }
 
-    /** Profil → „Tipps wieder anzeigen“. */
+    /** Profil → „Tipps wieder anzeigen“ (auch die Tipps nach Verhalten). */
     fun resetTips() {
-        prefs.edit().remove(KEY_SEEN_TIPS).apply()
+        prefs.edit().remove(KEY_SEEN_TIPS).remove(KEY_PENDING_TIPS).remove(KEY_TIP_OF_DAY).remove(KEY_MANUAL_TYPED).apply()
         _seenTips.value = emptySet()
+        _pendingTips.value = emptySet()
+        _tipOfDay.value = null
+    }
+
+    private val _pendingTips = MutableStateFlow(prefs.getStringSet(KEY_PENDING_TIPS, emptySet()).orEmpty().toSet())
+
+    /** Tipps nach Verhalten, deren Auslöser schon eingetreten ist und die beim nächsten Erfassen erscheinen. */
+    val pendingTips: StateFlow<Set<String>> = _pendingTips.asStateFlow()
+
+    fun addPendingTip(name: String) {
+        if (name in _pendingTips.value || name in _seenTips.value) return
+        val updated = _pendingTips.value + name
+        prefs.edit().putStringSet(KEY_PENDING_TIPS, updated).apply()
+        _pendingTips.value = updated
+    }
+
+    private val _tipOfDay = MutableStateFlow(prefs.getString(KEY_TIP_OF_DAY, null))
+
+    /** „Tag:Name“ des heute gezeigten Tipps nach Verhalten – höchstens einer pro Tag. */
+    val tipOfDay: StateFlow<String?> = _tipOfDay.asStateFlow()
+
+    /** Darf [name] heute erscheinen? Ja, wenn heute noch keiner kam oder es genau dieser ist; dann gilt er als heutiger. */
+    fun claimTipOfDay(name: String, epochDay: Long): Boolean {
+        val current = _tipOfDay.value
+        val value = "$epochDay:$name"
+        if (current == value) return true
+        if (current?.substringBefore(':') == epochDay.toString()) return false
+        prefs.edit().putString(KEY_TIP_OF_DAY, value).apply()
+        _tipOfDay.value = value
+        return true
+    }
+
+    /** Wie oft ein Lebensmittel von Hand abgetippt wurde (für den Tipp „Barcode/Nährwerttabelle“). */
+    fun countManualTyped(count: Int = 1): Int {
+        val total = prefs.getInt(KEY_MANUAL_TYPED, 0) + count
+        prefs.edit().putInt(KEY_MANUAL_TYPED, total).apply()
+        return total
     }
 
     private val _foodPreferences = MutableStateFlow(readFoodPreferences())
@@ -270,6 +307,9 @@ class AppSettings(context: Context) {
         private const val KEY_DISLIKES = "disliked_foods"
         private const val DISLIKE_SEPARATOR = "\n"
         private const val KEY_SEEN_TIPS = "seen_tips"
+        private const val KEY_PENDING_TIPS = "pending_tips"
+        private const val KEY_TIP_OF_DAY = "tip_of_day"
+        private const val KEY_MANUAL_TYPED = "manual_typed"
         private const val KEY_PLAN_ENABLED = "meal_plan_enabled"
         private const val KEY_CHANGELOG_SEEN = "changelog_seen_version"
         private const val KEY_WEEKLY_DONE = "weekly_report_done_for"

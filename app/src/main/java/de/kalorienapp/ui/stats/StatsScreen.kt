@@ -85,7 +85,7 @@ fun StatsScreen(
         ) { page ->
             when (pages[page]) {
                 StatsPage.FOOD -> {
-                    TipSlot(Tip.STATS)
+                    TipSlot(Tip.STATS, textRes = if (StatsPage.BODY in pages) R.string.tip_stats else R.string.tip_stats_no_body)
                     ChoiceChips(
                         options = StatsPeriod.entries,
                         selected = state.period,

@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.capture
 
+import de.kalorienapp.data.AppSettings
 import android.graphics.ImageDecoder
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
@@ -80,7 +81,11 @@ class CaptureViewModel(
     private val repository: FoodEntryRepository,
     private val library: FoodLibraryRepository,
     private val mealPlan: MealPlanRepository,
+    private val settings: AppSettings? = null,
 ) : ViewModel() {
+
+    /** Im Vorschlag selbst angelegte (abgetippte) Lebensmittel – zählen für den Tipp „Barcode statt Abtippen“. */
+    private val typedItemIds = mutableSetOf<Long>()
 
     private val route = savedStateHandle.toRoute<CaptureRoute>()
 
@@ -249,6 +254,7 @@ class CaptureViewModel(
 
     fun addItem() = updateProposal { p ->
         val item = ProposalItem(nextItemId++, FoodForm(), EntrySource.MANUAL)
+        typedItemIds += item.id
         p.copy(items = p.items + item, expandedId = item.id)
     }
 
@@ -299,6 +305,7 @@ class CaptureViewModel(
             }
             // Gleiches von eben (z. B. zweiter Salami-Stick) fließt in den vorhandenen Eintrag ein.
             entries.forEach { repository.add(it) }
+            de.kalorienapp.ui.entry.countTyped(settings, proposal.items.count { it.id in typedItemIds && it.dish == null })
             onDone()
         }
     }

@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.entry
 
+import de.kalorienapp.data.AppSettings
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -34,6 +35,7 @@ data class EntryEditState(
 class EntryEditViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: FoodEntryRepository,
+    private val settings: AppSettings? = null,
 ) : ViewModel() {
 
     private val route = savedStateHandle.toRoute<EntryEditRoute>()
@@ -99,7 +101,12 @@ class EntryEditViewModel(
         saving = true
         viewModelScope.launch {
             // Neue Einträge können in einen gleichen von eben einfließen (Zusammenfassen), bearbeitete nicht.
-            if (existing == null) repository.add(entry) else repository.save(entry)
+            if (existing == null) {
+                repository.add(entry)
+                countTyped(settings, 1)
+            } else {
+                repository.save(entry)
+            }
             onDone()
         }
     }
@@ -151,5 +158,13 @@ class EntryEditViewModel(
             repository.delete(id)
             onDone()
         }
+    }
+}
+
+/** Von Hand abgetippte Lebensmittel zählen; ab dem 5. kommt beim Erfassen der Tipp „Barcode statt Abtippen“. */
+internal fun countTyped(settings: AppSettings?, count: Int) {
+    if (settings == null || count <= 0) return
+    if (settings.countManualTyped(count) >= de.kalorienapp.domain.BehaviorTips.MANUAL_COUNT) {
+        settings.addPendingTip(de.kalorienapp.domain.BehaviorTip.SCAN_INSTEAD.name)
     }
 }

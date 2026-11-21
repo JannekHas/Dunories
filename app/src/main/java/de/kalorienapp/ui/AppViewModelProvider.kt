@@ -125,7 +125,7 @@ object AppViewModelProvider {
             GoalViewModel(container().profileRepository, container().goalRepository)
         }
         initializer {
-            EntryEditViewModel(createSavedStateHandle(), container().foodEntryRepository)
+            EntryEditViewModel(createSavedStateHandle(), container().foodEntryRepository, container().settings)
         }
         initializer { MealPlanViewModel(container().mealPlanRepository) }
         initializer { de.kalorienapp.ui.profile.WaterSettingsViewModel(container().settings) }
@@ -137,6 +137,7 @@ object AppViewModelProvider {
                 container().foodEntryRepository,
                 container().foodLibraryRepository,
                 container().mealPlanRepository,
+                container().settings,
             )
         }
     }

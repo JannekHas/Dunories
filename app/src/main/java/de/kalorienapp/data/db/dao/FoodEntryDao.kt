@@ -24,6 +24,9 @@ interface FoodEntryDao {
     suspend fun upsertAll(entries: List<FoodEntryEntity>)
 
     @Query("SELECT * FROM food_entry WHERE dateEpochDay BETWEEN :fromEpochDay AND :toEpochDay ORDER BY dateEpochDay, createdAt")
+    fun observeBetween(fromEpochDay: Long, toEpochDay: Long): Flow<List<FoodEntryEntity>>
+
+    @Query("SELECT * FROM food_entry WHERE dateEpochDay BETWEEN :fromEpochDay AND :toEpochDay ORDER BY dateEpochDay, createdAt")
     suspend fun between(fromEpochDay: Long, toEpochDay: Long): List<FoodEntryEntity>
 
     @Query("SELECT dateEpochDay, mealType, createdAt FROM food_entry WHERE dateEpochDay >= :fromEpochDay")

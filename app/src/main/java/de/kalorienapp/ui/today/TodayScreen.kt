@@ -92,6 +92,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.BuildConfig
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.BehaviorTipSlot
+import de.kalorienapp.domain.BehaviorTip
 import de.kalorienapp.ui.components.LocalWeightEnabled
 import kotlin.math.roundToInt
 import de.kalorienapp.domain.model.Nutrients
@@ -155,6 +157,7 @@ fun TodayScreen(
     val plan by viewModel.plan.collectAsStateWithLifecycle()
     val waterEnabled by viewModel.waterEnabled.collectAsStateWithLifecycle()
     val proteinOnly = LocalProteinOnly.current
+    val behaviorTip by viewModel.behaviorTip.collectAsStateWithLifecycle()
     val weightEnabled = LocalWeightEnabled.current
     // Nach einem Update einmal „Neu in Dunories“ zeigen (nur auf dem echten „Heute“, nicht im Kalender-Tag)
     val unseenChangelog by viewModel.unseenChangelog.collectAsStateWithLifecycle()
@@ -426,7 +429,43 @@ fun TodayScreen(
                 }
             }
             item(key = "tip_meal") { TipSlot(Tip.MEAL, caret = TipCaret.DOWN_CENTER, after = Tip.ADD) }
-            items(state.meals, key = { it.mealType.name }) { group ->
+            state.meals.forEach { group ->
+            // Tipp nach Verhalten direkt über der betroffenen Mahlzeit (nur heute).
+            val tip = behaviorTip?.takeIf { it.meal == group.mealType && state.isToday }
+            if (tip != null) {
+                item(key = "behavior_tip") {
+                    BehaviorTipSlot(
+                        tip = when (tip) {
+                            is TodayBehaviorTip.Favorite -> BehaviorTip.FAVORITE
+                            is TodayBehaviorTip.Combo -> BehaviorTip.COMBO
+                            is TodayBehaviorTip.Move -> BehaviorTip.MOVE
+                        },
+                        text = when (tip) {
+                            is TodayBehaviorTip.Favorite -> stringResource(R.string.btip_favorite, tip.entry.name.trim())
+                            is TodayBehaviorTip.Combo -> stringResource(R.string.btip_combo)
+                            is TodayBehaviorTip.Move -> stringResource(R.string.tip_move)
+                        },
+                        condition = true,
+                        caret = TipCaret.DOWN_CENTER,
+                        actionLabel = when (tip) {
+                            is TodayBehaviorTip.Favorite -> stringResource(R.string.btip_favorite_action)
+                            is TodayBehaviorTip.Combo -> stringResource(R.string.btip_combo_action)
+                            is TodayBehaviorTip.Move -> null
+                        },
+                        onAction = {
+                            when (tip) {
+                                is TodayBehaviorTip.Favorite -> {
+                                    viewModel.addFavorite(tip.entry)
+                                    scope.launch { snackbarHostState.showSnackbar(favoriteAdded.format(tip.entry.name)) }
+                                }
+                                is TodayBehaviorTip.Combo -> comboToSave = group.copy(entries = tip.entries)
+                                is TodayBehaviorTip.Move -> Unit
+                            }
+                        },
+                    )
+                }
+            }
+            item(key = group.mealType.name) {
                 val dragged = dragState.entry
                 MealCard(
                     modifier = Modifier
@@ -448,10 +487,8 @@ fun TodayScreen(
                     onPlanAdjust = { plan?.dayIndex?.let { onAdjustPlan(state.date, group.mealType, it) } },
                 )
             }
-            // Nach dem ersten Eintrag einmal erklären, dass man verschieben kann.
-            item(key = "tip_move") {
-                TipSlot(Tip.MOVE, condition = state.meals.any { it.entries.isNotEmpty() }, after = Tip.RINGS)
             }
+            // Verschieben-Tipp kommt jetzt nach Verhalten (gelöscht und woanders neu eingetragen), siehe oben.
         }
         EntryDragGhost(dragState) { it.neonColor }
         }
@@ -675,7 +712,7 @@ private fun ProteinSummaryCard(summary: DaySummary, onNutrientClick: (RankedNutr
                 onClick = { onNutrientClick(RankedNutrient.PROTEIN) },
             )
         }
-        TipSlot(Tip.RINGS, condition = eaten > 0, after = Tip.MEAL)
+        TipSlot(Tip.RINGS, condition = eaten > 0, after = Tip.MEAL, textRes = R.string.tip_rings_protein)
     }
 }
 

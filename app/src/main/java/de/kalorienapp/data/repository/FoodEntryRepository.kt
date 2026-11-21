@@ -18,6 +18,10 @@ class FoodEntryRepository(private val dao: FoodEntryDao) {
     fun entriesFor(date: LocalDate): Flow<List<FoodEntry>> =
         dao.observeForDay(date.toEpochDay()).map { list -> list.map { it.toDomain() } }
 
+    /** Einträge im Zeitraum (beide Tage inklusive) – z. B. für die Tipps nach Verhalten. */
+    fun entriesBetween(from: LocalDate, to: LocalDate): Flow<List<FoodEntry>> =
+        dao.observeBetween(from.toEpochDay(), to.toEpochDay()).map { list -> list.map { it.toDomain() } }
+
     suspend fun get(id: Long): FoodEntry? = dao.getById(id)?.toDomain()
 
     /** Legt an oder aktualisiert – auch zum Wiederherstellen gelöschter Einträge (gleiche id). */

@@ -31,6 +31,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
+import java.time.LocalDate
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
+import de.kalorienapp.domain.BehaviorTip
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.ui.theme.Neon
 
@@ -63,6 +68,8 @@ fun TipSlot(
     caret: TipCaret = TipCaret.NONE,
     condition: Boolean = true,
     after: Tip? = null,
+    /** Abweichender Text (z. B. im Modus „Nur Protein“); sonst [Tip.textRes]. */
+    @StringRes textRes: Int = tip.textRes,
 ) {
     val settings = LocalTips.current ?: return
     val seen by settings.seenTips.collectAsState()
@@ -73,13 +80,57 @@ fun TipSlot(
         enter = fadeIn() + expandVertically(spring(dampingRatio = Spring.DampingRatioNoBouncy)),
         exit = fadeOut() + shrinkVertically(spring(dampingRatio = Spring.DampingRatioNoBouncy)),
     ) {
-        TipBubble(stringResource(tip.textRes), caret, onDismiss = { settings.markTipSeen(tip.name) })
+        TipBubble(stringResource(textRes), caret, onDismiss = { settings.markTipSeen(tip.name) })
+    }
+}
+
+/**
+ * Tipp nach Verhalten ([BehaviorTip]): erscheint, sobald [condition] gilt – je einmal und höchstens einer
+ * pro Tag (`AppSettings.claimTipOfDay`). Mit [actionLabel] erledigt ein Knopf die Sache direkt
+ * (z. B. „Als Favorit speichern“); danach gilt der Tipp als gesehen.
+ */
+@Composable
+fun BehaviorTipSlot(
+    tip: BehaviorTip,
+    text: String,
+    condition: Boolean,
+    modifier: Modifier = Modifier,
+    caret: TipCaret = TipCaret.NONE,
+    actionLabel: String? = null,
+    onAction: () -> Unit = {},
+) {
+    val settings = LocalTips.current ?: return
+    val seen by settings.seenTips.collectAsState()
+    val tipOfDay by settings.tipOfDay.collectAsState()
+    val today = LocalDate.now().toEpochDay()
+    val freeToday = tipOfDay?.substringBefore(':') != today.toString() || tipOfDay == "$today:${tip.name}"
+    val visible = condition && tip.name !in seen && freeToday
+    LaunchedEffect(visible) { if (visible) settings.claimTipOfDay(tip.name, today) }
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = fadeIn() + expandVertically(spring(dampingRatio = Spring.DampingRatioNoBouncy)),
+        exit = fadeOut() + shrinkVertically(spring(dampingRatio = Spring.DampingRatioNoBouncy)),
+    ) {
+        TipBubble(
+            text = text,
+            caret = caret,
+            onDismiss = { settings.markTipSeen(tip.name) },
+            actionLabel = actionLabel,
+            onAction = { onAction(); settings.markTipSeen(tip.name) },
+        )
     }
 }
 
 /** Cyanfarbene Sprechblase mit schwarzer Schrift (wie die Neon-Kacheln) und kleinem Zeiger. */
 @Composable
-private fun TipBubble(text: String, caret: TipCaret, onDismiss: () -> Unit) {
+private fun TipBubble(
+    text: String,
+    caret: TipCaret,
+    onDismiss: () -> Unit,
+    actionLabel: String? = null,
+    onAction: () -> Unit = {},
+) {
     Column(Modifier.fillMaxWidth()) {
         if (caret == TipCaret.UP_START || caret == TipCaret.UP_END || caret == TipCaret.UP_CENTER) {
             Caret(up = true, modifier = Modifier.align(caret.alignment()))
@@ -101,8 +152,21 @@ private fun TipBubble(text: String, caret: TipCaret, onDismiss: () -> Unit) {
                 )
                 Text(text, style = MaterialTheme.typography.bodyMedium, color = Neon.OnNeon, modifier = Modifier.weight(1f).padding(end = 8.dp))
             }
-            TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                Text(stringResource(R.string.tip_dismiss), color = Neon.OnNeon, fontWeight = FontWeight.Bold)
+            Row(Modifier.align(Alignment.End), verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onDismiss) {
+                    Text(
+                        stringResource(if (actionLabel != null) R.string.tip_no_thanks else R.string.tip_dismiss),
+                        color = Neon.OnNeon,
+                        fontWeight = if (actionLabel != null) FontWeight.Normal else FontWeight.Bold,
+                    )
+                }
+                if (actionLabel != null) {
+                    Button(
+                        onClick = onAction,
+                        colors = ButtonDefaults.buttonColors(containerColor = Neon.OnNeon, contentColor = Neon.Cyan),
+                        modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
+                    ) { Text(actionLabel, fontWeight = FontWeight.Bold) }
+                }
             }
         }
         if (caret == TipCaret.DOWN_CENTER) Caret(up = false, modifier = Modifier.align(Alignment.CenterHorizontally))

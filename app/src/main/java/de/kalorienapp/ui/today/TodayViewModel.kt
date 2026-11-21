@@ -17,6 +17,9 @@ import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.repository.GoalRepository
 import de.kalorienapp.data.repository.StatsRepository
 import de.kalorienapp.domain.Streak
+import de.kalorienapp.domain.BehaviorTip
+import de.kalorienapp.domain.BehaviorTips
+import de.kalorienapp.domain.DeletedEntry
 import de.kalorienapp.data.repository.WaterRepository
 import de.kalorienapp.domain.FastingConfig
 import de.kalorienapp.domain.Water
@@ -71,6 +74,22 @@ data class TodayUiState(
     val isToday: Boolean get() = date == LocalDate.now()
 }
 
+/** Tipp nach Verhalten auf „Heute“ – erscheint über der betroffenen Mahlzeit. */
+sealed interface TodayBehaviorTip {
+    val meal: MealType
+
+    /** [entry] zum 3. Mal in 14 Tagen → „Als Favorit“. */
+    data class Favorite(val entry: FoodEntry) : TodayBehaviorTip {
+        override val meal get() = entry.mealType
+    }
+
+    /** Diese Mahlzeit gab es so schon → „Als Kombi“. */
+    data class Combo(override val meal: MealType, val entries: List<FoodEntry>) : TodayBehaviorTip
+
+    /** Gelöscht und hier neu eingetragen → „Halte gedrückt und zieh“. */
+    data class Move(override val meal: MealType) : TodayBehaviorTip
+}
+
 /** Ernährungsplan für den angezeigten Tag (null = Plan aus). */
 data class TodayPlan(
     /** Plan-Tag (0-basiert) oder null, wenn der Tag außerhalb des Durchlaufs liegt. */
@@ -100,6 +119,43 @@ class TodayViewModel(
     val streak: StateFlow<Int> = LocalDate.now().let { today ->
         statsRepository.days(today.minusDays(STREAK_LOOKBACK_DAYS), today.minusDays(1)).map { Streak.current(it, today) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** Zuletzt gelöschter Eintrag – „gelöscht und woanders neu eingetragen“ → Verschieben-Tipp. */
+    private val lastDeleted = MutableStateFlow<DeletedEntry?>(null)
+
+    /**
+     * Tipp nach Verhalten für heute (Priorität: Verschieben, Favorit, Kombi). Nebenbei: mehrere Einzelfotos
+     * für eine Mahlzeit merken → Tipp „Ein Foto reicht“ beim nächsten Erfassen.
+     */
+    val behaviorTip: StateFlow<TodayBehaviorTip?> = LocalDate.now().let { today ->
+        combine(
+            entryRepository.entriesBetween(today.minusDays(BehaviorTips.LOOKBACK_DAYS), today),
+            library.favorites,
+            library.combos,
+            lastDeleted,
+        ) { entries, favorites, combos, deleted ->
+            val todays = entries.filter { it.date == today }
+            if (BehaviorTips.manySinglePhotos(todays)) settings.addPendingTip(BehaviorTip.ONE_PHOTO.name)
+            val moved = deleted?.takeIf { BehaviorTips.reEnteredElsewhere(it, todays) }
+            val favorite = BehaviorTips.favoriteCandidate(entries, today, favorites.map { BehaviorTips.key(it.name) }.toSet())
+            val combo = BehaviorTips.comboCandidate(
+                entries, today, combos.map { c -> c.items.map { BehaviorTips.key(it.name) }.toSet() }.toSet(),
+            )
+            val seen = settings.seenTips.value
+            when {
+                moved != null && BehaviorTip.MOVE.name !in seen ->
+                    todays.firstOrNull { BehaviorTips.key(it.name) == BehaviorTips.key(moved.name) && it.mealType != moved.mealType }
+                        ?.let { TodayBehaviorTip.Move(it.mealType) }
+                favorite != null && BehaviorTip.FAVORITE.name !in seen -> TodayBehaviorTip.Favorite(favorite)
+                combo != null && BehaviorTip.COMBO.name !in seen -> TodayBehaviorTip.Combo(combo.first, combo.second)
+                else -> null
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun addFavorite(entry: FoodEntry) {
+        viewModelScope.launch { library.addFavorite(entry) }
+    }
 
     /** Aus dem Kalender geöffnet → dieses Datum, sonst heute. */
     private val date = MutableStateFlow(
@@ -219,6 +275,7 @@ class TodayViewModel(
     }
 
     fun delete(entry: FoodEntry) {
+        lastDeleted.value = DeletedEntry(entry.name, entry.date, entry.mealType, System.currentTimeMillis())
         viewModelScope.launch { entryRepository.delete(entry.id) }
     }
 

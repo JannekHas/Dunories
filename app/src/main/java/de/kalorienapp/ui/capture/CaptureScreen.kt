@@ -80,6 +80,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import de.kalorienapp.ui.components.pressable
 import de.kalorienapp.R
+import androidx.compose.runtime.collectAsState
+import de.kalorienapp.ui.components.LocalTips
+import de.kalorienapp.ui.components.BehaviorTipSlot
+import de.kalorienapp.domain.BehaviorTip
 import de.kalorienapp.ui.components.Tip
 import de.kalorienapp.ui.components.TipCaret
 import de.kalorienapp.ui.components.TipSlot
@@ -293,6 +297,7 @@ private fun CameraContent(
                 textAlign = TextAlign.Center,
             )
             TipSlot(Tip.CAPTURE, caret = TipCaret.UP_CENTER)
+            CapturePendingTip()
         }
 
         // Taschenlampe: Dauerlicht für dunkle Teller/Restaurants (nur wenn die Kamera ein Blitzlicht hat)
@@ -645,4 +650,23 @@ internal fun SpeechButton(text: String, onChange: (String) -> Unit, separator: S
             Text(stringResource(it), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
         }
     }
+}
+
+/**
+ * Vorgemerkter Tipp nach Verhalten („Ein Foto reicht“, „Barcode statt Abtippen“) – erst nach dem
+ * Kamera-Tipp, und immer nur einer.
+ */
+@Composable
+private fun CapturePendingTip() {
+    val settings = LocalTips.current ?: return
+    val pending by settings.pendingTips.collectAsState()
+    val seen by settings.seenTips.collectAsState()
+    if (Tip.CAPTURE.name !in seen) return
+    val tip = listOf(BehaviorTip.ONE_PHOTO, BehaviorTip.SCAN_INSTEAD).firstOrNull { it.name in pending && it.name !in seen } ?: return
+    BehaviorTipSlot(
+        tip = tip,
+        text = stringResource(if (tip == BehaviorTip.ONE_PHOTO) R.string.btip_one_photo else R.string.btip_scan_instead),
+        condition = true,
+        caret = TipCaret.UP_CENTER,
+    )
 }
