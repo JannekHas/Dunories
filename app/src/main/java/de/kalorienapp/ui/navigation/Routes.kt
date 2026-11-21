@@ -70,6 +70,10 @@ data class MealPlanDayRoute(val dayIndex: Int)
 @Serializable
 data object MealPlanImportRoute
 
+/** Körperanalyse eintragen (eintippen, Foto, einsprechen). */
+@Serializable
+data object BodyAnalysisRoute
+
 /** Tagesansicht für ein bestimmtes Datum (aus dem Kalender geöffnet). */
 @Serializable
 data class DayRoute(val epochDay: Long)

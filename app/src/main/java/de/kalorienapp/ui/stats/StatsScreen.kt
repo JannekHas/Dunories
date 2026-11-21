@@ -65,6 +65,7 @@ fun StatsScreen(
     /** Aus der Wiege-Erinnerung geöffnet → Reiter „Körper“ mit Wiege-Dialog. */
     openWeighDialog: Boolean = false,
     onWeighDialogShown: () -> Unit = {},
+    onAddAnalysis: () -> Unit = {},
     viewModel: StatsViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -116,6 +117,7 @@ fun StatsScreen(
                     openWeighDialog = openWeighDialog,
                     onWeighDialogShown = onWeighDialogShown,
                     onOpenGoal = onOpenGoal,
+                    onAddAnalysis = onAddAnalysis,
                     viewModel = viewModel,
                 )
                 StatsPage.AI -> WeeklyReportSection(

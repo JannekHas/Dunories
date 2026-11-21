@@ -69,7 +69,7 @@ object AppViewModelProvider {
             )
         }
         initializer {
-            BodyMeasurementViewModel(container().bodyMeasurementRepository)
+            BodyMeasurementViewModel(container().bodyMeasurementRepository, container().settings)
         }
         initializer {
             WeeklyReportViewModel(createSavedStateHandle(), container().weeklyReportRepository, container().settings)
@@ -130,6 +130,7 @@ object AppViewModelProvider {
         initializer { MealPlanViewModel(container().mealPlanRepository) }
         initializer { de.kalorienapp.ui.profile.WaterSettingsViewModel(container().settings) }
         initializer { MealPlanImportViewModel(container().mealPlanImporter, container().mealPlanRepository) }
+        initializer { de.kalorienapp.ui.stats.BodyAnalysisViewModel(container().bodyAnalysisReader, container().bodyMeasurementRepository) }
         initializer {
             CaptureViewModel(
                 createSavedStateHandle(),

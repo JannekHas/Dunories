@@ -72,6 +72,7 @@ class AppContainer(context: Context) {
     )
 
     val mealPlanImporter = MealPlanImporter(context, GeminiMealPlanAnalyzer(gemini))
+    val bodyAnalysisReader = de.kalorienapp.capture.BodyAnalysisReader(context, de.kalorienapp.data.remote.gemini.GeminiBodyAnalyzer(gemini))
 
     /** Per Teilen-Menü empfangene Inhalte für den Rezept-Import. */
     val shareInbox = ShareInbox(ShareGuard(BuildConfig.APPLICATION_ID))

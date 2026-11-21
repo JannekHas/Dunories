@@ -56,6 +56,7 @@ object BackupFormat {
         val waterEnabled: Boolean? = null,
         val proteinOnly: Boolean? = null,
         val weightEnabled: Boolean? = null,
+        val bodyAnalysisEnabled: Boolean? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

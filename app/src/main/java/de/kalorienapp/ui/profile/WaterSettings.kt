@@ -23,6 +23,24 @@ class WaterSettingsViewModel(private val settings: AppSettings) : ViewModel() {
     val weightEnabled = settings.weightEnabled
 
     fun setWeightEnabled(enabled: Boolean) = settings.setWeightEnabled(enabled)
+
+    val bodyAnalysisEnabled = settings.bodyAnalysisEnabled
+
+    fun setBodyAnalysisEnabled(enabled: Boolean) = settings.setBodyAnalysisEnabled(enabled)
+}
+
+/** „Körperanalyse“ (Bioimpedanz-Waage) – nur sichtbar, wenn Gewicht getrackt wird. */
+@Composable
+fun BodyAnalysisSettingSection(viewModel: WaterSettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
+    val weight by viewModel.weightEnabled.collectAsStateWithLifecycle()
+    val enabled by viewModel.bodyAnalysisEnabled.collectAsStateWithLifecycle()
+    if (!weight) return
+    SettingSwitchRow(
+        stringResource(R.string.body_analysis_enable),
+        stringResource(R.string.body_analysis_enable_text),
+        enabled,
+        viewModel::setBodyAnalysisEnabled,
+    )
 }
 
 /** „Gewicht tracken“ (standardmäßig an) – aus für alle, die mit Wiegen und Gewicht nichts zu tun haben wollen. */

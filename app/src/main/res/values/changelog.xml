@@ -12,6 +12,8 @@
         <item>Tipps im richtigen Moment|Trägst du etwas zum dritten Mal ein, fragt Dunories, ob es ein Favorit werden soll – und sieht dein Frühstück aus wie neulich, schlägt es eine Kombi vor. Höchstens ein Tipp pro Tag, jeder nur einmal.</item>
         <item>Geschätzt oder genau?|Was die KI per Foto oder Beschreibung geschätzt hat, bekommt ein „≈“ vor den kcal – Werte vom Etikett oder Barcode nicht. Öffnest du einen Eintrag, steht oben, woher die Werte stammen. Korrigierst du die Nährwerte selbst, verschwindet das „≈“.</item>
         <item>Vier neue Nährstoffe|Vitamin B3, Vitamin B5, Kupfer und Mangan. Du siehst sie unter „Alle Nährwerte“, sobald ein Eintrag sie enthält – sonst bleiben sie unsichtbar.</item>
+        <item>Ernährungsplan schneller eintragen|Wisch einfach von Tag zu Tag, übernimm mit „Wie an Tag 1“ einzelne Mahlzeiten oder gleich den ganzen Tag für alle. Ist dein Plan noch leer, steht der Import ganz oben – Foto, PDF oder einsprechen. Danke Tristan!</item>
+        <item>Körperanalyse|Hast du eine Waage mit Körperfett, Muskelmasse und Co.? Schalte unter Profil → Ziele „Körperanalyse“ ein und trag die Werte unter Statistik → Körper ein – tippen, Display fotografieren oder einsprechen.</item>
         <item>Barcode schneller|Einmal gescannte Produkte merkt sich Dunories 30 Tage – der zweite Scan ist sofort da und klappt auch ohne Internet.</item>
         <item>Feinschliff|Beim Warten auf die KI siehst du schon die Form des Vorschlags. Mit großer Systemschrift wird nichts mehr abgeschnitten.</item>
     </string-array>

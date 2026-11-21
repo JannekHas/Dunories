@@ -56,4 +56,18 @@ class MealPlanRepository(private val dao: MealPlanDao, private val settings: App
     }
 
     suspend fun clearDay(dayIndex: Int) = dao.deleteDay(dayIndex)
+
+    /** Nur eine Mahlzeit von Tag [from] an Tag [to] anhängen („Wie an Tag 1“). */
+    suspend fun copyMeal(from: Int, to: Int, meal: MealType) {
+        if (from == to) return
+        val start = dao.maxPosition(to, meal.name) + 1
+        dao.insertAll(
+            dao.forDay(from).filter { it.mealType == meal }.mapIndexed { i, e -> e.copy(id = 0, dayIndex = to, position = start + i) },
+        )
+    }
+
+    /** Tag [from] auf alle anderen Tage des Rhythmus kopieren („Auf alle Tage übernehmen“). */
+    suspend fun copyToAll(from: Int, days: Int) {
+        (0 until days).filter { it != from }.forEach { copyDay(from, it) }
+    }
 }

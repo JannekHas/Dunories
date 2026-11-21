@@ -1,5 +1,13 @@
 package de.kalorienapp.ui.plan
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.HorizontalPager
 import de.kalorienapp.ui.components.SettingSwitchRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -189,6 +197,24 @@ fun MealPlanScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Leerer Plan: Import zuerst – wer einen fertigen Plan hat, ist in einem Schritt fertig (Tester-Feedback).
+            if (items.isEmpty()) {
+                GlassCard(Modifier.fillMaxWidth(), strong = true) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(stringResource(R.string.plan_import_title), style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.plan_import_card_text), style = MaterialTheme.typography.bodyMedium, color = Neon.TextSecondary)
+                        Button(
+                            onClick = onImport,
+                            colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_sparkle), contentDescription = null)
+                            Text(stringResource(R.string.plan_import), modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold)
+                        }
+                        Text(stringResource(R.string.plan_or_manual), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+                    }
+                }
+            }
             // Rhythmus (so viele Tage trägt man ein) und Laufzeit (wie lange er sich wiederholt) – getrennt,
             // damit klar ist: 30 Tage mit gleichem Wochenessen = nur 7 Tage eintragen (Tester-Feedback).
             GlassCard(Modifier.fillMaxWidth()) {
@@ -234,10 +260,12 @@ fun MealPlanScreen(
                     )
                 }
             }
-            // Import per Foto/Text
-            OutlinedButton(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
-                Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_sparkle), contentDescription = null)
-                Text(stringResource(R.string.plan_import), modifier = Modifier.padding(start = 8.dp))
+            // Import per Foto/Text – bei leerem Plan steht er oben groß (s. u.), sonst hier dezent.
+            if (items.isNotEmpty()) {
+                OutlinedButton(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
+                    Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_sparkle), contentDescription = null)
+                    Text(stringResource(R.string.plan_import), modifier = Modifier.padding(start = 8.dp))
+                }
             }
             // Tage
             val byDay = items.groupBy { it.dayIndex }
@@ -322,13 +350,16 @@ private fun DayCard(title: String, repeats: String?, items: List<MealPlanItem>, 
 fun MealPlanDayScreen(
     dayIndex: Int,
     onBack: () -> Unit,
-    onAdd: (MealType) -> Unit,
+    onAdd: (day: Int, meal: MealType) -> Unit,
     onEdit: (MealPlanItem) -> Unit,
     viewModel: MealPlanViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val config by viewModel.config.collectAsStateWithLifecycle()
     val allItems by viewModel.items.collectAsStateWithLifecycle()
-    val items = allItems.filter { it.dayIndex == dayIndex }
+    // Tester-Feedback: Tag für Tag über die Übersicht war mühsam → Tage hier durchwischen, „Weiter zu Tag 2“.
+    val pager = rememberPagerState(initialPage = dayIndex.coerceIn(0, (config.days - 1).coerceAtLeast(0))) { config.days }
+    val scope = rememberCoroutineScope()
+    val current = pager.currentPage
     var menu by remember { mutableStateOf(false) }
     var copyDialog by remember { mutableStateOf(false) }
 
@@ -338,11 +369,16 @@ fun MealPlanDayScreen(
             title = { Text(stringResource(R.string.plan_copy_to)) },
             text = {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = false,
+                        onClick = { viewModel.copyToAll(current); copyDialog = false },
+                        label = { Text(stringResource(R.string.plan_copy_all_days)) },
+                    )
                     repeat(config.days) { day ->
-                        if (day == dayIndex) return@repeat
+                        if (day == current) return@repeat
                         FilterChip(
                             selected = false,
-                            onClick = { viewModel.copyDay(dayIndex, day); copyDialog = false },
+                            onClick = { viewModel.copyDay(current, day); copyDialog = false },
                             label = { Text(stringResource(R.string.plan_day_short, day + 1)) },
                         )
                     }
@@ -355,7 +391,7 @@ fun MealPlanDayScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.plan_day_title, dayIndex + 1, config.dateOf(dayIndex).format(dayFormatter))) },
+                title = { Text(stringResource(R.string.plan_day_title, current + 1, config.dateOf(current).format(dayFormatter))) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
                 },
@@ -369,41 +405,95 @@ fun MealPlanDayScreen(
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.plan_clear_day)) },
-                            onClick = { menu = false; viewModel.clearDay(dayIndex) },
+                            onClick = { menu = false; viewModel.clearDay(current) },
                         )
                     }
                 },
             )
         },
     ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            val total = items.map { it.nutrients }.sum()
-            Text(
-                stringResource(
-                    R.string.plan_day_total,
-                    total.kcal.format(),
-                    total.proteinG.format(),
-                    total.carbsG.format(),
-                    total.fatG.format(),
-                ),
-                style = MaterialTheme.typography.titleMedium,
-                color = Neon.Cyan,
-            )
-            MealType.entries.forEach { meal ->
-                PlanMealCard(
-                    meal = meal,
-                    items = items.filter { it.mealType == meal },
-                    onAdd = { onAdd(meal) },
-                    onEdit = onEdit,
-                    onDelete = viewModel::delete,
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            // ‹ Tag 2 von 7 › – Pfeile oder seitlich wischen
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = { scope.launch { pager.animateScrollToPage(current - 1) } },
+                    enabled = current > 0,
+                ) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.plan_prev_day)) }
+                Text(
+                    stringResource(R.string.plan_day_of, current + 1, config.days),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Neon.TextSecondary,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.weight(1f),
                 )
+                IconButton(
+                    onClick = { scope.launch { pager.animateScrollToPage(current + 1) } },
+                    enabled = current < config.days - 1,
+                ) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.plan_next_day)) }
+            }
+            HorizontalPager(state = pager, modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.Top) { day ->
+                val items = allItems.filter { it.dayIndex == day }
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    val total = items.map { it.nutrients }.sum()
+                    Text(
+                        stringResource(
+                            R.string.plan_day_total,
+                            total.kcal.format(),
+                            total.proteinG.format(),
+                            total.carbsG.format(),
+                            total.fatG.format(),
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Neon.Cyan,
+                    )
+                    // Erster Tag gefüllt, alle anderen leer → gleich auf alle übernehmen anbieten.
+                    val othersEmpty = (0 until config.days).filter { it != day }.none { d -> allItems.any { it.dayIndex == d } }
+                    if (config.days > 1 && items.isNotEmpty() && othersEmpty) {
+                        GlassCard(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(stringResource(R.string.plan_same_for_all), style = MaterialTheme.typography.bodyMedium)
+                                Button(
+                                    onClick = { viewModel.copyToAll(day) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
+                                ) { Text(stringResource(R.string.plan_copy_all_days)) }
+                            }
+                        }
+                    }
+                    MealType.entries.forEach { meal ->
+                        val mealItems = items.filter { it.mealType == meal }
+                        // „Wie an Tag 1“: nächstgelegener früherer Tag, an dem diese Mahlzeit gefüllt ist.
+                        val source = if (mealItems.isEmpty()) {
+                            (day - 1 downTo 0).firstOrNull { d -> allItems.any { it.dayIndex == d && it.mealType == meal } }
+                        } else {
+                            null
+                        }
+                        PlanMealCard(
+                            meal = meal,
+                            items = mealItems,
+                            onAdd = { onAdd(day, meal) },
+                            onEdit = onEdit,
+                            onDelete = viewModel::delete,
+                            copyFromDay = source,
+                            onCopyFrom = { from -> viewModel.copyMeal(from, day, meal) },
+                        )
+                    }
+                    if (day < config.days - 1) {
+                        Button(
+                            onClick = { scope.launch { pager.animateScrollToPage(day + 1) } },
+                            colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                        ) { Text(stringResource(R.string.plan_next_day_button, day + 2), fontWeight = FontWeight.Bold) }
+                    } else {
+                        OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.plan_done)) }
+                    }
+                }
             }
         }
     }
@@ -416,6 +506,8 @@ private fun PlanMealCard(
     onAdd: () -> Unit,
     onEdit: (MealPlanItem) -> Unit,
     onDelete: (MealPlanItem) -> Unit,
+    copyFromDay: Int? = null,
+    onCopyFrom: (Int) -> Unit = {},
 ) {
     GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 4.dp)) {
@@ -456,9 +548,16 @@ private fun PlanMealCard(
                     IconButton(onClick = { onDelete(item) }) { Icon(Icons.Filled.Delete, stringResource(R.string.delete)) }
                 }
             }
-            TextButton(onClick = onAdd) {
-                Icon(Icons.Filled.Add, contentDescription = null, tint = meal.neonColor)
-                Text(stringResource(R.string.plan_add), color = meal.neonColor, modifier = Modifier.padding(start = 6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onAdd) {
+                    Icon(Icons.Filled.Add, contentDescription = null, tint = meal.neonColor)
+                    Text(stringResource(R.string.plan_add), color = meal.neonColor, modifier = Modifier.padding(start = 6.dp))
+                }
+                if (copyFromDay != null) {
+                    TextButton(onClick = { onCopyFrom(copyFromDay) }) {
+                        Text(stringResource(R.string.plan_same_as_day, copyFromDay + 1), color = Neon.TextSecondary)
+                    }
+                }
             }
         }
     }

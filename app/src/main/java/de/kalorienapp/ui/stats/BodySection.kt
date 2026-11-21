@@ -62,6 +62,8 @@ fun BodySection(
     onWeighDialogShown: () -> Unit = {},
     /** Erreichtes Ziel antippen → Feier-Bildschirm (dort auch „Erfolg teilen“). */
     onOpenGoal: (Long) -> Unit = {},
+    /** Körperanalyse eintragen (eigene Seite). */
+    onAddAnalysis: () -> Unit = {},
     viewModel: StatsViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -105,7 +107,7 @@ fun BodySection(
                 onAdd = { showWeightDialog = true },
                 onDelete = viewModel::deleteWeight,
             )
-            HorizontalDivider()
+            BodyAnalysisSection(onAdd = onAddAnalysis)
             BodyMeasurementsSection()
             if (state.reachedGoals.isNotEmpty()) {
                 HorizontalDivider()

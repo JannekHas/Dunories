@@ -1,5 +1,7 @@
 package de.kalorienapp.ui.stats
 
+import de.kalorienapp.domain.model.MeasureUnit
+import de.kalorienapp.data.AppSettings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -64,7 +66,13 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class BodyMeasurementViewModel(private val repository: BodyMeasurementRepository) : ViewModel() {
+class BodyMeasurementViewModel(
+    private val repository: BodyMeasurementRepository,
+    settings: AppSettings,
+) : ViewModel() {
+    /** Körperanalyse an → Körperfett wandert aus den Körpermaßen in die Körperanalyse. */
+    val analysisEnabled: StateFlow<Boolean> = settings.bodyAnalysisEnabled
+
     /** Messungen je Art, älteste zuerst. */
     val byType: StateFlow<Map<MeasureType, List<BodyMeasurement>>> = repository.all
         .map { list -> list.groupBy { it.type } }
@@ -89,9 +97,22 @@ val MeasureType.labelRes: Int
         MeasureType.UPPER_ARM -> R.string.measure_upper_arm
         MeasureType.THIGH -> R.string.measure_thigh
         MeasureType.BODY_FAT -> R.string.measure_body_fat
+        MeasureType.MUSCLE_MASS -> R.string.measure_muscle_mass
+        MeasureType.BODY_WATER -> R.string.measure_body_water
+        MeasureType.VISCERAL_FAT -> R.string.measure_visceral_fat
+        MeasureType.BONE_MASS -> R.string.measure_bone_mass
+        MeasureType.BMR -> R.string.measure_bmr
     }
 
-private val MeasureType.unitRes: Int get() = if (isPercent) R.string.unit_percent else R.string.unit_cm
+/** Einheit zum Anzeigen; viszerales Fett ist eine Stufe ohne Einheit (leerer Text). */
+val MeasureType.unitRes: Int
+    get() = when (unit) {
+        MeasureUnit.CM -> R.string.unit_cm
+        MeasureUnit.PERCENT -> R.string.unit_percent
+        MeasureUnit.KG -> R.string.unit_kg
+        MeasureUnit.KCAL -> R.string.unit_kcal
+        MeasureUnit.LEVEL -> R.string.unit_level
+    }
 
 private val measuredFormatter = DateTimeFormatter.ofPattern("d. MMM yyyy", Locale.GERMAN)
 
@@ -99,11 +120,13 @@ private val measuredFormatter = DateTimeFormatter.ofPattern("d. MMM yyyy", Local
 @Composable
 fun BodyMeasurementsSection(viewModel: BodyMeasurementViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
     val byType by viewModel.byType.collectAsStateWithLifecycle()
+    val analysis by viewModel.analysisEnabled.collectAsStateWithLifecycle()
+    val types = MeasureType.measures(analysis)
     var showDialog by remember { mutableStateOf(false) }
-    var expanded by rememberSaveable { mutableStateOf<String?>(null) }
 
     if (showDialog) {
         MeasurementDialog(
+            types = types,
             latest = byType.mapValues { it.value.last().value },
             onSave = { viewModel.save(it); showDialog = false },
             onDismiss = { showDialog = false },
@@ -122,48 +145,84 @@ fun BodyMeasurementsSection(viewModel: BodyMeasurementViewModel = viewModel(fact
                 Text(stringResource(R.string.weight_add), modifier = Modifier.padding(start = 6.dp))
             }
         }
-        if (byType.isEmpty()) {
+        if (types.none { it in byType }) {
             Text(stringResource(R.string.measure_empty), style = MaterialTheme.typography.bodyMedium, color = Neon.TextSecondary)
             return@Column
         }
-        MeasureType.entries.filter { it in byType }.forEach { type ->
-            val list = byType.getValue(type)
-            val unit = stringResource(type.unitRes)
-            val latest = list.last()
-            val diff = latest.value - list.first().value
-            GlassCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.clickable { expanded = if (expanded == type.name) null else type.name }.padding(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(type.labelRes), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                        Text("${latest.value.toInputString()} $unit", style = MaterialTheme.typography.titleMedium)
-                        if (list.size > 1) {
-                            Text(
-                                (if (diff > 0) "+" else "") + diff.format(1),
-                                style = MaterialTheme.typography.labelMedium,
-                                // Weniger Umfang/Körperfett = grün (Muskelaufbau am Arm wäre die Ausnahme – bleibt neutral).
-                                color = when {
-                                    type == MeasureType.UPPER_ARM -> Neon.TextSecondary
-                                    diff <= 0 -> Neon.Green
-                                    else -> Neon.Orange
-                                },
-                                modifier = Modifier.padding(start = 8.dp),
-                            )
-                        }
+        MeasureCards(types, byType, onDelete = { viewModel.delete(it) })
+    }
+}
+
+/**
+ * Körperanalyse (Bioimpedanz-Waage, Schalter „Körperanalyse“): Werte mit Verlauf, „Eintragen“ öffnet die
+ * Eingabe-Seite (eintippen, Foto vom Display/Ausdruck oder einsprechen). Nur Anzeige – das Tagesziel
+ * rechnet nicht damit (Entscheidung des Nutzers, Nov. 2026); Körperfett wirkt wie bisher aufs Protein.
+ */
+@Composable
+fun BodyAnalysisSection(onAdd: () -> Unit, viewModel: BodyMeasurementViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
+    val byType by viewModel.byType.collectAsStateWithLifecycle()
+    val analysis by viewModel.analysisEnabled.collectAsStateWithLifecycle()
+    if (!analysis) return
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        HorizontalDivider()
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.body_analysis_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            Button(
+                onClick = onAdd,
+                colors = ButtonDefaults.buttonColors(containerColor = Neon.Violet, contentColor = Neon.OnNeon),
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = null)
+                Text(stringResource(R.string.weight_add), modifier = Modifier.padding(start = 6.dp))
+            }
+        }
+        if (MeasureType.ANALYSIS.none { it in byType }) {
+            Text(stringResource(R.string.body_analysis_empty), style = MaterialTheme.typography.bodyMedium, color = Neon.TextSecondary)
+            return@Column
+        }
+        MeasureCards(MeasureType.ANALYSIS, byType, onDelete = { viewModel.delete(it) })
+    }
+}
+
+/** Je Messart eine Karte: letzter Wert, Veränderung (Farbe nach [MeasureType.goodDirection]), aufklappbar mit Verlauf. */
+@Composable
+private fun MeasureCards(types: List<MeasureType>, byType: Map<MeasureType, List<BodyMeasurement>>, onDelete: (BodyMeasurement) -> Unit) {
+    var expanded by rememberSaveable { mutableStateOf<String?>(null) }
+    types.filter { it in byType }.forEach { type ->
+        val list = byType.getValue(type)
+        val unit = stringResource(type.unitRes)
+        val latest = list.last()
+        val diff = latest.value - list.first().value
+        GlassCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.clickable { expanded = if (expanded == type.name) null else type.name }.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(type.labelRes), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    Text("${latest.value.toInputString()} $unit".trim(), style = MaterialTheme.typography.titleMedium)
+                    if (list.size > 1) {
+                        Text(
+                            (if (diff > 0) "+" else "") + diff.format(1),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = when {
+                                type.goodDirection == 0 || diff == 0.0 -> Neon.TextSecondary
+                                diff * type.goodDirection > 0 -> Neon.Green
+                                else -> Neon.Orange
+                            },
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
                     }
-                    AnimatedVisibility(expanded == type.name) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
-                            if (list.size > 1) MeasureLine(list)
-                            list.reversed().forEach { m ->
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        m.measuredAt.atZone(ZoneId.systemDefault()).format(measuredFormatter),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    Text("${m.value.toInputString()} $unit", style = MaterialTheme.typography.bodyMedium)
-                                    IconButton(onClick = { viewModel.delete(m) }) {
-                                        Icon(Icons.Filled.Delete, stringResource(R.string.delete), tint = Neon.TextSecondary)
-                                    }
+                }
+                AnimatedVisibility(expanded == type.name) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
+                        if (list.size > 1) MeasureLine(list)
+                        list.reversed().forEach { m ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    m.measuredAt.atZone(ZoneId.systemDefault()).format(measuredFormatter),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Text("${m.value.toInputString()} $unit".trim(), style = MaterialTheme.typography.bodyMedium)
+                                IconButton(onClick = { onDelete(m) }) {
+                                    Icon(Icons.Filled.Delete, stringResource(R.string.delete), tint = Neon.TextSecondary)
                                 }
                             }
                         }
@@ -196,10 +255,14 @@ private fun MeasureLine(list: List<BodyMeasurement>) {
 
 /** Alle Maße auf einmal eintragen – leere Felder werden übersprungen. */
 @Composable
-private fun MeasurementDialog(latest: Map<MeasureType, Double>, onSave: (Map<MeasureType, Double>) -> Unit, onDismiss: () -> Unit) {
+private fun MeasurementDialog(
+    types: List<MeasureType>,
+    latest: Map<MeasureType, Double>,
+    onSave: (Map<MeasureType, Double>) -> Unit,
+    onDismiss: () -> Unit,
+) {
     val texts = remember { mutableStateMapOf<MeasureType, String>() }
-    fun valid(type: MeasureType, text: String): Double? =
-        text.parseDecimal()?.takeIf { if (type.isPercent) it in 2.0..70.0 else it in 10.0..250.0 }
+    fun valid(type: MeasureType, text: String): Double? = text.parseDecimal()?.takeIf(type::isValid)
     val values = texts.mapNotNull { (type, text) -> valid(type, text)?.let { type to it } }.toMap()
     val hasError = texts.any { (type, text) -> text.isNotBlank() && valid(type, text) == null }
     AlertDialog(
@@ -208,7 +271,7 @@ private fun MeasurementDialog(latest: Map<MeasureType, Double>, onSave: (Map<Mea
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(stringResource(R.string.measure_add_hint), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
-                MeasureType.entries.forEach { type ->
+                types.forEach { type ->
                     val text = texts[type].orEmpty()
                     NumberField(
                         value = text,
@@ -219,7 +282,7 @@ private fun MeasurementDialog(latest: Map<MeasureType, Double>, onSave: (Map<Mea
                         placeholder = latest[type]?.toInputString(),
                         isError = text.isNotBlank() && valid(type, text) == null,
                         errorText = stringResource(R.string.error_number),
-                        imeAction = if (type == MeasureType.entries.last()) ImeAction.Done else ImeAction.Next,
+                        imeAction = if (type == types.last()) ImeAction.Done else ImeAction.Next,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

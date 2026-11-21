@@ -316,7 +316,11 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onOpenGoal = { navController.navigate(GoalCelebrationRoute(it)) },
                             openWeighDialog = container.navRequests.openWeighDialog.collectAsStateWithLifecycle().value,
                             onWeighDialogShown = container.navRequests::weighDialogShown,
+                            onAddAnalysis = { navController.navigate(BodyAnalysisRoute) },
                         )
+                    }
+                    screen<BodyAnalysisRoute> {
+                        de.kalorienapp.ui.stats.BodyAnalysisScreen(onBack = { navController.popBackStack() })
                     }
                     screen<DayNutrientsRoute> {
                         DayNutrientsScreen(
@@ -381,10 +385,10 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                         MealPlanDayScreen(
                             dayIndex = day,
                             onBack = { navController.popBackStack() },
-                            onAdd = { meal -> navController.navigate(CaptureRoute(epochDay = today, mealType = meal.name, planDay = day)) },
+                            onAdd = { planDay, meal -> navController.navigate(CaptureRoute(epochDay = today, mealType = meal.name, planDay = planDay)) },
                             onEdit = { item ->
                                 navController.navigate(
-                                    CaptureRoute(epochDay = today, mealType = item.mealType.name, planDay = day, planItemId = item.id),
+                                    CaptureRoute(epochDay = today, mealType = item.mealType.name, planDay = item.dayIndex, planItemId = item.id),
                                 )
                             },
                         )

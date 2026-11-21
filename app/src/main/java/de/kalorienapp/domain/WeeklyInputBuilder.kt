@@ -229,7 +229,13 @@ object WeeklyInputBuilder {
             appendLine("KÖRPERMASSE (erste und letzte Messung):")
             input.measurements.groupBy { it.type }.forEach { (type, list) ->
                 val sorted = list.sortedBy { it.measuredAt }
-                val unit = if (type.isPercent) "%" else "cm"
+                val unit = when (type.unit) {
+                    de.kalorienapp.domain.model.MeasureUnit.CM -> "cm"
+                    de.kalorienapp.domain.model.MeasureUnit.PERCENT -> "%"
+                    de.kalorienapp.domain.model.MeasureUnit.KG -> "kg"
+                    de.kalorienapp.domain.model.MeasureUnit.KCAL -> "kcal"
+                    de.kalorienapp.domain.model.MeasureUnit.LEVEL -> "(Stufe)"
+                }
                 val first = sorted.first()
                 val last = sorted.last()
                 append("- ${type.german()}: ${last.value.r1()} $unit am ${last.measuredAt.atZone(zone).toLocalDate()}")
@@ -319,6 +325,11 @@ object WeeklyInputBuilder {
         MeasureType.UPPER_ARM -> "Oberarm"
         MeasureType.THIGH -> "Oberschenkel"
         MeasureType.BODY_FAT -> "Körperfett"
+        MeasureType.MUSCLE_MASS -> "Muskelmasse"
+        MeasureType.BODY_WATER -> "Körperwasser"
+        MeasureType.VISCERAL_FAT -> "Viszerales Fett"
+        MeasureType.BONE_MASS -> "Knochenmasse"
+        MeasureType.BMR -> "Grundumsatz laut Waage"
     }
 
     private fun DayStatus.german() = when (this) {

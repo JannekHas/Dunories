@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.plan
 
+import de.kalorienapp.domain.model.MealType
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.kalorienapp.data.repository.MealPlanRepository
@@ -56,6 +57,14 @@ class MealPlanViewModel(private val repository: MealPlanRepository) : ViewModel(
 
     fun copyDay(from: Int, to: Int) {
         viewModelScope.launch { repository.copyDay(from, to) }
+    }
+
+    fun copyMeal(from: Int, to: Int, meal: MealType) {
+        viewModelScope.launch { repository.copyMeal(from, to, meal) }
+    }
+
+    fun copyToAll(from: Int) {
+        viewModelScope.launch { repository.copyToAll(from, config.value.days) }
     }
 
     fun clearDay(dayIndex: Int) {

@@ -77,6 +77,7 @@ fun ProfileScreen(
                     SectionTitle(stringResource(R.string.section_tracking))
                     ProteinOnlySection()
                     WeightTrackingSection()
+                    BodyAnalysisSettingSection()
                     WaterSettingsSection()
                 }
                 1 -> MealPlanSettingsSection(onOpenPlan)
