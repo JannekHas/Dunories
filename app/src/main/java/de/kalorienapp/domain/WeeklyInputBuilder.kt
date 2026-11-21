@@ -50,6 +50,8 @@ data class WeeklyInput(
     val fastingStats: FastingStats? = null,
     /** Ernährungsweise und „mag ich nicht“ – für passende Lebensmittel-Vorschläge. */
     val preferences: FoodPreferences = FoodPreferences(),
+    /** Modus „Nur Eiweiß“: Person zählt bewusst keine Kalorien → Auswertung nur zum Eiweiß. */
+    val proteinOnly: Boolean = false,
 )
 
 /**
@@ -60,12 +62,21 @@ object WeeklyInputBuilder {
 
     const val MIN_LOGGED_DAYS = 2
 
+    /** Verbindliche Vorgabe im Modus „Nur Eiweiß“ – die Kalorienwerte stehen trotzdem im Datenblock (für Lebensmittel-Wissen). */
+    const val PROTEIN_ONLY_RULE = "MODUS NUR EIWEISS (verbindlich): Die Person zählt bewusst keine Kalorien. Bewerte nur Eiweiß " +
+        "(Tagesziel erreicht?, Verteilung über die Mahlzeiten, gute Eiweißquellen). Erwähne keine Kalorien, kein Budget, " +
+        "keine Kohlenhydrate oder Fett und bewerte weder Gewicht noch Abnehmen/Zunehmen; goal_note = null. " +
+        "Status der Tage bezieht sich hier auf das Eiweißziel."
+
     fun loggedDays(input: WeeklyInput) = input.days.count { it.hasEntries }
 
     fun build(input: WeeklyInput, zone: ZoneId = ZoneId.systemDefault()): String = buildString {
         val p = input.profile
         val year = input.to.year
         appendLine("ZEITRAUM: ${input.from} bis ${input.to} (${input.days.size} Tage, davon ${loggedDays(input)} mit Einträgen)")
+        if (input.proteinOnly) {
+            appendLine(PROTEIN_ONLY_RULE)
+        }
         appendLine()
         appendLine("PERSON: ${if (p.sex.name == "MALE") "männlich" else "weiblich"}, ${p.ageIn(year)} Jahre, ${p.heightCm.r()} cm, aktuell ${p.weightKg.r1()} kg")
         appendLine("Bedarf ohne Sport (Grundumsatz × Alltagsfaktor ${p.lifestyle.pal}, Tagesziel-Basis): ${GoalCalculator.maintenanceKcal(p, year).roundToInt()} kcal. Sport wird als Aktivität extra eingetragen und erhöht das Budget.")
@@ -284,6 +295,8 @@ object WeeklyInputBuilder {
         DayStatus.SLIGHTLY_OVER -> "knapp drüber"
         DayStatus.OVER -> "deutlich drüber"
         DayStatus.NO_DATA -> "keine Daten"
+        DayStatus.PROTEIN_PARTIAL -> "Eiweißziel fast erreicht"
+        DayStatus.PROTEIN_LOW -> "Eiweißziel verfehlt"
     }
 
     private fun MealType.german() = when (this) {

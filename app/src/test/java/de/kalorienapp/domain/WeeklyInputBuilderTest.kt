@@ -67,6 +67,12 @@ class WeeklyInputBuilderTest {
     }
 
     @Test
+    fun `nur eiweiss steht als verbindlicher modus im datenblock`() {
+        assertTrue(WeeklyInputBuilder.build(input().copy(proteinOnly = true), zone).contains("MODUS NUR EIWEISS"))
+        assertTrue(!WeeklyInputBuilder.build(input(), zone).contains("MODUS NUR EIWEISS"))
+    }
+
+    @Test
     fun `datenblock enthaelt tage lebensmittel und gewicht`() {
         val text = WeeklyInputBuilder.build(input(), zone)
         assertEquals(2, WeeklyInputBuilder.loggedDays(input()))

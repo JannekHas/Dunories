@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.LocalProteinOnly
 import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.data.repository.GoalState
 import de.kalorienapp.domain.GoalCalculator
@@ -188,11 +189,11 @@ fun GoalPreviewCard(preview: GoalState?, modifier: Modifier = Modifier, recommen
             )
             if (goal.direction != Goal.MAINTAIN) {
                 Text(
-                    stringResource(R.string.goal_preview_pace, signed(plan.kgPerWeek, 2), signed(plan.dailyAdjustmentKcal)),
+                    paceText(plan.kgPerWeek, plan.dailyAdjustmentKcal),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            Text(
+            if (!LocalProteinOnly.current) Text(
                 stringResource(R.string.goal_preview_kcal, preview.targets.kcal.format()),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
@@ -222,6 +223,12 @@ private fun LimitedHint(limited: Boolean, realisticDate: LocalDate?, direction: 
         color = Neon.Yellow,
     )
 }
+
+/** „Tempo heute: −0,50 kg pro Woche (−550 kcal pro Tag)“; „Nur Protein“: ohne kcal. */
+@Composable
+private fun paceText(kgPerWeek: Double, adjustmentKcal: Int): String =
+    if (LocalProteinOnly.current) stringResource(R.string.goal_preview_pace_kg, signed(kgPerWeek, 2))
+    else stringResource(R.string.goal_preview_pace, signed(kgPerWeek, 2), signed(adjustmentKcal))
 
 /** Aktives Ziel im Profil mit Fortschritt; ohne Ziel ein Hinweis. */
 @Composable
@@ -277,7 +284,7 @@ fun GoalCard(state: GoalState?, onNewGoal: () -> Unit, modifier: Modifier = Modi
                         color = Neon.TextSecondary,
                     )
                     Text(
-                        stringResource(R.string.goal_preview_pace, signed(plan.kgPerWeek, 2), signed(plan.dailyAdjustmentKcal)),
+                        paceText(plan.kgPerWeek, plan.dailyAdjustmentKcal),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     LimitedHint(plan.limited, plan.realisticDate, goal.direction)

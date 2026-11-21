@@ -90,7 +90,7 @@ internal fun PlanSuggestionRow(items: List<MealPlanItem>, color: Color, onApply:
             maxLines = 3,
         )
         Text(
-            stringResource(R.string.kcal_value, items.map { it.nutrients }.sum().kcal.format()),
+            entryValueText(items.map { it.nutrients }.sum()),
             style = MaterialTheme.typography.bodySmall,
             color = Neon.TextSecondary,
         )

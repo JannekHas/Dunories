@@ -214,6 +214,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
         CompositionLocalProvider(
             LocalBottomBarPadding provides padding.calculateBottomPadding(),
             LocalTips provides container.settings,
+            de.kalorienapp.ui.components.LocalProteinOnly provides container.settings.proteinOnly.collectAsStateWithLifecycle().value,
         ) {
             Box(Modifier.fillMaxSize()) {
                 NavHost(

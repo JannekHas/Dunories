@@ -44,6 +44,16 @@ class AppSettings(context: Context) {
         _waterEnabled.value = enabled
     }
 
+    private val _proteinOnly = MutableStateFlow(prefs.getBoolean(KEY_PROTEIN_ONLY, false))
+
+    /** „Nur Eiweiß“: Kalorien, KH und Fett überall ausblenden, nur Eiweiß zählt (standardmäßig aus). */
+    val proteinOnly: StateFlow<Boolean> = _proteinOnly.asStateFlow()
+
+    fun setProteinOnly(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_PROTEIN_ONLY, enabled).apply()
+        _proteinOnly.value = enabled
+    }
+
     private val _waterGoalMl = MutableStateFlow(prefs.getInt(KEY_WATER_GOAL, 0).takeIf { it > 0 })
     /** Eigenes Wasser-Tagesziel in ml; null = automatisch aus dem Gewicht. */
     val waterGoalMl: StateFlow<Int?> = _waterGoalMl.asStateFlow()
@@ -229,6 +239,7 @@ class AppSettings(context: Context) {
         private const val KEY_WEEKLY = "weekly_report"
         private const val KEY_WATER_GOAL = "water_goal_ml"
         private const val KEY_WATER_ENABLED = "water_enabled"
+        private const val KEY_PROTEIN_ONLY = "protein_only"
         private const val KEY_FASTING = "fasting_enabled"
         private const val KEY_MEAL_REMINDERS = "meal_reminders"
         private const val KEY_FASTING_PLAN = "fasting_plan"

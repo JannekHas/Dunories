@@ -25,6 +25,27 @@ class WaterSettingsViewModel(private val settings: AppSettings) : ViewModel() {
     val enabled = settings.waterEnabled
 
     fun setEnabled(enabled: Boolean) = settings.setWaterEnabled(enabled)
+
+    val proteinOnly = settings.proteinOnly
+
+    fun setProteinOnly(enabled: Boolean) = settings.setProteinOnly(enabled)
+}
+
+/** „Nur Eiweiß tracken“ (standardmäßig aus): Kalorien, KH und Fett verschwinden überall. */
+@Composable
+fun ProteinOnlySection(viewModel: WaterSettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
+    val enabled by viewModel.proteinOnly.collectAsStateWithLifecycle()
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(stringResource(R.string.protein_only_enable), style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.protein_only_enable_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+        }
+        Switch(
+            checked = enabled,
+            onCheckedChange = viewModel::setProteinOnly,
+            colors = SwitchDefaults.colors(checkedTrackColor = Neon.Cyan, checkedThumbColor = Neon.OnNeon),
+        )
+    }
 }
 
 /** Wasser an/aus (standardmäßig aus); Ziel stellt man auf der Wasser-Karte auf „Heute“ ein. */

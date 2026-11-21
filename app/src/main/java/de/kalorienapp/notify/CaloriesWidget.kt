@@ -39,6 +39,13 @@ class CaloriesWidget : AppWidgetProvider() {
             if (summary == null) {
                 views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_no_profile))
                 views.setTextViewText(R.id.widget_subtitle, "")
+            } else if (proteinOnly(context)) {
+                views.setTextViewText(R.id.widget_title, CalorieNotifier.proteinTitle(context, summary))
+                views.setTextViewText(
+                    R.id.widget_subtitle,
+                    context.getString(R.string.notif_protein_progress, summary.eaten.proteinG.format(), summary.targets.proteinG.format()),
+                )
+                views.setImageViewBitmap(R.id.widget_rings, CalorieNotifier.ringBitmap(summary, context.resources.displayMetrics.density, proteinOnly = true))
             } else {
                 val remaining = summary.remainingKcal
                 views.setTextViewText(
@@ -63,6 +70,9 @@ class CaloriesWidget : AppWidgetProvider() {
             )
             manager.updateAppWidget(ids, views)
         }
+
+        private fun proteinOnly(context: Context) =
+            (context.applicationContext as KalorienApplication).container.settings.proteinOnly.value
 
         private const val REQUEST_OPEN = 100
         private const val REQUEST_CAPTURE = 101

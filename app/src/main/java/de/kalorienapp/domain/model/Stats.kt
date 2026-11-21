@@ -23,6 +23,12 @@ enum class DayStatus {
 
     /** Mehr als 10 % über dem Budget. */
     OVER,
+
+    /** Nur Eiweiß: mindestens 80 % des Eiweißziels (gelb). */
+    PROTEIN_PARTIAL,
+
+    /** Nur Eiweiß: weniger als 80 % des Eiweißziels (grau, nie rot). */
+    PROTEIN_LOW,
 }
 
 /** Ein Tag im Kalender bzw. in der Statistik. */

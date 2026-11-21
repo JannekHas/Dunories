@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.LocalProteinOnly
 import de.kalorienapp.data.repository.StatsRepository
 import de.kalorienapp.domain.StatsCalculator
 import de.kalorienapp.domain.model.DayStats
@@ -151,7 +152,7 @@ private fun DayCell(date: LocalDate, stats: DayStats?, onClick: () -> Unit) {
     val today = LocalDate.now()
     val future = date.isAfter(today)
     val color = if (future) Color.Transparent else statusColor(stats?.status ?: DayStatus.NO_DATA)
-    val onNeon = !future && stats?.status != null && stats.status != DayStatus.NO_DATA
+    val onNeon = !future && stats?.status != null && stats.status != DayStatus.NO_DATA && stats.status != DayStatus.PROTEIN_LOW
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -178,11 +179,20 @@ fun statusColor(status: DayStatus): Color = when (status) {
     DayStatus.ON_TARGET -> Neon.Green
     DayStatus.SLIGHTLY_OVER -> Neon.Yellow
     DayStatus.OVER -> Neon.Red
-    DayStatus.NO_DATA -> Neon.Track
+    DayStatus.PROTEIN_PARTIAL -> Neon.Yellow
+    DayStatus.PROTEIN_LOW, DayStatus.NO_DATA -> Neon.Track
 }
 
 @Composable
 private fun Legend() {
+    if (LocalProteinOnly.current) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            LegendItem(Neon.Green, stringResource(R.string.calendar_protein_reached))
+            LegendItem(Neon.Yellow, stringResource(R.string.calendar_protein_partial))
+            LegendItem(Neon.Track, stringResource(R.string.calendar_protein_low))
+        }
+        return
+    }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         LegendItem(Neon.Green, stringResource(R.string.calendar_on_target))
         LegendItem(Neon.Yellow, stringResource(R.string.calendar_slightly_over))
@@ -210,15 +220,24 @@ private fun MonthSummary(summary: PeriodStats) {
         )
         NeonPill(
             value = summary.onTargetRate?.let { "${(it * 100).roundToInt()} %" } ?: "–",
-            label = stringResource(R.string.stats_on_target),
+            label = stringResource(if (LocalProteinOnly.current) R.string.stats_protein_reached else R.string.stats_on_target),
             color = Neon.Green,
             modifier = Modifier.weight(1f),
         )
-        NeonPill(
-            value = summary.averageEaten?.kcal?.format() ?: "–",
-            label = stringResource(R.string.stats_avg_kcal),
-            color = Neon.Orange,
-            modifier = Modifier.weight(1f),
-        )
+        if (LocalProteinOnly.current) {
+            NeonPill(
+                value = summary.averageEaten?.proteinG?.let { it.format() + " g" } ?: "–",
+                label = stringResource(R.string.stats_avg_protein),
+                color = Neon.Magenta,
+                modifier = Modifier.weight(1f),
+            )
+        } else {
+            NeonPill(
+                value = summary.averageEaten?.kcal?.format() ?: "–",
+                label = stringResource(R.string.stats_avg_kcal),
+                color = Neon.Orange,
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }

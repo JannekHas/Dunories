@@ -61,7 +61,8 @@ class CalorieNotifier(
         scope.launch {
             today.flatMapLatest { day ->
                 combine(
-                    settings.caloriesNotification,
+                    // „Nur Eiweiß“ umgeschaltet → Text und Ring sofort anpassen
+                    combine(settings.caloriesNotification, settings.proteinOnly) { on, _ -> on },
                     goals.current,
                     entries.entriesFor(day),
                     activities.entriesFor(day),
@@ -105,18 +106,27 @@ class CalorieNotifier(
     @SuppressLint("MissingPermission") // canPost prüft die Erlaubnis
     private fun post(summary: DaySummary) {
         if (!Notifications.canPost(context)) return
-        val remaining = summary.remainingKcal
-        val title = if (remaining >= 0) {
-            context.getString(R.string.notif_calories_left, remaining.format())
-        } else {
-            context.getString(R.string.notif_calories_over, abs(remaining).format())
-        }
+        val proteinOnly = settings.proteinOnly.value
         val n = summary.eaten
         val t = summary.targets
-        val macros = context.getString(
-            R.string.notif_calories_macros,
-            n.proteinG.format(), t.proteinG.format(), n.carbsG.format(), t.carbsG.format(), n.fatG.format(), t.fatG.format(),
-        )
+        val title = if (proteinOnly) {
+            proteinTitle(context, summary)
+        } else {
+            val remaining = summary.remainingKcal
+            if (remaining >= 0) {
+                context.getString(R.string.notif_calories_left, remaining.format())
+            } else {
+                context.getString(R.string.notif_calories_over, abs(remaining).format())
+            }
+        }
+        val macros = if (proteinOnly) {
+            context.getString(R.string.notif_protein_progress, n.proteinG.format(), t.proteinG.format())
+        } else {
+            context.getString(
+                R.string.notif_calories_macros,
+                n.proteinG.format(), t.proteinG.format(), n.carbsG.format(), t.carbsG.format(), n.fatG.format(), t.fatG.format(),
+            )
+        }
         // In der Fastenzeit steht der Hinweis vorne – zugeklappt sieht man nur eine Zeile.
         val fasting = fastingLine()
         val text = fasting ?: macros
@@ -132,7 +142,7 @@ class CalorieNotifier(
             .setSortKey("0")
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
-            .setLargeIcon(ringBitmap(summary, context.resources.displayMetrics.density))
+            .setLargeIcon(ringBitmap(summary, context.resources.displayMetrics.density, proteinOnly))
             .setColor(Neon.Cyan.toArgb())
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -181,15 +191,27 @@ class CalorieNotifier(
         private const val SIZE_DP = 64
         private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-        /** Die vier Ringe von „Heute“: außen kcal (Regenbogen), dann Protein, KH, Fett. */
-        fun ringBitmap(summary: DaySummary, density: Float): Bitmap {
+        /** „Noch 60 g Eiweiß“ bzw. „Eiweißziel geschafft“ (Modus „Nur Eiweiß“). */
+        fun proteinTitle(context: Context, summary: DaySummary): String {
+            val left = summary.targets.proteinG - summary.eaten.proteinG
+            return if (left > 0) context.getString(R.string.notif_protein_left, left.format())
+            else context.getString(R.string.notif_protein_reached)
+        }
+
+        /**
+         * Die vier Ringe von „Heute“: außen kcal (Regenbogen), dann Protein, KH, Fett.
+         * „Nur Eiweiß“ ([proteinOnly]): ein einzelner, kräftiger Eiweiß-Ring (nie rot).
+         */
+        fun ringBitmap(summary: DaySummary, density: Float, proteinOnly: Boolean = false): Bitmap {
             val size = (SIZE_DP * density).roundToInt()
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            val stroke = size * 0.085f
+            val stroke = size * (if (proteinOnly) 0.16f else 0.085f)
             val gap = size * 0.035f
             val budget = (summary.targets.kcal + summary.activityKcal).coerceAtLeast(1)
-            val rings = listOf(
+            val rings = if (proteinOnly) {
+                listOf(ratio(summary.eaten.proteinG, summary.targets.proteinG).coerceAtMost(1f) to Neon.Magenta.toArgb())
+            } else listOf(
                 (summary.eaten.kcal / budget).toFloat() to null,
                 ratio(summary.eaten.proteinG, summary.targets.proteinG) to Neon.Magenta.toArgb(),
                 ratio(summary.eaten.carbsG, summary.targets.carbsG) to Neon.Yellow.toArgb(),

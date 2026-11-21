@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.LocalProteinOnly
 import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.domain.model.DailyTargets
@@ -123,6 +124,14 @@ fun TargetsCard(targets: DailyTargets?, modifier: Modifier = Modifier, atMinimum
             if (targets == null) {
                 Text(stringResource(R.string.targets_incomplete), style = MaterialTheme.typography.bodyMedium)
             } else {
+                if (LocalProteinOnly.current) {
+                    Text(
+                        stringResource(R.string.protein_only_target, targets.proteinG),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Neon.Magenta,
+                    )
+                    return@Column
+                }
                 Text(
                     stringResource(R.string.kcal_value, targets.kcal.format()),
                     style = MaterialTheme.typography.headlineMedium,
@@ -174,6 +183,20 @@ fun TargetAdjustmentsSection(state: ProfileUiState, onUpdate: FormUpdate) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        // Nur Eiweiß: kcal/KH/Fett-Ziele sind unsichtbar → nur das Eiweiß-Ziel lässt sich festlegen.
+        if (LocalProteinOnly.current) {
+            NumberField(
+                value = form.proteinOverride,
+                onValueChange = { v -> onUpdate { it.copy(proteinOverride = v) } },
+                label = stringResource(R.string.protein),
+                suffix = stringResource(R.string.unit_g),
+                autoValue = auto?.proteinG?.toString(),
+                isError = form.proteinOverrideError,
+                decimal = false,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            return@Column
         }
         NumberField(
             value = form.kcalOverride,

@@ -226,6 +226,10 @@
     <string name="nutrient_details_hide">Weniger anzeigen</string>
     <string name="extra_nutrients_hint">Summe aus allen Einträgen, bei denen der Wert angegeben ist.</string>
     <string name="grams_value">%1$s g</string>
+    <string name="amount_with_unit">%1$s %2$s</string>
+    <string name="protein_value">%1$s g Protein</string>
+    <string name="protein_remaining">Protein noch</string>
+    <string name="protein_reached">Protein geschafft</string>
     <string name="value_missing">–</string>
     <!-- Kalender & Statistik -->
     <string name="nav_calendar">Kalender</string>
@@ -270,10 +274,16 @@
     <string name="stats_tab_ai">KI</string>
     <string name="stats_period_week">7 Tage</string>
     <string name="stats_period_month">30 Tage</string>
+    <string name="stats_chart_caption_protein">Balken: Protein (grün = Ziel erreicht, gelb = ab 80 %) · Strich: Proteinziel</string>
     <string name="stats_chart_caption">Balken: gegessen (Farbe = Zielerreichung) · Strich: Budget (Ziel + Aktivitäten)</string>
     <string name="stats_no_data">In diesem Zeitraum gibt es noch keine Einträge.</string>
     <string name="stats_logged_days">Tage erfasst</string>
     <string name="stats_on_target">im Budget</string>
+    <string name="stats_avg_protein">Ø Protein</string>
+    <string name="stats_protein_reached">Protein erreicht</string>
+    <string name="calendar_protein_reached">Protein erreicht</string>
+    <string name="calendar_protein_partial">Ab 80 %</string>
+    <string name="calendar_protein_low">Weniger</string>
     <string name="stats_avg_kcal">Ø kcal</string>
     <string name="stats_protein_hit">Proteinziel</string>
     <string name="stats_avg_title">Durchschnitt pro Tag</string>
@@ -302,6 +312,7 @@
     <string name="goal_pick_date">Zieldatum wählen</string>
     <string name="goal_target_date_value">Zieldatum: %1$s</string>
     <string name="goal_preview_incomplete">Bitte Wunschgewicht und Zieldatum angeben.</string>
+    <string name="goal_preview_pace_kg">Tempo heute: %1$s kg pro Woche</string>
     <string name="goal_preview_pace">Tempo heute: %1$s kg pro Woche (%2$s kcal pro Tag)</string>
     <string name="goal_preview_kcal">Tagesziel: %1$s kcal</string>
     <string name="goal_limited_hint">Gesund sind max. %1$s kg pro Woche – realistisch am %2$s.</string>
@@ -506,6 +517,9 @@
     <string name="channel_calories">Verbleibende Kalorien</string>
     <string name="channel_reminders">Erinnerungen</string>
     <string name="channel_reports">KI-Wochenauswertung</string>
+    <string name="notif_protein_left">Noch %1$s g Protein</string>
+    <string name="notif_protein_reached">Proteinziel geschafft 💪</string>
+    <string name="notif_protein_progress">Protein %1$s / %2$s g</string>
     <string name="notif_calories_left">Noch %1$s kcal</string>
     <string name="notif_calories_over">%1$s kcal über dem Budget</string>
     <string name="notif_calories_macros">Protein %1$s/%2$s g · KH %3$s/%4$s g · Fett %5$s/%6$s g</string>
@@ -880,6 +894,10 @@
     <string name="changelog_version">Version %1$s</string>
     <string name="changelog_close">Alles klar, los geht\'s</string>
     <string name="changelog_open">Was ist neu?</string>
+    <string name="section_tracking">Was du trackst</string>
+    <string name="protein_only_enable">Nur Protein tracken</string>
+    <string name="protein_only_enable_text">Kalorien, Kohlenhydrate und Fett verschwinden überall – nur dein Protein zählt. Eingetragen wird weiter alles, beim Zurückschalten siehst du sofort wieder alle Werte.</string>
+    <string name="protein_only_target">%1$d g Protein</string>
     <string name="water_enable">Wasser tracken</string>
     <string name="water_enable_text">Zeigt auf „Heute“ eine Wasser-Karte. Getränke, die du in ml einträgst (z. B. Diet-Limo, Kaffee, Tee), zählen automatisch mit – Alkohol nicht. Das Ziel tippst du auf der Karte an.</string>
     <string name="water_from_drinks">davon %1$s l aus Getränken</string>

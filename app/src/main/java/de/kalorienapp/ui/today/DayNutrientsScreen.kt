@@ -41,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.LocalProteinOnly
 import de.kalorienapp.data.repository.FoodEntryRepository
 import de.kalorienapp.domain.NutrientRanking
 import de.kalorienapp.domain.RankedEntry
@@ -122,12 +123,14 @@ fun DayNutrientsScreen(
             )
         },
     ) { padding ->
+        val proteinOnly = LocalProteinOnly.current
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item(key = "chips") {
+            // „Nur Eiweiß“: keine Reiter – es gibt nur das Eiweiß-Ranking.
+            if (!proteinOnly) item(key = "chips") {
                 // Vier Haupt-Reiter (+ „Mehr“), darunter klein die Unterwerte des gewählten Reiters (Wunsch des Nutzers)
                 val tab = NutrientTab.of(state.nutrient)
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

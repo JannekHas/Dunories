@@ -23,6 +23,20 @@ object StatsCalculator {
         else -> DayStatus.OVER
     }
 
+    /** Ab diesem Anteil des Eiweißziels gilt ein Tag im Modus „Nur Eiweiß“ als „fast geschafft“ (gelb). */
+    const val PROTEIN_PARTIAL = 0.8
+
+    /**
+     * Modus „Nur Eiweiß“: grün = Eiweißziel erreicht, gelb = mind. 80 %, grau = weniger.
+     * Nie rot – zu wenig Eiweiß ist kein Versagen (Entscheidung des Nutzers).
+     */
+    fun proteinStatus(eatenProteinG: Double, targetG: Int, hasEntries: Boolean): DayStatus = when {
+        !hasEntries -> DayStatus.NO_DATA
+        eatenProteinG >= targetG -> DayStatus.ON_TARGET
+        eatenProteinG >= targetG * PROTEIN_PARTIAL -> DayStatus.PROTEIN_PARTIAL
+        else -> DayStatus.PROTEIN_LOW
+    }
+
     /**
      * Baut die Tageswerte für jeden Tag in [from]..[to], auch für Tage ohne Einträge.
      * [targetsFor] liefert die Tagesziele (aus dem aktuellen Profil).
@@ -32,6 +46,7 @@ object StatsCalculator {
         to: LocalDate,
         eatenByDay: Map<LocalDate, Nutrients>,
         activityByDay: Map<LocalDate, Int>,
+        proteinOnly: Boolean = false,
         targetsFor: (LocalDate) -> DailyTargets,
     ): List<DayStats> {
         val result = mutableListOf<DayStats>()
@@ -48,7 +63,11 @@ object StatsCalculator {
                 budgetKcal = budget,
                 proteinTargetG = targets.proteinG,
                 hasEntries = eaten != null,
-                status = status(eaten?.kcal ?: 0.0, budget, eaten != null),
+                status = if (proteinOnly) {
+                    proteinStatus(eaten?.proteinG ?: 0.0, targets.proteinG, eaten != null)
+                } else {
+                    status(eaten?.kcal ?: 0.0, budget, eaten != null)
+                },
             )
             date = date.plusDays(1)
         }

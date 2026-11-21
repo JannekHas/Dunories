@@ -54,6 +54,7 @@ object BackupFormat {
         val mealPlanStopAtEnd: Boolean? = null,
         val mealPlanOpenEnded: Boolean? = null,
         val waterEnabled: Boolean? = null,
+        val proteinOnly: Boolean? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

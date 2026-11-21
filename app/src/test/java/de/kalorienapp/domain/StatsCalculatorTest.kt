@@ -22,6 +22,27 @@ class StatsCalculatorTest {
     }
 
     @Test
+    fun `nur eiweiss bewertet nach eiweissziel und nie rot`() {
+        assertEquals(DayStatus.NO_DATA, StatsCalculator.proteinStatus(0.0, 150, hasEntries = false))
+        assertEquals(DayStatus.ON_TARGET, StatsCalculator.proteinStatus(150.0, 150, hasEntries = true))
+        assertEquals(DayStatus.ON_TARGET, StatsCalculator.proteinStatus(220.0, 150, hasEntries = true))
+        assertEquals(DayStatus.PROTEIN_PARTIAL, StatsCalculator.proteinStatus(120.0, 150, hasEntries = true))
+        assertEquals(DayStatus.PROTEIN_LOW, StatsCalculator.proteinStatus(119.0, 150, hasEntries = true))
+    }
+
+    @Test
+    fun `nur eiweiss ignoriert kalorien beim tagesstatus`() {
+        val days = StatsCalculator.days(
+            from = d1, to = d1,
+            eatenByDay = mapOf(d1 to Nutrients(kcal = 3500.0, proteinG = 160.0)),
+            activityByDay = emptyMap(),
+            targetsFor = { targets },
+            proteinOnly = true,
+        )
+        assertEquals(DayStatus.ON_TARGET, days.single().status)
+    }
+
+    @Test
     fun `aktivitaet erhoeht das budget eines tages`() {
         val days = StatsCalculator.days(
             from = d1, to = d1,

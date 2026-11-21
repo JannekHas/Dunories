@@ -22,13 +22,16 @@ import java.time.ZoneId
 class StatsRepository(
     private val dao: StatsDao,
     private val goalRepository: GoalRepository,
+    /** „Nur Eiweiß“: Tage werden nach dem Eiweißziel bewertet statt nach dem Kalorienbudget. */
+    private val proteinOnly: Flow<Boolean> = kotlinx.coroutines.flow.flowOf(false),
 ) {
     fun days(from: LocalDate, to: LocalDate): Flow<List<DayStats>> = combine(
         dao.observeDailyNutrition(from.toEpochDay(), to.toEpochDay()),
         dao.observeDailyActivity(from.toEpochDay(), to.toEpochDay()),
         goalRepository.current,
         dao.observeMicros(from.toEpochDay(), to.toEpochDay()),
-    ) { nutrition, activity, state, micros ->
+        proteinOnly,
+    ) { nutrition, activity, state, micros, proteinMode ->
         if (state == null) return@combine emptyList()
         val microsByDay = micros.groupBy { it.dateEpochDay }.mapValues { (_, rows) ->
             rows.map { Nutrients(micros = Micro.decode(it.micros)) }.sum().micros
@@ -41,6 +44,7 @@ class StatsRepository(
             },
             activityByDay = activity.associate { LocalDate.ofEpochDay(it.dateEpochDay) to it.kcal },
             targetsFor = { date -> state.targetsFor(date.year) },
+            proteinOnly = proteinMode,
         )
     }
 

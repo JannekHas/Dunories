@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.LocalProteinOnly
 import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.DailyTargets
 import de.kalorienapp.domain.model.PeriodStats
@@ -89,9 +90,10 @@ fun StatsScreen(
                             onAction = onAddEntry,
                         )
                     } else if (stats != null) {
-                        KcalBarChart(stats.days, Modifier.fillMaxWidth())
+                        val proteinOnly = LocalProteinOnly.current
+                        KcalBarChart(stats.days, Modifier.fillMaxWidth(), protein = proteinOnly)
                         Text(
-                            stringResource(R.string.stats_chart_caption),
+                            stringResource(if (proteinOnly) R.string.stats_chart_caption_protein else R.string.stats_chart_caption),
                             style = MaterialTheme.typography.bodySmall,
                             color = Neon.TextSecondary,
                         )
@@ -119,6 +121,23 @@ private fun percent(value: Double?) = value?.let { "${(it * 100).roundToInt()} %
 
 @Composable
 private fun SummaryPills(stats: PeriodStats) {
+    if (LocalProteinOnly.current) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NeonPill(
+                value = stats.averageEaten?.proteinG?.let { stringResource(R.string.grams_value, it.format()) } ?: "–",
+                label = stringResource(R.string.stats_avg_protein),
+                color = Neon.Magenta,
+                modifier = Modifier.weight(1f),
+            )
+            NeonPill(
+                value = percent(stats.proteinHitRate),
+                label = stringResource(R.string.stats_protein_reached),
+                color = Neon.Green,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        return
+    }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         NeonPill(
             value = stats.averageEaten?.kcal?.format() ?: "–",
@@ -153,6 +172,11 @@ private fun AverageCard(stats: PeriodStats, targets: DailyTargets?, sex: Sex?) {
                 style = MaterialTheme.typography.bodySmall,
                 color = Neon.TextSecondary,
             )
+            // „Nur Eiweiß“: nur Eiweiß – keine Kalorien, KH, Fett (und deren Unterwerte).
+            if (LocalProteinOnly.current) {
+                AvgRow(stringResource(R.string.protein), avg.proteinG, targets?.proteinG, Neon.Magenta)
+                return@Column
+            }
             AvgRow(stringResource(R.string.nutrient_energy), avg.kcal, stats.averageBudgetKcal, Neon.Orange, unit = R.string.unit_kcal)
             AvgRow(stringResource(R.string.protein), avg.proteinG, targets?.proteinG, Neon.Magenta)
             AvgRow(stringResource(R.string.carbs), avg.carbsG, targets?.carbsG, Neon.Yellow)

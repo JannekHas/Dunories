@@ -19,12 +19,17 @@ import de.kalorienapp.ui.calendar.statusColor
 import de.kalorienapp.ui.theme.Neon
 import java.time.ZoneId
 
-/** Balken je Tag (Farbe = Zielerreichung), gestrichelte Linie = Budget. */
+/**
+ * Balken je Tag (Farbe = Zielerreichung), gestrichelte Linie = Budget.
+ * „Nur Eiweiß“ ([protein]): Balken = Eiweiß, Linie = Eiweißziel.
+ */
 @Composable
-fun KcalBarChart(days: List<DayStats>, modifier: Modifier = Modifier) {
+fun KcalBarChart(days: List<DayStats>, modifier: Modifier = Modifier, protein: Boolean = false) {
+    val value: (DayStats) -> Double = if (protein) { d -> d.eaten.proteinG } else { d -> d.eaten.kcal }
+    val limit: (DayStats) -> Double = if (protein) { d -> d.proteinTargetG.toDouble() } else { d -> d.budgetKcal.toDouble() }
     Canvas(modifier.height(160.dp)) {
         if (days.isEmpty()) return@Canvas
-        val maxValue = days.maxOf { maxOf(it.eaten.kcal, it.budgetKcal.toDouble()) }.coerceAtLeast(1.0) * 1.1
+        val maxValue = days.maxOf { maxOf(value(it), limit(it)) }.coerceAtLeast(1.0) * 1.1
         val slot = size.width / days.size
         val barWidth = (slot * 0.65f).coerceAtMost(28.dp.toPx())
         days.forEachIndexed { index, day ->
@@ -35,13 +40,13 @@ fun KcalBarChart(days: List<DayStats>, modifier: Modifier = Modifier) {
                 cornerRadius = CornerRadius(barWidth / 2), alpha = 0.35f,
             )
             if (day.hasEntries) {
-                val h = (day.eaten.kcal / maxValue * size.height).toFloat()
+                val h = (value(day) / maxValue * size.height).toFloat()
                 drawRoundRect(
                     statusColor(day.status), Offset(x, size.height - h), Size(barWidth, h),
                     cornerRadius = CornerRadius(barWidth / 2),
                 )
             }
-            val by = (size.height - day.budgetKcal / maxValue * size.height).toFloat()
+            val by = (size.height - limit(day) / maxValue * size.height).toFloat()
             drawLine(
                 Neon.TextPrimary, Offset(x - 2f, by), Offset(x + barWidth + 2f, by), strokeWidth = 2.dp.toPx(),
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 4f)),

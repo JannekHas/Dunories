@@ -71,7 +71,8 @@ fun ProfileScreen(
                     SectionTitle(stringResource(R.string.section_targets))
                     TargetAdjustmentsSection(state, viewModel::update)
                     HorizontalDivider()
-                    SectionTitle(stringResource(R.string.water_title))
+                    SectionTitle(stringResource(R.string.section_tracking))
+                    ProteinOnlySection()
                     WaterSettingsSection()
                 }
                 1 -> MealPlanSettingsSection(onOpenPlan)

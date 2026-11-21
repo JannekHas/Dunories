@@ -92,6 +92,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.BuildConfig
 import de.kalorienapp.R
+import kotlin.math.roundToInt
+import de.kalorienapp.domain.model.Nutrients
+import de.kalorienapp.ui.components.LocalProteinOnly
 import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.ActivityEntry
 import de.kalorienapp.domain.model.DaySummary
@@ -150,6 +153,7 @@ fun TodayScreen(
     val streak by viewModel.streak.collectAsStateWithLifecycle()
     val plan by viewModel.plan.collectAsStateWithLifecycle()
     val waterEnabled by viewModel.waterEnabled.collectAsStateWithLifecycle()
+    val proteinOnly = LocalProteinOnly.current
     // Nach einem Update einmal „Neu in Dunories“ zeigen (nur auf dem echten „Heute“, nicht im Kalender-Tag)
     val unseenChangelog by viewModel.unseenChangelog.collectAsStateWithLifecycle()
     if (onBack == null && unseenChangelog.isNotEmpty()) {
@@ -371,7 +375,7 @@ fun TodayScreen(
                 item(key = "skeleton") { TodaySkeleton() }
                 return@LazyColumn
             }
-            if (!state.hasGoal && state.isToday) {
+            if (!state.hasGoal && state.isToday && !proteinOnly) {
                 item(key = "goal_banner") { GoalBanner(onSetGoal) }
             }
             if (streak > 0 && state.isToday) {
@@ -535,6 +539,10 @@ private fun SummaryCard(
     onActivityClick: () -> Unit,
     onNutrientClick: (RankedNutrient) -> Unit,
 ) {
+    if (LocalProteinOnly.current) {
+        ProteinSummaryCard(summary, onNutrientClick)
+        return
+    }
     val over = summary.remainingKcal < 0
     val budget = (summary.targets.kcal + summary.activityKcal).coerceAtLeast(1)
     Column(
@@ -608,6 +616,63 @@ private fun SummaryCard(
         TipSlot(Tip.ACTIVITY, caret = TipCaret.UP_END, after = Tip.MEAL)
         TipSlot(Tip.RINGS, condition = summary.eaten.kcal > 0, after = Tip.ACTIVITY)
         NutrientLegend(summary, sex, onNutrientClick)
+    }
+}
+
+/**
+ * „Nur Eiweiß“: ein einziger Eiweiß-Ring, in der Mitte „noch X g“ bzw. „geschafft“, darunter Ziel und
+ * Gegessen. Keine Aktivitäten (die erhöhen nur das Kalorienbudget) und keine Makro-Legende.
+ */
+@Composable
+private fun ProteinSummaryCard(summary: DaySummary, onNutrientClick: (RankedNutrient) -> Unit) {
+    val target = summary.targets.proteinG
+    val eaten = summary.eaten.proteinG
+    val reached = target > 0 && eaten >= target
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        ConcentricRings(
+            rings = listOf(RingSpec(ratio(eaten, target).coerceAtMost(1f), listOf(MacroColors.protein))),
+            modifier = Modifier.fillMaxWidth(0.62f),
+            strokeWidth = 22.dp,
+        ) {
+            val shown by animateIntAsState(
+                if (reached) eaten.roundToInt() else (target - eaten).roundToInt().coerceAtLeast(0),
+                spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
+                label = "protein",
+            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    stringResource(R.string.grams_value, shown.format()),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (reached) Neon.Green else Neon.TextPrimary,
+                )
+                Text(
+                    stringResource(if (reached) R.string.protein_reached else R.string.protein_remaining),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Neon.TextSecondary,
+                )
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NeonPill(
+                value = stringResource(R.string.grams_value, target.format()),
+                label = stringResource(R.string.summary_target),
+                color = Neon.Cyan,
+                modifier = Modifier.weight(1f),
+            )
+            NeonPill(
+                value = stringResource(R.string.grams_value, eaten.format()),
+                label = stringResource(R.string.summary_eaten),
+                color = MacroColors.protein,
+                modifier = Modifier.weight(1f),
+                onClick = { onNutrientClick(RankedNutrient.PROTEIN) },
+            )
+        }
+        TipSlot(Tip.RINGS, condition = eaten > 0, after = Tip.MEAL)
     }
 }
 
@@ -785,7 +850,7 @@ private fun MealCard(
                 )
                 if (group.entries.isNotEmpty()) {
                     Text(
-                        stringResource(R.string.kcal_value, group.total.kcal.format()),
+                        entryValueText(group.total),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -862,7 +927,7 @@ private fun EntryRow(
         supportingContent = { Text(entrySubtitle(entry)) },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.kcal_value, n.kcal.format()), style = MaterialTheme.typography.labelLarge)
+                Text(entryValueText(n), style = MaterialTheme.typography.labelLarge)
                 Box {
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, stringResource(R.string.more_options))
@@ -894,12 +959,22 @@ private fun EntryRow(
     )
 }
 
-/** „150 g · P 5 g · KH 4 g · F 1 g“ – Unterzeile eines Eintrags (Liste und Zieh-Karte). */
+/** Wert rechts an Einträgen und Mahlzeiten: „320 kcal“, im Modus „Nur Eiweiß“ „25 g Eiweiß“. */
+@Composable
+internal fun entryValueText(n: Nutrients): String =
+    if (LocalProteinOnly.current) stringResource(R.string.protein_value, n.proteinG.format())
+    else stringResource(R.string.kcal_value, n.kcal.format())
+
+/** „150 g · P 5 g · KH 4 g · F 1 g“ – Unterzeile eines Eintrags (Liste und Zieh-Karte); „Nur Eiweiß“: nur die Menge. */
 @Composable
 internal fun entrySubtitle(entry: FoodEntry): String {
     val n = entry.nutrients
-    val macros = stringResource(R.string.entry_macros, n.proteinG.format(), n.carbsG.format(), n.fatG.format())
     val unit = stringResource(entry.unit.labelRes)
+    if (LocalProteinOnly.current) {
+        val amount = entry.amount?.let { stringResource(R.string.amount_with_unit, it.format(), unit) }.orEmpty()
+        return if (entry.isDish) stringResource(R.string.entry_dish_prefix, entry.components.size, amount).trimEnd(' ', '·') else amount
+    }
+    val macros = stringResource(R.string.entry_macros, n.proteinG.format(), n.carbsG.format(), n.fatG.format())
     val line = entry.amount?.let { stringResource(R.string.entry_amount_prefix, it.format(), unit, macros) } ?: macros
     // Gericht: „2 Zutaten · 450 g · P …“
     return if (entry.isDish) stringResource(R.string.entry_dish_prefix, entry.components.size, line) else line
