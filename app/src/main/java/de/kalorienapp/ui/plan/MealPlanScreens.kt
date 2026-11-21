@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.plan
 
+import de.kalorienapp.ui.components.SettingSwitchRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -21,8 +22,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -37,8 +36,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -95,17 +92,7 @@ fun MealPlanSettingsSection(
     val config by viewModel.config.collectAsStateWithLifecycle()
     val items by viewModel.items.collectAsStateWithLifecycle()
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f).padding(end = 12.dp)) {
-                Text(stringResource(R.string.plan_enable), style = MaterialTheme.typography.bodyLarge)
-                Text(stringResource(R.string.plan_enable_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
-            }
-            Switch(
-                checked = config.enabled,
-                onCheckedChange = viewModel::setEnabled,
-                colors = SwitchDefaults.colors(checkedTrackColor = Neon.Cyan, checkedThumbColor = Neon.OnNeon),
-            )
-        }
+        SettingSwitchRow(stringResource(R.string.plan_enable), stringResource(R.string.plan_enable_text), config.enabled, viewModel::setEnabled)
         if (!config.enabled) return@Column
         val today = LocalDate.now()
         val index = MealPlanSchedule.dayIndex(config, today)

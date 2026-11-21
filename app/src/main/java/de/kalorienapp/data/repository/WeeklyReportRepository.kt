@@ -1,6 +1,5 @@
 package de.kalorienapp.data.repository
 
-import de.kalorienapp.BuildConfig
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.db.dao.ActivityEntryDao
 import de.kalorienapp.data.db.dao.FoodEntryDao

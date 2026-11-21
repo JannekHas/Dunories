@@ -1,5 +1,7 @@
 package de.kalorienapp.ui.calendar
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -153,8 +155,12 @@ private fun DayCell(date: LocalDate, stats: DayStats?, onClick: () -> Unit) {
     val future = date.isAfter(today)
     val color = if (future) Color.Transparent else statusColor(stats?.status ?: DayStatus.NO_DATA)
     val onNeon = !future && stats?.status != null && stats.status != DayStatus.NO_DATA && stats.status != DayStatus.PROTEIN_LOW
+    // TalkBack: Datum + Bewertung vorlesen („21. Oktober, im Budget“) – die Farbe allein sieht man nicht.
+    val statusText = if (future) null else stringResource(statusLabel(stats?.status ?: DayStatus.NO_DATA, LocalProteinOnly.current))
+    val description = listOfNotNull(date.format(cellDateFormatter), statusText).joinToString(", ")
     Box(
         modifier = Modifier
+            .semantics(mergeDescendants = true) { contentDescription = description }
             .fillMaxSize()
             .clip(CircleShape)
             .background(color)
@@ -173,6 +179,17 @@ private fun DayCell(date: LocalDate, stats: DayStats?, onClick: () -> Unit) {
             },
         )
     }
+}
+
+private val cellDateFormatter = DateTimeFormatter.ofPattern("d. MMMM", Locale.GERMAN)
+
+private fun statusLabel(status: DayStatus, proteinOnly: Boolean): Int = when (status) {
+    DayStatus.ON_TARGET -> if (proteinOnly) R.string.calendar_protein_reached else R.string.calendar_on_target
+    DayStatus.SLIGHTLY_OVER -> R.string.calendar_slightly_over
+    DayStatus.OVER -> R.string.calendar_over
+    DayStatus.PROTEIN_PARTIAL -> R.string.a11y_protein_partial
+    DayStatus.PROTEIN_LOW -> R.string.a11y_protein_low
+    DayStatus.NO_DATA -> R.string.calendar_no_data
 }
 
 fun statusColor(status: DayStatus): Color = when (status) {

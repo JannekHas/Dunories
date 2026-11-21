@@ -238,6 +238,8 @@
     <string name="soon_title">Hier entsteht etwas Neues</string>
     <string name="soon_text">An diesem Platz bauen wir gerade etwas, das Dunories noch mehr Spaß macht. Gewicht und Körpermaße findest du jetzt unter Statistik → Körper.</string>
     <string name="tip_label">Tipp</string>
+    <string name="stepper_less">Weniger</string>
+    <string name="stepper_more">Mehr</string>
     <string name="origin_label">✓ Von der Nährwerttabelle abgelesen</string>
     <string name="origin_barcode">✓ Barcode – Packungsangaben aus Open Food Facts</string>
     <string name="origin_ai_photo">≈ Von der KI geschätzt (Foto vom Essen)</string>
@@ -295,7 +297,6 @@
     <string name="stats_period_month">30 Tage</string>
     <string name="stats_chart_caption_protein">Balken: Protein (grün = Ziel erreicht, gelb = ab 80 %) · Strich: Proteinziel</string>
     <string name="stats_chart_caption">Balken: gegessen (Farbe = Zielerreichung) · Strich: Budget (Ziel + Aktivitäten)</string>
-    <string name="stats_no_data">In diesem Zeitraum gibt es noch keine Einträge.</string>
     <string name="stats_logged_days">Tage erfasst</string>
     <string name="stats_on_target">im Budget</string>
     <string name="stats_avg_protein">Ø Protein</string>
@@ -303,6 +304,8 @@
     <string name="calendar_protein_reached">Protein erreicht</string>
     <string name="calendar_protein_partial">Ab 80 %</string>
     <string name="calendar_protein_low">Weniger</string>
+    <string name="a11y_protein_partial">Protein ab 80 %</string>
+    <string name="a11y_protein_low">Protein unter 80 %</string>
     <string name="stats_avg_kcal">Ø kcal</string>
     <string name="stats_protein_hit">Proteinziel</string>
     <string name="stats_avg_title">Durchschnitt pro Tag</string>
@@ -532,7 +535,6 @@
     <string name="import_tip_tiktok">Tipp: Wird das Rezept nur im Video gezeigt, speichere das Video in TikTok („Video speichern“) und teile die Datei an Dunories – oder teile Screenshots.</string>
     <string name="import_tip_instagram">Tipp: Instagram gibt Beiträge oft nicht frei. Teile stattdessen Screenshots vom Rezept oder eine Bildschirmaufnahme des Reels an Dunories.</string>
     <!-- Benachrichtigungen -->
-    <string name="section_notifications">Benachrichtigungen</string>
     <string name="channel_calories">Verbleibende Kalorien</string>
     <string name="channel_reminders">Erinnerungen</string>
     <string name="channel_reports">KI-Wochenauswertung</string>
@@ -737,7 +739,6 @@
     <string name="quick_combo_summary">%1$s · %2$s kcal</string>
     <string name="quick_remove_combo">Kombi löschen</string>
     <!-- Vitamine & Mineralstoffe -->
-    <string name="micros_title">Vitamine &amp; Mineralstoffe</string>
     <string name="micros_section">Vitamine, Mineralstoffe &amp; Weitere pro 100 %1$s (optional)</string>
     <string name="micros_per_serving">Vitamine, Mineralstoffe &amp; Weitere pro Portion</string>
     <string name="micros_stats_hint">Balken: Anteil am DGE-Tageswert. Es zählen nur Lebensmittel mit Angaben (KI, Barcode oder selbst eingetragen) – die echte Zufuhr ist meist etwas höher.</string>
@@ -785,7 +786,6 @@
     <string name="speech_permission">Für die Spracheingabe braucht die App Zugriff aufs Mikrofon.</string>
     <string name="speech_unavailable">Auf diesem Gerät ist keine Spracherkennung verfügbar. Du kannst das Mikrofon der Tastatur nutzen.</string>
     <!-- Intervallfasten -->
-    <string name="section_fasting">Intervallfasten</string>
     <string name="fasting_enable">Intervallfasten</string>
     <string name="fasting_enable_text">Timer auf „Heute“, Benachrichtigung bei Beginn und Ende des Essensfensters, Auswertung in der Statistik.</string>
     <string name="fasting_plan_16_8">16:8</string>
@@ -844,7 +844,6 @@
     <string name="plan_title">Ernährungsplan</string>
     <string name="plan_enable">Ernährungsplan</string>
     <string name="plan_enable_text">Trag einmal ein, was du an welchem Tag isst – auf „Heute“ reicht dann ein Tipp auf „Wie geplant“.</string>
-    <string name="plan_status_day">Heute ist Tag %1$d von %2$d</string>
     <string name="plan_status_before">Startet am %1$s</string>
     <string name="plan_status_expired">Abgelaufen am %1$s</string>
     <string name="plan_days_filled">%1$d von %2$d Tagen geplant</string>

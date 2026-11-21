@@ -42,7 +42,6 @@ import de.kalorienapp.ui.goal.GoalPreviewCard
 import de.kalorienapp.ui.profile.BodyDataSection
 import de.kalorienapp.ui.profile.ProfileFormState
 import de.kalorienapp.ui.profile.ProfileViewModel
-import de.kalorienapp.ui.profile.TargetAdjustmentsSection
 import de.kalorienapp.ui.profile.TargetsCard
 
 private const val STEP_COUNT = 3

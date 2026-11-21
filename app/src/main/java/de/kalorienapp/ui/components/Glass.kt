@@ -17,8 +17,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import de.kalorienapp.ui.theme.Neon
 
@@ -76,8 +74,3 @@ fun GlassCard(
         Card(modifier = modifier, shape = GlassShape, colors = colors, border = GlassBorder, content = content)
     }
 }
-
-/** Glas-Optik für beliebige Flächen (z. B. Fasten-Karte, Kopfzeilen). */
-fun Modifier.glass(shape: Shape = GlassShape, strong: Boolean = false, borderWidth: Dp = 1.dp): Modifier =
-    background(if (strong) Neon.GlassStrong else Neon.Glass, shape)
-        .border(BorderStroke(borderWidth, GlassBorder.brush), shape)

@@ -23,20 +23,17 @@ import de.kalorienapp.data.db.dao.FoodEntryDao
 import de.kalorienapp.data.remote.gemini.GeminiError
 import de.kalorienapp.data.remote.gemini.GeminiException
 import de.kalorienapp.data.repository.NotEnoughDataException
-import de.kalorienapp.data.repository.WeeklyReportRepository
 import de.kalorienapp.domain.Fasting
 import de.kalorienapp.domain.MealReminderPlanner
 import de.kalorienapp.domain.ReminderPlanner
 import de.kalorienapp.domain.model.MealType
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.temporal.TemporalAdjusters
 import java.util.concurrent.TimeUnit
 
 /**

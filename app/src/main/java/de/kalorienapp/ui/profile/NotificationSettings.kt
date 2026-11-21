@@ -1,5 +1,8 @@
 package de.kalorienapp.ui.profile
 
+import de.kalorienapp.ui.components.SettingSwitchRow
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import android.Manifest
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -21,8 +24,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -150,7 +151,9 @@ fun NotificationSettingsSection(
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 8.dp)) {
                     Text(stringResource(R.string.notif_weigh_after), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                     val colors = IconButtonDefaults.filledIconButtonColors(containerColor = Neon.SurfaceHighest, contentColor = Neon.TextPrimary)
-                    FilledIconButton(onClick = { viewModel.setWeightDays((days - 1).coerceAtLeast(1)) }, colors = colors, modifier = Modifier.size(32.dp)) {
+                    val less = stringResource(R.string.stepper_less)
+                    val more = stringResource(R.string.stepper_more)
+                    FilledIconButton(onClick = { viewModel.setWeightDays((days - 1).coerceAtLeast(1)) }, colors = colors, modifier = Modifier.size(32.dp).semantics { contentDescription = less }) {
                         Text(stringResource(R.string.minus), fontWeight = FontWeight.Bold)
                     }
                     Text(
@@ -159,7 +162,7 @@ fun NotificationSettingsSection(
                         modifier = Modifier.padding(horizontal = 10.dp),
                     )
                     FilledIconButton(onClick = { viewModel.setWeightDays((days + 1).coerceAtMost(14)) }, colors = colors, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Add, contentDescription = more, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -199,15 +202,5 @@ fun NotificationSettingsSection(
 
 @Composable
 private fun SwitchRow(title: String, text: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(text, style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onChange,
-            colors = SwitchDefaults.colors(checkedTrackColor = Neon.Cyan, checkedThumbColor = Neon.OnNeon),
-        )
-    }
+    SettingSwitchRow(title, text, checked, onChange)
 }

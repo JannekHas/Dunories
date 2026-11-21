@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.stats
 
+import de.kalorienapp.ui.components.SettingSwitchRow
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -28,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -230,13 +230,13 @@ private fun EverydaySection(prefs: FoodPreferences, update: ((FoodPreferences) -
         RadioRow(stringResource(budget.labelRes), null, prefs.budget == budget) { update { it.copy(budget = budget) } }
     }
     Header(stringResource(R.string.prefs_meal_prep_title))
-    Row(
-        Modifier.fillMaxWidth().clickable { update { it.copy(mealPrep = !it.mealPrep) } }.padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(stringResource(R.string.prefs_meal_prep), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Switch(checked = prefs.mealPrep, onCheckedChange = { checked -> update { it.copy(mealPrep = checked) } })
-    }
+    SettingSwitchRow(
+        title = stringResource(R.string.prefs_meal_prep),
+        text = null,
+        checked = prefs.mealPrep,
+        onChange = { checked -> update { it.copy(mealPrep = checked) } },
+        modifier = Modifier.padding(vertical = 4.dp),
+    )
 }
 
 @Composable

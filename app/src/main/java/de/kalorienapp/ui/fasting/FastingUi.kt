@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.fasting
 
+import de.kalorienapp.ui.components.SettingSwitchRow
 import de.kalorienapp.ui.components.tabularNums
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
@@ -23,8 +23,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -122,17 +120,7 @@ fun FastingSettingsSection(viewModel: FastingSettingsViewModel = viewModel(facto
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f).padding(end = 12.dp)) {
-                Text(stringResource(R.string.fasting_enable), style = MaterialTheme.typography.bodyLarge)
-                Text(stringResource(R.string.fasting_enable_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
-            }
-            Switch(
-                checked = enabled,
-                onCheckedChange = viewModel::setEnabled,
-                colors = SwitchDefaults.colors(checkedTrackColor = Neon.Cyan, checkedThumbColor = Neon.OnNeon),
-            )
-        }
+        SettingSwitchRow(stringResource(R.string.fasting_enable), stringResource(R.string.fasting_enable_text), enabled, viewModel::setEnabled)
         if (!enabled) return@Column
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FastingPlan.entries.forEach { plan ->

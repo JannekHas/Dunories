@@ -1,5 +1,7 @@
 package de.kalorienapp.ui.recipes
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.ui.res.pluralStringResource
@@ -339,8 +341,10 @@ fun CategoryTag(name: String) {
 @Composable
 private fun ServingsStepper(value: Int, onChange: (Int) -> Unit) {
     val colors = IconButtonDefaults.filledIconButtonColors(containerColor = Neon.SurfaceHighest, contentColor = Neon.TextPrimary)
+    val less = stringResource(R.string.stepper_less)
+    val more = stringResource(R.string.stepper_more)
     Row(verticalAlignment = Alignment.CenterVertically) {
-        FilledIconButton(onClick = { onChange((value - 1).coerceAtLeast(1)) }, colors = colors, modifier = Modifier.size(32.dp)) {
+        FilledIconButton(onClick = { onChange((value - 1).coerceAtLeast(1)) }, colors = colors, modifier = Modifier.size(32.dp).semantics { contentDescription = less }) {
             Text(stringResource(R.string.minus), fontWeight = FontWeight.Bold)
         }
         Text(
@@ -349,7 +353,7 @@ private fun ServingsStepper(value: Int, onChange: (Int) -> Unit) {
             modifier = Modifier.padding(horizontal = 10.dp),
         )
         FilledIconButton(onClick = { onChange((value + 1).coerceAtMost(50)) }, colors = colors, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(Icons.Filled.Add, contentDescription = more, modifier = Modifier.size(18.dp))
         }
     }
 }

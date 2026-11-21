@@ -19,8 +19,6 @@ class MealPlanRepository(private val dao: MealPlanDao, private val settings: App
 
     val items: Flow<List<MealPlanItem>> = dao.observeAll().map { list -> list.map { it.toDomain() } }
 
-    fun setConfig(value: MealPlanSettings) = settings.setMealPlan(value)
-
     fun updateConfig(transform: (MealPlanSettings) -> MealPlanSettings) = settings.updateMealPlan(transform)
 
     /** Nach „Beenden“ und abgelaufenem letzten Tag automatisch ausschalten. */

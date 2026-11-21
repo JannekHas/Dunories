@@ -56,7 +56,6 @@ import de.kalorienapp.R
 import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.ui.components.GlassShape
-import de.kalorienapp.ui.components.format
 import de.kalorienapp.ui.components.labelRes
 import de.kalorienapp.ui.theme.Neon
 import kotlinx.coroutines.isActive

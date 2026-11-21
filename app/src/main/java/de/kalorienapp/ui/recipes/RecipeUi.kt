@@ -5,7 +5,6 @@ import android.util.LruCache
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -273,6 +271,3 @@ fun RecipeMetaLine(recipe: Recipe, modifier: Modifier = Modifier) {
         }
     }
 }
-
-/** Klickbare Zeile ohne Ripple-Probleme in Listen. */
-fun Modifier.clickableIf(onClick: (() -> Unit)?): Modifier = if (onClick != null) clickable(onClick = onClick) else this
