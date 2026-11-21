@@ -88,7 +88,7 @@ class WeeklyReportRepository(
         val fasting = settings.fastingConfig.value.takeIf { settings.fastingEnabled.value }
         // Nur der Plan, keine „eingehalten“-Auswertung: nachträglich erfasste Einträge sähen wie
         // Essen in der Fastenzeit aus – das wäre falsch und demotivierend (Wunsch des Nutzers).
-        val withPrefs = baseInput.copy(preferences = settings.foodPreferences.value, proteinOnly = settings.proteinOnly.value)
+        val withPrefs = baseInput.copy(preferences = settings.foodPreferences.value, proteinOnly = settings.proteinOnly.value, weightHidden = !settings.weightEnabled.value)
         return if (fasting == null) withPrefs else withPrefs.copy(fasting = fasting)
     }
 

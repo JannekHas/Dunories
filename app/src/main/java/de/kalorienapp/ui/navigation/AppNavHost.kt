@@ -48,7 +48,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.navigation.NavDestination
 import de.kalorienapp.ui.components.PressableSurface
-import de.kalorienapp.ui.stats.WeightScreen
 import java.time.LocalDate
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -57,6 +56,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -106,17 +107,25 @@ import de.kalorienapp.ui.stats.FoodPreferencesScreen
 import de.kalorienapp.ui.stats.AllReportsScreen
 import de.kalorienapp.ui.today.DayNutrientsScreen
 
+/** Eintrag der unteren Leiste; [route] == [SoonSlot] = Platzhalter „Bald“ (öffnet nur einen Hinweis). */
 private data class TopLevelDestination(val route: Any, val icon: @Composable () -> ImageVector, val labelRes: Int)
+
+/**
+ * Platzhalter in der Leiste, wo früher „Gewicht“ war (Gewicht ist jetzt der Reiter „Körper“ in der Statistik).
+ * Hält den Platz für einen späteren Bereich (z. B. Social) frei – Entscheidung des Nutzers Nov. 2026.
+ */
+private object SoonSlot
 
 private val topLevelDestinations = listOf(
     TopLevelDestination(TodayRoute, { Icons.Filled.Home }, R.string.nav_today),
     TopLevelDestination(StatsRoute, { ImageVector.vectorResource(R.drawable.ic_bar_chart) }, R.string.nav_stats),
-    TopLevelDestination(WeightRoute, { ImageVector.vectorResource(R.drawable.ic_scale) }, R.string.nav_weight),
+    TopLevelDestination(SoonSlot, { ImageVector.vectorResource(R.drawable.ic_sparkle) }, R.string.nav_soon),
     TopLevelDestination(RecipesRoute, { ImageVector.vectorResource(R.drawable.ic_restaurant) }, R.string.nav_recipes),
     TopLevelDestination(ProfileRoute, { Icons.Filled.Person }, R.string.nav_profile),
 ).filter { it.route != RecipesRoute || BuildConfig.FEATURE_RECIPES }
 
-private fun NavDestination?.isTopLevel() = this != null && topLevelDestinations.any { hasRoute(it.route::class) }
+private fun NavDestination?.isTopLevel() =
+    this != null && topLevelDestinations.any { it.route != SoonSlot && hasRoute(it.route::class) }
 
 /** Reiterwechsel blenden nur über; Unterseiten kommen von rechts und gehen dorthin zurück. */
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch() =
@@ -137,6 +146,8 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
     val currentDestination = backStackEntry?.destination
     val showBottomBar = currentDestination.isTopLevel()
     var navUnlockedAt by remember { mutableStateOf(0L) }
+    var showSoon by remember { mutableStateOf(false) }
+    val weightEnabled = container.settings.weightEnabled.collectAsStateWithLifecycle().value
     // Inhalte laufen unter der gläsernen Leiste durch; sie wird daraus weichgezeichnet.
     val hazeState = rememberHazeState()
     val addEntry = {
@@ -163,9 +174,15 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     topLevelDestinations.forEachIndexed { index, dest ->
                         if (index == middle) AddButton(onClick = addEntry)
                         NavigationBarItem(
-                            selected = currentDestination?.hasRoute(dest.route::class) == true,
+                            selected = dest.route != SoonSlot && currentDestination?.hasRoute(dest.route::class) == true,
                             // Kurz nach der Einrichtung gesperrt: ein Doppeltipp auf „Fertig“ landete sonst im Profil.
-                            onClick = { if (System.currentTimeMillis() > navUnlockedAt) navController.navigateTopLevel(dest.route) },
+                            onClick = {
+                                when {
+                                    System.currentTimeMillis() <= navUnlockedAt -> Unit
+                                    dest.route == SoonSlot -> showSoon = true
+                                    else -> navController.navigateTopLevel(dest.route)
+                                }
+                            },
                             icon = { Icon(dest.icon(), contentDescription = null) },
                             label = { FitText(stringResource(dest.labelRes), style = MaterialTheme.typography.labelMedium) },
                             colors = NavigationBarItemDefaults.colors(
@@ -193,7 +210,8 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
             val destination = currentDestination ?: return@LaunchedEffect
             if (pendingNav == null || destination.hasRoute(OnboardingRoute::class)) return@LaunchedEffect
             when (val request = container.navRequests.take()) {
-                NavRequest.Weigh -> navController.navigateTopLevel(WeightRoute)
+                // Wiege-Erinnerung → Statistik, die springt zum Reiter „Körper“ und öffnet den Dialog.
+                NavRequest.Weigh -> navController.navigateTopLevel(StatsRoute)
                 is NavRequest.Report -> navController.navigate(WeeklyReportRoute(request.id))
                 is NavRequest.Capture -> navController.navigate(
                     CaptureRoute(epochDay = java.time.LocalDate.now().toEpochDay(), mealType = request.mealType),
@@ -211,10 +229,21 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                 askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
+        if (showSoon) {
+            AlertDialog(
+                onDismissRequest = { showSoon = false },
+                icon = { Icon(ImageVector.vectorResource(R.drawable.ic_sparkle), contentDescription = null, tint = Neon.Cyan) },
+                title = { Text(stringResource(R.string.soon_title)) },
+                text = { Text(stringResource(R.string.soon_text)) },
+                confirmButton = { TextButton(onClick = { showSoon = false }) { Text(stringResource(R.string.ok)) } },
+                containerColor = Neon.SurfaceHigh,
+            )
+        }
         CompositionLocalProvider(
             LocalBottomBarPadding provides padding.calculateBottomPadding(),
             LocalTips provides container.settings,
             de.kalorienapp.ui.components.LocalProteinOnly provides container.settings.proteinOnly.collectAsStateWithLifecycle().value,
+            de.kalorienapp.ui.components.LocalWeightEnabled provides weightEnabled,
         ) {
             Box(Modifier.fillMaxSize()) {
                 NavHost(
@@ -284,10 +313,6 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                                 navController.navigateTopLevel(TodayRoute)
                             },
                             onAddEntry = addEntry,
-                        )
-                    }
-                    screen<WeightRoute> {
-                        WeightScreen(
                             onOpenGoal = { navController.navigate(GoalCelebrationRoute(it)) },
                             openWeighDialog = container.navRequests.openWeighDialog.collectAsStateWithLifecycle().value,
                             onWeighDialogShown = container.navRequests::weighDialogShown,

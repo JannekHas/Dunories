@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.pager.rememberPagerState
+import de.kalorienapp.ui.components.LocalWeightEnabled
 import de.kalorienapp.ui.components.LocalProteinOnly
 import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.DailyTargets
@@ -58,22 +61,30 @@ fun StatsScreen(
     onShowAllReports: () -> Unit = {},
     onDayClick: (LocalDate) -> Unit = {},
     onAddEntry: () -> Unit = {},
+    /** Erreichtes Ziel im Reiter „Körper“ antippen → Feier-Bildschirm. */
+    onOpenGoal: (Long) -> Unit = {},
+    /** Aus der Wiege-Erinnerung geöffnet → Reiter „Körper“ mit Wiege-Dialog. */
+    openWeighDialog: Boolean = false,
+    onWeighDialogShown: () -> Unit = {},
     viewModel: StatsViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val generation by viewModel.reportGeneration.collectAsStateWithLifecycle()
+    // Ernährung | Kalender | Körper | KI – „Körper“ nur, wenn Gewicht getrackt wird.
+    val pages = if (LocalWeightEnabled.current) StatsPage.entries else StatsPage.entries - StatsPage.BODY
+    val pagerState = rememberPagerState { pages.size }
+    LaunchedEffect(openWeighDialog, pages) {
+        if (openWeighDialog && StatsPage.BODY in pages) pagerState.scrollToPage(pages.indexOf(StatsPage.BODY))
+    }
 
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.stats_title)) }) }) { padding ->
         TabbedPages(
-            tabs = listOf(
-                stringResource(R.string.stats_tab_food),
-                stringResource(R.string.nav_calendar),
-                stringResource(R.string.stats_tab_ai),
-            ),
+            tabs = pages.map { stringResource(it.labelRes) },
             modifier = Modifier.fillMaxSize().padding(padding),
+            pagerState = pagerState,
         ) { page ->
-            when (page) {
-                TAB_FOOD -> {
+            when (pages[page]) {
+                StatsPage.FOOD -> {
                     TipSlot(Tip.STATS)
                     ChoiceChips(
                         options = StatsPeriod.entries,
@@ -101,8 +112,14 @@ fun StatsScreen(
                         AverageCard(stats, state.targets, state.sex)
                     }
                 }
-                TAB_CALENDAR -> CalendarSection(onDayClick = onDayClick)
-                else -> WeeklyReportSection(
+                StatsPage.CALENDAR -> CalendarSection(onDayClick = onDayClick)
+                StatsPage.BODY -> BodySection(
+                    openWeighDialog = openWeighDialog,
+                    onWeighDialogShown = onWeighDialogShown,
+                    onOpenGoal = onOpenGoal,
+                    viewModel = viewModel,
+                )
+                StatsPage.AI -> WeeklyReportSection(
                     reports = state.reports,
                     generation = generation,
                     onGenerate = { viewModel.generateReport(onOpenReport) },
@@ -114,8 +131,13 @@ fun StatsScreen(
     }
 }
 
-private const val TAB_FOOD = 0
-private const val TAB_CALENDAR = 1
+/** Reiter der Statistik in Anzeige-Reihenfolge. */
+private enum class StatsPage(val labelRes: Int) {
+    FOOD(R.string.stats_tab_food),
+    CALENDAR(R.string.nav_calendar),
+    BODY(R.string.stats_tab_body),
+    AI(R.string.stats_tab_ai),
+}
 
 private fun percent(value: Double?) = value?.let { "${(it * 100).roundToInt()} %" } ?: "–"
 

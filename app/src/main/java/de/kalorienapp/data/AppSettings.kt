@@ -54,6 +54,19 @@ class AppSettings(context: Context) {
         _proteinOnly.value = enabled
     }
 
+    private val _weightEnabled = MutableStateFlow(prefs.getBoolean(KEY_WEIGHT_ENABLED, true))
+
+    /**
+     * Gewicht tracken (standardmäßig an). Aus: Reiter „Körper“, Wiege-Erinnerung und Gewicht in der
+     * KI-Auswertung verschwinden; ein laufendes Gewichtsziel rechnet unsichtbar mit dem letzten Gewicht weiter.
+     */
+    val weightEnabled: StateFlow<Boolean> = _weightEnabled.asStateFlow()
+
+    fun setWeightEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_WEIGHT_ENABLED, enabled).apply()
+        _weightEnabled.value = enabled
+    }
+
     private val _waterGoalMl = MutableStateFlow(prefs.getInt(KEY_WATER_GOAL, 0).takeIf { it > 0 })
     /** Eigenes Wasser-Tagesziel in ml; null = automatisch aus dem Gewicht. */
     val waterGoalMl: StateFlow<Int?> = _waterGoalMl.asStateFlow()
@@ -240,6 +253,7 @@ class AppSettings(context: Context) {
         private const val KEY_WATER_GOAL = "water_goal_ml"
         private const val KEY_WATER_ENABLED = "water_enabled"
         private const val KEY_PROTEIN_ONLY = "protein_only"
+        private const val KEY_WEIGHT_ENABLED = "weight_enabled"
         private const val KEY_FASTING = "fasting_enabled"
         private const val KEY_MEAL_REMINDERS = "meal_reminders"
         private const val KEY_FASTING_PLAN = "fasting_plan"

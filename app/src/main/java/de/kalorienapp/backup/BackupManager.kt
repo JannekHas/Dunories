@@ -73,6 +73,7 @@ class BackupManager(
                 mealPlanOpenEnded = settings.mealPlan.value.openEnded,
                 waterEnabled = settings.waterEnabled.value,
                 proteinOnly = settings.proteinOnly.value,
+                weightEnabled = settings.weightEnabled.value,
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
                         .joinToString(";")
@@ -156,6 +157,7 @@ class BackupManager(
         settings.setWaterGoalMl(manifest.settings.waterGoalMl)
         manifest.settings.waterEnabled?.let(settings::setWaterEnabled)
         manifest.settings.proteinOnly?.let(settings::setProteinOnly)
+        manifest.settings.weightEnabled?.let(settings::setWeightEnabled)
         settings.setFastingEnabled(manifest.settings.fastingEnabled)
         settings.setMealReminders(manifest.settings.mealReminders)
         manifest.settings.let { m ->

@@ -67,6 +67,13 @@ class WeeklyInputBuilderTest {
     }
 
     @Test
+    fun `ohne gewicht tracken fehlen gewicht und gewichtsziel`() {
+        val text = WeeklyInputBuilder.build(input().copy(weightHidden = true), zone)
+        assertTrue(text, text.contains("KEIN GEWICHT"))
+        assertTrue(text, !text.contains("GEWICHTSZIEL") && !text.contains("97,2 kg am") && !text.contains("GEWICHT:"))
+    }
+
+    @Test
     fun `nur eiweiss steht als verbindlicher modus im datenblock`() {
         assertTrue(WeeklyInputBuilder.build(input().copy(proteinOnly = true), zone).contains("MODUS NUR EIWEISS"))
         assertTrue(!WeeklyInputBuilder.build(input(), zone).contains("MODUS NUR EIWEISS"))

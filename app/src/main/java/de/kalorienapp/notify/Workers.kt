@@ -260,7 +260,8 @@ class WeightReminderWorker(context: Context, params: WorkerParameters) : Corouti
         val c = applicationContext.container
         val days = c.settings.weightReminderDays.value
         val today = LocalDate.now()
-        if (days != null && c.profileRepository.get() != null && Notifications.canPost(applicationContext)) {
+        // „Gewicht tracken“ aus → nie erinnern (Planung läuft weiter, damit Einschalten sofort wirkt).
+        if (days != null && c.settings.weightEnabled.value && c.profileRepository.get() != null && Notifications.canPost(applicationContext)) {
             val zone = ZoneId.systemDefault()
             val last = c.weightRepository.latestDate(zone)
             // Nur vor dem Essen sinnvoll: hat man heute schon etwas eingetragen, ist es zu spät.

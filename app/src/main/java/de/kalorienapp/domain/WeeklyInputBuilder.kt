@@ -52,6 +52,8 @@ data class WeeklyInput(
     val preferences: FoodPreferences = FoodPreferences(),
     /** Modus „Nur Eiweiß“: Person zählt bewusst keine Kalorien → Auswertung nur zum Eiweiß. */
     val proteinOnly: Boolean = false,
+    /** „Gewicht tracken“ aus: kein Gewicht, keine Körpermaße, kein Gewichtsziel im Datenblock. */
+    val weightHidden: Boolean = false,
 )
 
 /**
@@ -61,6 +63,10 @@ data class WeeklyInput(
 object WeeklyInputBuilder {
 
     const val MIN_LOGGED_DAYS = 2
+
+    /** Verbindliche Vorgabe, wenn „Gewicht tracken“ aus ist. */
+    const val WEIGHT_HIDDEN_RULE = "KEIN GEWICHT (verbindlich): Die Person trackt bewusst kein Gewicht. Erwähne kein Gewicht, " +
+        "keine kg, keine Körpermaße und kein Gewichtsziel, rate nicht zum Wiegen; goal_note = null."
 
     /** Verbindliche Vorgabe im Modus „Nur Eiweiß“ – die Kalorienwerte stehen trotzdem im Datenblock (für Lebensmittel-Wissen). */
     const val PROTEIN_ONLY_RULE = "MODUS NUR EIWEISS (verbindlich): Die Person zählt bewusst keine Kalorien. Bewerte nur Eiweiß " +
@@ -77,13 +83,18 @@ object WeeklyInputBuilder {
         if (input.proteinOnly) {
             appendLine(PROTEIN_ONLY_RULE)
         }
+        if (input.weightHidden) {
+            appendLine(WEIGHT_HIDDEN_RULE)
+        }
         appendLine()
         appendLine("PERSON: ${if (p.sex.name == "MALE") "männlich" else "weiblich"}, ${p.ageIn(year)} Jahre, ${p.heightCm.r()} cm, aktuell ${p.weightKg.r1()} kg")
         appendLine("Bedarf ohne Sport (Grundumsatz × Alltagsfaktor ${p.lifestyle.pal}, Tagesziel-Basis): ${GoalCalculator.maintenanceKcal(p, year).roundToInt()} kcal. Sport wird als Aktivität extra eingetragen und erhöht das Budget.")
         input.waterGoalMl?.let { appendLine("WASSERZIEL: $it ml pro Tag") }
         appendLine("TAGESZIEL: ${input.targets.kcal} kcal, Protein ${input.targets.proteinG} g, KH ${input.targets.carbsG} g, Fett ${input.targets.fatG} g")
         val goal = input.goal
-        if (goal == null) {
+        if (input.weightHidden) {
+            // Gewichtsziel läuft unsichtbar weiter – nur seine Wirkung aufs Tagesziel ist relevant.
+        } else if (goal == null) {
             appendLine("GEWICHTSZIEL: keins gesetzt")
         } else {
             val date = goal.targetDate?.let { " bis $it" } ?: ""
@@ -187,6 +198,7 @@ object WeeklyInputBuilder {
             }
             appendLine()
         }
+        if (input.weightHidden) return@buildString
         val weights = input.weights.sortedBy { it.measuredAt }
         val fromInstant = input.from.atStartOfDay(zone).toInstant()
         val before = weights.lastOrNull { it.measuredAt.isBefore(fromInstant) }

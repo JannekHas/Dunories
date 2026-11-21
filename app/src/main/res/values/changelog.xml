@@ -6,8 +6,9 @@
         <item>🔦|Taschenlampe beim Foto|In der Kamera gibt es jetzt rechts einen Blitz-Knopf: Taschenlampe an für dunkle Teller oder Restaurants, nochmal tippen – aus.</item>
         <item>🔊|Foto mit der Lautstärketaste|Handy in einer Hand, Essen in der anderen? Drück einfach Lauter oder Leiser – wie in der Kamera-App wird das Foto gemacht.</item>
         <item>📊|Wochenauswertung kommt wieder zuverlässig|Die KI-Auswertung am Montag ist manchmal ausgefallen. Das ist behoben – und wurde ein Montag verpasst (z. B. Handy aus), holt Dunories die Auswertung beim nächsten Öffnen nach.</item>
-        <item>💪|Protein passend zu deinem Körper|Protein richtet sich nach der fettfreien Masse, nicht nach dem vollen Körpergewicht. Bei Übergewicht rechnet Dunories deshalb mit einem gesunden Bezugsgewicht – und hast du unter Gewicht → Körpermaße deinen Körperfettanteil eingetragen, noch genauer.</item>
+        <item>💪|Protein passend zu deinem Körper|Protein richtet sich nach der fettfreien Masse, nicht nach dem vollen Körpergewicht. Bei Übergewicht rechnet Dunories deshalb mit einem gesunden Bezugsgewicht – und hast du unter Statistik → Körper deinen Körperfettanteil eingetragen, noch genauer.</item>
         <item>🥩|Nur Protein tracken|Kalorien sind dir egal? Unter Profil → Ziele → „Nur Protein tracken“ verschwinden Kalorien, KH und Fett überall – Ring, Kalender, Statistik und Benachrichtigung zeigen nur noch dein Protein. Zurückschalten geht jederzeit, nichts geht verloren.</item>
+        <item>⚖️|Gewicht ist umgezogen|Gewicht, Körpermaße und erreichte Ziele findest du jetzt unter Statistik → Körper. Unten in der Leiste ist dafür Platz für etwas Neues ✨ – und wer sich nicht wiegen mag, schaltet unter Profil → Ziele „Gewicht tracken“ aus.</item>
         <item>⚡|Barcode schneller|Einmal gescannte Produkte merkt sich Dunories 30 Tage – der zweite Scan ist sofort da und klappt auch ohne Internet.</item>
         <item>🔧|Feinschliff|Beim Warten auf die KI siehst du schon die Form des Vorschlags. Mit großer Systemschrift wird nichts mehr abgeschnitten.</item>
     </string-array>

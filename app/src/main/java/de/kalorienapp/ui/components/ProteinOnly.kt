@@ -8,3 +8,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
  * Gesetzt in [de.kalorienapp.ui.navigation.AppNavHost].
  */
 val LocalProteinOnly = staticCompositionLocalOf { false }
+
+/** „Gewicht tracken“ (Profil → Ziele, standardmäßig an); aus = Reiter „Körper“ in der Statistik fehlt. */
+val LocalWeightEnabled = staticCompositionLocalOf { true }

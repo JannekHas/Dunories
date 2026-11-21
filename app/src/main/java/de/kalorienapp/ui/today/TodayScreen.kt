@@ -92,6 +92,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.BuildConfig
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.LocalWeightEnabled
 import kotlin.math.roundToInt
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.ui.components.LocalProteinOnly
@@ -154,6 +155,7 @@ fun TodayScreen(
     val plan by viewModel.plan.collectAsStateWithLifecycle()
     val waterEnabled by viewModel.waterEnabled.collectAsStateWithLifecycle()
     val proteinOnly = LocalProteinOnly.current
+    val weightEnabled = LocalWeightEnabled.current
     // Nach einem Update einmal „Neu in Dunories“ zeigen (nur auf dem echten „Heute“, nicht im Kalender-Tag)
     val unseenChangelog by viewModel.unseenChangelog.collectAsStateWithLifecycle()
     if (onBack == null && unseenChangelog.isNotEmpty()) {
@@ -198,7 +200,8 @@ fun TodayScreen(
     LaunchedEffect(endedGoal) {
         endedGoal?.let { goal ->
             viewModel.dismissEndedGoal()
-            onGoalEnded(goal.id)
+            // Ohne „Gewicht tracken“ endet das unsichtbare Ziel still (keine Feier mit kg).
+            if (weightEnabled) onGoalEnded(goal.id)
         }
     }
 
@@ -375,7 +378,7 @@ fun TodayScreen(
                 item(key = "skeleton") { TodaySkeleton() }
                 return@LazyColumn
             }
-            if (!state.hasGoal && state.isToday && !proteinOnly) {
+            if (!state.hasGoal && state.isToday && !proteinOnly && weightEnabled) {
                 item(key = "goal_banner") { GoalBanner(onSetGoal) }
             }
             if (streak > 0 && state.isToday) {

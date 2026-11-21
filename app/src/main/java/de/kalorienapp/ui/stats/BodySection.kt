@@ -58,10 +58,12 @@ import java.util.Locale
 
 private val dateTimeFormatter = DateTimeFormatter.ofPattern("EEE, d. MMM yyyy · HH:mm", Locale.GERMAN)
 
-/** Eigener Tab „Gewicht“: Messungen + Trend, Körpermaße, erreichte Ziele. */
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Reiter „Körper“ in der Statistik (früher eigener Tab „Gewicht“): Messungen + Trend, Körpermaße,
+ * erreichte Ziele. Nur sichtbar, wenn „Gewicht tracken“ an ist.
+ */
 @Composable
-fun WeightScreen(
+fun BodySection(
     /** Aus der Wiege-Erinnerung geöffnet → Dialog direkt zeigen. */
     openWeighDialog: Boolean = false,
     onWeighDialogShown: () -> Unit = {},
@@ -101,16 +103,8 @@ fun WeightScreen(
         )
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.weight_screen_title)) }) }) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(top = 4.dp, bottom = 24.dp + LocalBottomBarPadding.current),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+    run {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TipSlot(Tip.WEIGHT)
             WeightSection(
                 entries = state.weights,

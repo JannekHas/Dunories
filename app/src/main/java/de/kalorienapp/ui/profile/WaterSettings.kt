@@ -29,6 +29,27 @@ class WaterSettingsViewModel(private val settings: AppSettings) : ViewModel() {
     val proteinOnly = settings.proteinOnly
 
     fun setProteinOnly(enabled: Boolean) = settings.setProteinOnly(enabled)
+
+    val weightEnabled = settings.weightEnabled
+
+    fun setWeightEnabled(enabled: Boolean) = settings.setWeightEnabled(enabled)
+}
+
+/** „Gewicht tracken“ (standardmäßig an) – aus für alle, die mit Wiegen und Gewicht nichts zu tun haben wollen. */
+@Composable
+fun WeightTrackingSection(viewModel: WaterSettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
+    val enabled by viewModel.weightEnabled.collectAsStateWithLifecycle()
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(stringResource(R.string.weight_enable), style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.weight_enable_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+        }
+        Switch(
+            checked = enabled,
+            onCheckedChange = viewModel::setWeightEnabled,
+            colors = SwitchDefaults.colors(checkedTrackColor = Neon.Cyan, checkedThumbColor = Neon.OnNeon),
+        )
+    }
 }
 
 /** „Nur Eiweiß tracken“ (standardmäßig aus): Kalorien, KH und Fett verschwinden überall. */

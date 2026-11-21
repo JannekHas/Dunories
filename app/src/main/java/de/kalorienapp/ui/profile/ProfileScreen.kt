@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.LocalWeightEnabled
 import de.kalorienapp.domain.GoalCalculator
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.TabbedPages
@@ -62,9 +63,12 @@ fun ProfileScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     TargetsCard(state.targets, atMinimum = state.form.kcalOverride.isBlank() && state.targets?.kcal == GoalCalculator.MIN_KCAL_TARGET)
-                    SectionTitle(stringResource(R.string.section_goal))
-                    GoalCard(state.goalState, onNewGoal)
-                    HorizontalDivider()
+                    // Ohne „Gewicht tracken“ läuft ein Ziel unsichtbar weiter – keine kg, kein Fortschritt.
+                    if (LocalWeightEnabled.current) {
+                        SectionTitle(stringResource(R.string.section_goal))
+                        GoalCard(state.goalState, onNewGoal)
+                        HorizontalDivider()
+                    }
                     SectionTitle(stringResource(R.string.section_body))
                     BodyDataSection(state.form, viewModel::update)
                     HorizontalDivider()
@@ -73,6 +77,7 @@ fun ProfileScreen(
                     HorizontalDivider()
                     SectionTitle(stringResource(R.string.section_tracking))
                     ProteinOnlySection()
+                    WeightTrackingSection()
                     WaterSettingsSection()
                 }
                 1 -> MealPlanSettingsSection(onOpenPlan)

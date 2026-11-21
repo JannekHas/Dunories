@@ -46,6 +46,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.ui.components.LocalWeightEnabled
 import de.kalorienapp.ui.components.LocalTips
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.notify.CalorieNotifier
@@ -134,29 +135,32 @@ fun NotificationSettingsSection(
             checked = calories,
             onChange = { viewModel.setCalories(it); if (it) ensurePermission() },
         )
-        SwitchRow(
-            title = stringResource(R.string.notif_setting_weigh),
-            text = stringResource(R.string.notif_setting_weigh_text),
-            checked = weightDays != null,
-            onChange = { on ->
-                viewModel.setWeightDays(if (on) AppSettings.DEFAULT_WEIGHT_DAYS else null)
-                if (on) ensurePermission()
-            },
-        )
-        weightDays?.let { days ->
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 8.dp)) {
-                Text(stringResource(R.string.notif_weigh_after), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                val colors = IconButtonDefaults.filledIconButtonColors(containerColor = Neon.SurfaceHighest, contentColor = Neon.TextPrimary)
-                FilledIconButton(onClick = { viewModel.setWeightDays((days - 1).coerceAtLeast(1)) }, colors = colors, modifier = Modifier.size(32.dp)) {
-                    Text(stringResource(R.string.minus), fontWeight = FontWeight.Bold)
-                }
-                Text(
-                    pluralStringResource(R.plurals.days_count, days, days),
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(horizontal = 10.dp),
-                )
-                FilledIconButton(onClick = { viewModel.setWeightDays((days + 1).coerceAtMost(14)) }, colors = colors, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+        // Ohne „Gewicht tracken“ gibt es keine Wiege-Erinnerung.
+        if (LocalWeightEnabled.current) {
+            SwitchRow(
+                title = stringResource(R.string.notif_setting_weigh),
+                text = stringResource(R.string.notif_setting_weigh_text),
+                checked = weightDays != null,
+                onChange = { on ->
+                    viewModel.setWeightDays(if (on) AppSettings.DEFAULT_WEIGHT_DAYS else null)
+                    if (on) ensurePermission()
+                },
+            )
+            weightDays?.let { days ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 8.dp)) {
+                    Text(stringResource(R.string.notif_weigh_after), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    val colors = IconButtonDefaults.filledIconButtonColors(containerColor = Neon.SurfaceHighest, contentColor = Neon.TextPrimary)
+                    FilledIconButton(onClick = { viewModel.setWeightDays((days - 1).coerceAtLeast(1)) }, colors = colors, modifier = Modifier.size(32.dp)) {
+                        Text(stringResource(R.string.minus), fontWeight = FontWeight.Bold)
+                    }
+                    Text(
+                        pluralStringResource(R.plurals.days_count, days, days),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                    )
+                    FilledIconButton(onClick = { viewModel.setWeightDays((days + 1).coerceAtMost(14)) }, colors = colors, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
                 }
             }
         }
