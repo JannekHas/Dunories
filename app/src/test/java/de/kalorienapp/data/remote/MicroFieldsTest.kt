@@ -26,4 +26,20 @@ class MicroFieldsTest {
         val micros = MicroFields.read(json("""{"vitamin_c_mg":53.2,"iron_mg":null,"potassium_mg":"358"}"""))
         assertEquals(mapOf(Micro.VITAMIN_C to 53.2, Micro.POTASSIUM to 358.0), micros)
     }
+
+    @Test
+    fun `niacin pantothensaeure kupfer mangan`() {
+        val off = MicroFields.readOpenFoodFacts(
+            json("""{"vitamin-pp_100g":0.0045,"pantothenic-acid_100g":0.0011,"copper_100g":0.0004,"manganese_100g":0.0029}"""),
+        )
+        assertEquals(4.5, off[Micro.VITAMIN_B3]!!, 0.0001)
+        assertEquals(1.1, off[Micro.VITAMIN_B5]!!, 0.0001)
+        assertEquals(0.4, off[Micro.COPPER]!!, 0.0001)
+        assertEquals(2.9, off[Micro.MANGANESE]!!, 0.0001)
+        val ai = MicroFields.read(json("""{"niacin_mg":9.7,"pantothenic_acid_mg":1.2,"copper_mg":0.3,"manganese_mg":1.1}"""))
+        assertEquals(4, ai.size)
+        // Kupfer über 5 mg = über der EFSA-Höchstmenge
+        assertEquals(true, Micro.COPPER.tooMuch(5.5, de.kalorienapp.domain.model.Sex.MALE))
+        assertEquals(false, Micro.MANGANESE.alwaysShown)
+    }
 }

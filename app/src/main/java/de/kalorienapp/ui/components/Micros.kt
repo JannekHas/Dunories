@@ -41,6 +41,10 @@ val Micro.labelRes: Int
         Micro.VITAMIN_B6 -> R.string.micro_vitamin_b6
         Micro.VITAMIN_B1 -> R.string.micro_vitamin_b1
         Micro.VITAMIN_B2 -> R.string.micro_vitamin_b2
+        Micro.VITAMIN_B3 -> R.string.micro_vitamin_b3
+        Micro.VITAMIN_B5 -> R.string.micro_vitamin_b5
+        Micro.COPPER -> R.string.micro_copper
+        Micro.MANGANESE -> R.string.micro_manganese
         Micro.CALCIUM -> R.string.micro_calcium
         Micro.IRON -> R.string.micro_iron
         Micro.MAGNESIUM -> R.string.micro_magnesium

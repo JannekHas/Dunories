@@ -756,6 +756,10 @@
     <string name="micro_vitamin_b6">Vitamin B6</string>
     <string name="micro_vitamin_b1">Vitamin B1</string>
     <string name="micro_vitamin_b2">Vitamin B2</string>
+    <string name="micro_vitamin_b3">Vitamin B3</string>
+    <string name="micro_vitamin_b5">Vitamin B5</string>
+    <string name="micro_copper">Kupfer</string>
+    <string name="micro_manganese">Mangan</string>
     <string name="micro_iodine">Jod</string>
     <string name="micro_selenium">Selen</string>
     <string name="micro_phosphorus">Phosphor</string>

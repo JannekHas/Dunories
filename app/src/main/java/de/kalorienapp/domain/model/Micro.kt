@@ -30,6 +30,10 @@ enum class Micro(
     VITAMIN_B6(MicroUnit.MILLIGRAM, MicroGroup.VITAMIN, 1.6, 1.4, upperLimit = 12.0),
     VITAMIN_B1(MicroUnit.MILLIGRAM, MicroGroup.VITAMIN, 1.2, 1.0),
     VITAMIN_B2(MicroUnit.MILLIGRAM, MicroGroup.VITAMIN, 1.4, 1.1),
+    /** Niacin (DGE 25–51 J.); Höchstmenge gilt nur für Präparate → keine. Nov. 2026 ergänzt (wie Cronometer). */
+    VITAMIN_B3(MicroUnit.MILLIGRAM, MicroGroup.VITAMIN, 15.0, 12.0),
+    /** Pantothensäure, DGE-Schätzwert. */
+    VITAMIN_B5(MicroUnit.MILLIGRAM, MicroGroup.VITAMIN, 5.0, 5.0),
 
     IRON(MicroUnit.MILLIGRAM, MicroGroup.MINERAL, 11.0, 15.0, alwaysShown = true),
     CALCIUM(MicroUnit.MILLIGRAM, MicroGroup.MINERAL, 1000.0, 1000.0, alwaysShown = true, upperLimit = 2500.0),
@@ -39,6 +43,10 @@ enum class Micro(
     IODINE(MicroUnit.MICROGRAM, MicroGroup.MINERAL, 200.0, 200.0, upperLimit = 600.0),
     SELENIUM(MicroUnit.MICROGRAM, MicroGroup.MINERAL, 70.0, 60.0, upperLimit = 255.0),
     PHOSPHORUS(MicroUnit.MILLIGRAM, MicroGroup.MINERAL, 550.0, 550.0),
+    /** DGE-Schätzwert 1,0–1,5 mg (Männer oberes, Frauen mittleres Ende), EFSA-Höchstmenge 5 mg. */
+    COPPER(MicroUnit.MILLIGRAM, MicroGroup.MINERAL, 1.5, 1.25, upperLimit = 5.0),
+    /** DGE-Schätzwert 2–5 mg → Mitte; keine EFSA-Höchstmenge. */
+    MANGANESE(MicroUnit.MILLIGRAM, MicroGroup.MINERAL, 3.5, 3.5),
 
     /** EFSA: bis 400 mg/Tag für gesunde Erwachsene unbedenklich. */
     CAFFEINE(MicroUnit.MILLIGRAM, MicroGroup.OTHER, 400.0, 400.0, isLimit = true),
