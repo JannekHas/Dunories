@@ -864,6 +864,8 @@
     <string name="plan_ask_extend_expired">Dein Plan ist am %1$s abgelaufen.</string>
     <string name="plan_extend">Verlängern</string>
     <string name="changelog_title">Neu in Dunories</string>
+    <string name="capture_torch_on">Taschenlampe an</string>
+    <string name="capture_torch_off">Taschenlampe aus</string>
     <string name="changelog_version">Version %1$s</string>
     <string name="changelog_close">Alles klar, los geht\'s</string>
     <string name="changelog_open">Was ist neu?</string>

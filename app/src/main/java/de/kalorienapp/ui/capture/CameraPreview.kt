@@ -2,6 +2,7 @@ package de.kalorienapp.ui.capture
 
 import android.content.Context
 import android.net.Uri
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -24,6 +25,17 @@ class CameraController {
         .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
         .build()
 
+    /** Gebundene Kamera (für die Taschenlampe); null, solange die Vorschau nicht läuft. */
+    internal var camera: Camera? = null
+
+    /** Hat die Rückkamera ein Blitzlicht (sonst kein Taschenlampen-Knopf)? */
+    val hasTorch: Boolean get() = camera?.cameraInfo?.hasFlashUnit() == true
+
+    /** Taschenlampe (Dauerlicht) an/aus – geht beim Verlassen der Kamera automatisch aus. */
+    fun setTorch(on: Boolean) {
+        camera?.cameraControl?.enableTorch(on)
+    }
+
     /** Nimmt ein Foto in den Cache auf; [onResult] bekommt die Datei-Uri oder null bei Fehler. */
     fun takePhoto(context: Context, onResult: (Uri?) -> Unit) {
         val dir = File(context.cacheDir, "capture").apply { mkdirs() }
@@ -42,7 +54,7 @@ class CameraController {
 }
 
 @Composable
-fun CameraPreview(controller: CameraController, modifier: Modifier = Modifier) {
+fun CameraPreview(controller: CameraController, modifier: Modifier = Modifier, onReady: () -> Unit = {}) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER } }
@@ -55,11 +67,15 @@ fun CameraPreview(controller: CameraController, modifier: Modifier = Modifier) {
                 val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
                 p.unbindAll()
                 runCatching {
-                    p.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, controller.imageCapture)
+                    controller.camera = p.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, controller.imageCapture)
+                    onReady()
                 }
             }
         }, ContextCompat.getMainExecutor(context))
-        onDispose { provider?.unbindAll() }
+        onDispose {
+            controller.camera = null
+            provider?.unbindAll()
+        }
     }
 
     AndroidView(factory = { previewView }, modifier = modifier)

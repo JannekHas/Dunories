@@ -2,6 +2,11 @@
 <!-- Patchnotes für das Fenster „Neu in Dunories“ (ui/changelog). Je Version ein Array, Einträge: Emoji|Titel|Text.
      Neue Version: Array anlegen und in ChangelogUi.VERSIONS eintragen. -->
 <resources>
+    <string-array name="changelog_7">
+        <item>🔦|Taschenlampe beim Foto|In der Kamera gibt es jetzt rechts einen Blitz-Knopf: Taschenlampe an für dunkle Teller oder Restaurants, nochmal tippen – aus.</item>
+        <item>🔊|Foto mit der Lautstärketaste|Handy in einer Hand, Essen in der anderen? Drück einfach Lauter oder Leiser – wie in der Kamera-App wird das Foto gemacht.</item>
+        <item>📊|Wochenauswertung kommt wieder zuverlässig|Die KI-Auswertung am Montag ist manchmal ausgefallen. Das ist behoben – und wurde ein Montag verpasst (z. B. Handy aus), holt Dunories die Auswertung beim nächsten Öffnen nach.</item>
+    </string-array>
     <string-array name="changelog_6">
         <item>📋|Ernährungsplan: Wiederholen und Laufzeit|Oben steht jetzt „Wiederholt sich alle 7 Tage“ – du trägst nur diese Tage ein, danach beginnt der Plan wieder bei Tag 1. Darunter stellst du ein, wie lange er läuft: bis zu einem Datum oder ohne Ende. Isst du jede Woche gleich, reichen also 7 Tage, auch wenn der Plan einen Monat geht. Danke Tristan!</item>
         <item>📷|Plan per Kamera, PDF oder Sprache|Beim „Plan importieren“ kannst du deinen Plan jetzt direkt fotografieren, eine PDF wählen oder ihn einsprechen – zusätzlich zu Fotos und Text. Alles lässt sich kombinieren.</item>

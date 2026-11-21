@@ -22,8 +22,8 @@ android {
         applicationId = "de.kalorienapp"
         minSdk = 28
         targetSdk = 37
-        versionCode = 6
-        versionName = "0.5.1"
+        versionCode = 7
+        versionName = "0.5.2"
 
         buildConfigField(
             "String",

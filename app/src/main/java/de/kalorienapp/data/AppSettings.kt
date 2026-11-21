@@ -171,6 +171,11 @@ class AppSettings(context: Context) {
         )
     }
 
+    /** Wochenbeginn (Montag) der zuletzt automatisch erledigten Wochenauswertung; null = noch nie. */
+    var weeklyDoneFor: java.time.LocalDate?
+        get() = prefs.getLong(KEY_WEEKLY_DONE, Long.MIN_VALUE).takeIf { it != Long.MIN_VALUE }?.let(java.time.LocalDate::ofEpochDay)
+        set(value) = prefs.edit().putLong(KEY_WEEKLY_DONE, value?.toEpochDay() ?: Long.MIN_VALUE).apply()
+
     private val _changelogSeen = MutableStateFlow(prefs.getInt(KEY_CHANGELOG_SEEN, 0).takeIf { it > 0 })
 
     /** versionCode, dessen Patchnotes zuletzt gelesen wurden (null = noch nie). */
@@ -242,6 +247,7 @@ class AppSettings(context: Context) {
         private const val KEY_SEEN_TIPS = "seen_tips"
         private const val KEY_PLAN_ENABLED = "meal_plan_enabled"
         private const val KEY_CHANGELOG_SEEN = "changelog_seen_version"
+        private const val KEY_WEEKLY_DONE = "weekly_report_done_for"
         private const val KEY_PLAN_START = "meal_plan_start"
         private const val KEY_PLAN_DAYS = "meal_plan_days"
         private const val KEY_PLAN_END = "meal_plan_end"

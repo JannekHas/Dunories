@@ -1,5 +1,7 @@
 package de.kalorienapp.notify
 
+import kotlinx.coroutines.sync.withLock
+import de.kalorienapp.domain.WeeklySchedule
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -48,22 +50,28 @@ class WorkScheduler(
 ) {
     private val work get() = WorkManager.getInstance(context)
 
+    /**
+     * Beim App-Start und nach Neustart: bestehende Termine **behalten** ([ExistingWorkPolicy.KEEP]).
+     * Mit REPLACE hat der App-Start, den ein Termin selbst ausgelöst hat (App war beendet), genau diesen
+     * Termin abgebrochen und verschoben – so fiel z. B. die Montags-Auswertung aus.
+     */
     suspend fun scheduleAll() {
-        scheduleMealReminder()
-        scheduleFasting()
-        scheduleMidnight()
-        scheduleWeightReminder()
-        scheduleWeekly()
+        val keep = ExistingWorkPolicy.KEEP
+        scheduleMealReminder(keep)
+        scheduleFasting(keep)
+        scheduleMidnight(keep)
+        scheduleWeightReminder(policy = keep)
+        scheduleWeekly(policy = keep)
     }
 
     /** Eintrage-Erinnerung: zur nächsten gelernten Erinnerungszeit (siehe [MealReminderPlanner]). */
-    suspend fun scheduleMealReminder() {
+    suspend fun scheduleMealReminder(policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE) {
         val next = if (settings.mealReminders.value) MealReminderPlanner.next(mealReminderTimes(), LocalDateTime.now()) else null
         if (next == null) {
             work.cancelUniqueWork(NAME_MEAL)
             return
         }
-        enqueue<MealReminderWorker>(NAME_MEAL, next.first)
+        enqueue<MealReminderWorker>(NAME_MEAL, next.first, policy = policy)
     }
 
     /** Erinnerungszeiten aus den Einträgen der letzten 3 Wochen. */
@@ -79,23 +87,23 @@ class WorkScheduler(
     }
 
     /** Intervallfasten: Benachrichtigung zum nächsten Beginn/Ende des Essensfensters. */
-    fun scheduleFasting() {
+    fun scheduleFasting(policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE) {
         val next = if (settings.fastingEnabled.value) Fasting.nextTransition(settings.fastingConfig.value, LocalDateTime.now()) else null
         if (next == null) {
             work.cancelUniqueWork(NAME_FASTING)
             return
         }
-        enqueue<FastingWorker>(NAME_FASTING, next.first)
+        enqueue<FastingWorker>(NAME_FASTING, next.first, policy = policy)
     }
 
     /** Kurz nach Mitternacht: Kalorien-Benachrichtigung auf den neuen Tag umstellen. */
-    fun scheduleMidnight() {
+    fun scheduleMidnight(policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE) {
         val next = LocalDate.now().plusDays(1).atTime(0, 1)
-        enqueue<MidnightWorker>(NAME_MIDNIGHT, next)
+        enqueue<MidnightWorker>(NAME_MIDNIGHT, next, policy = policy)
     }
 
     /** Täglich zur Erinnerungszeit (30 min vor der üblichen ersten Mahlzeit) prüfen, ob Wiegen fällig ist. */
-    suspend fun scheduleWeightReminder(fromTomorrow: Boolean = false) {
+    suspend fun scheduleWeightReminder(fromTomorrow: Boolean = false, policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE) {
         if (settings.weightReminderDays.value == null) {
             work.cancelUniqueWork(NAME_WEIGH)
             return
@@ -103,23 +111,25 @@ class WorkScheduler(
         val time = ReminderPlanner.reminderTime(typicalFirstEntryTime())
         val todayAt = LocalDate.now().atTime(time)
         val next = if (fromTomorrow || !todayAt.isAfter(LocalDateTime.now())) todayAt.plusDays(1) else todayAt
-        enqueue<WeightReminderWorker>(NAME_WEIGH, next)
+        enqueue<WeightReminderWorker>(NAME_WEIGH, next, policy = policy)
     }
 
-    /** Montags 7 Uhr: Auswertung der letzten Woche (braucht Internet). */
-    fun scheduleWeekly(afterRun: Boolean = false) {
+    /**
+     * Montags 7 Uhr: Auswertung der letzten Woche (braucht Internet). Ist die fällige Woche noch nicht
+     * erledigt (Montag ausgefallen), wird sie sofort nachgeholt – sobald Internet da ist.
+     */
+    fun scheduleWeekly(afterRun: Boolean = false, policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE) {
         if (!settings.weeklyReport.value) {
             work.cancelUniqueWork(NAME_WEEKLY)
+            work.cancelUniqueWork(NAME_WEEKLY_CATCH_UP)
             return
         }
         val now = LocalDateTime.now()
-        var next = LocalDate.now().with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY)).atTime(WEEKLY_TIME)
-        if (afterRun || !next.isAfter(now)) next = next.toLocalDate().plusWeeks(1).atTime(WEEKLY_TIME)
-        enqueue<WeeklyReportWorker>(
-            NAME_WEEKLY,
-            next,
-            Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
-        )
+        val network = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+        if (!afterRun && WeeklySchedule.needsCatchUp(now, settings.weeklyDoneFor)) {
+            enqueue<WeeklyReportWorker>(NAME_WEEKLY_CATCH_UP, now, network, ExistingWorkPolicy.KEEP)
+        }
+        enqueue<WeeklyReportWorker>(NAME_WEEKLY, WeeklySchedule.nextRun(now), network, policy)
     }
 
     /** Übliche Uhrzeit des ersten Eintrags der letzten 3 Wochen (nur am selben Tag erfasste Einträge). */
@@ -138,13 +148,14 @@ class WorkScheduler(
         name: String,
         at: LocalDateTime,
         constraints: Constraints = Constraints.NONE,
+        policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE,
     ) {
         val delay = Duration.between(LocalDateTime.now(), at).toMillis().coerceAtLeast(0)
         val request = OneTimeWorkRequestBuilder<W>()
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .setConstraints(constraints)
             .build()
-        work.enqueueUniqueWork(name, ExistingWorkPolicy.REPLACE, request)
+        work.enqueueUniqueWork(name, policy, request)
     }
 
     companion object {
@@ -153,7 +164,7 @@ class WorkScheduler(
         private const val NAME_MEAL = "meal_reminder"
         private const val NAME_WEIGH = "weight_reminder"
         private const val NAME_WEEKLY = "weekly_report"
-        private val WEEKLY_TIME: LocalTime = LocalTime.of(7, 0)
+        private const val NAME_WEEKLY_CATCH_UP = "weekly_report_catch_up"
     }
 }
 
@@ -278,7 +289,21 @@ class WeeklyReportWorker(context: Context, params: WorkerParameters) : Coroutine
     override suspend fun doWork(): Result {
         val c = applicationContext.container
         if (!c.settings.weeklyReport.value) return Result.success()
-        val (from, to) = WeeklyReportRepository.previousWeek(LocalDate.now())
+        // Regulärer Termin und Nachholen können gleichzeitig laufen → nacheinander, sonst doppelte Auswertung.
+        return generationLock.withLock { runLocked() }
+    }
+
+    @SuppressLint("MissingPermission") // canPost prüft die Erlaubnis
+    private suspend fun runLocked(): Result {
+        val c = applicationContext.container
+        val from = WeeklySchedule.dueWeekStart(LocalDateTime.now())
+        val to = from.plusDays(6)
+        // Regulärer Termin und Nachholen können zusammenfallen → jede Woche nur einmal.
+        val done = c.settings.weeklyDoneFor
+        if (done != null && !done.isBefore(from)) {
+            c.workScheduler.scheduleWeekly(afterRun = true)
+            return Result.success()
+        }
         try {
             if (!c.weeklyReportRepository.exists(from, to)) {
                 val report = c.weeklyReportRepository.generate(from, to)
@@ -305,13 +330,17 @@ class WeeklyReportWorker(context: Context, params: WorkerParameters) : Coroutine
         } catch (e: GeminiException) {
             val temporary = e.error in setOf(GeminiError.NETWORK, GeminiError.OVERLOADED, GeminiError.QUOTA)
             if (temporary && runAttemptCount < MAX_RETRIES) return Result.retry()
+        } catch (e: java.io.IOException) {
+            if (runAttemptCount < MAX_RETRIES) return Result.retry()
         }
+        c.settings.weeklyDoneFor = from
         c.workScheduler.scheduleWeekly(afterRun = true)
         return Result.success()
     }
 
     private companion object {
         const val MAX_RETRIES = 4
+        val generationLock = kotlinx.coroutines.sync.Mutex()
     }
 }
 

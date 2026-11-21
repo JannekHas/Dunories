@@ -203,8 +203,25 @@ private fun CameraContent(
         )
     }
     var capturing by remember { mutableStateOf(false) }
+    var torchOn by remember { mutableStateOf(false) }
+    var hasTorch by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         hasPermission = it
+    }
+    fun shoot() {
+        if (hasPermission && !capturing) {
+            capturing = true
+            controller.takePhoto(context) { uri ->
+                capturing = false
+                if (uri != null) viewModel.onPhoto(uri) else viewModel.onCaptureFailed()
+            }
+        }
+    }
+    // Lauter-/Leiser-Taste löst aus, solange die Kamera sichtbar ist.
+    val currentShoot by rememberUpdatedState(::shoot)
+    DisposableEffect(Unit) {
+        HardwareShutter.onPress = { currentShoot() }
+        onDispose { HardwareShutter.onPress = null }
     }
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let(viewModel::onPhoto)
@@ -215,7 +232,10 @@ private fun CameraContent(
 
     Box(modifier.background(Color.Black)) {
         if (hasPermission) {
-            CameraPreview(controller, Modifier.fillMaxSize())
+            CameraPreview(controller, Modifier.fillMaxSize(), onReady = {
+                hasTorch = controller.hasTorch
+                if (torchOn) controller.setTorch(true)
+            })
         } else {
             Column(
                 modifier = Modifier
@@ -268,6 +288,33 @@ private fun CameraContent(
             TipSlot(Tip.CAPTURE, caret = TipCaret.UP_CENTER)
         }
 
+        // Taschenlampe: Dauerlicht für dunkle Teller/Restaurants (nur wenn die Kamera ein Blitzlicht hat)
+        if (hasPermission && hasTorch) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 156.dp)
+                    .size(52.dp)
+                    .background(
+                        if (torchOn) Neon.Yellow else Color.Black.copy(alpha = 0.5f),
+                        CircleShape,
+                    )
+                    .border(1.dp, Neon.Yellow.copy(alpha = 0.7f), CircleShape)
+                    .pressable({
+                        torchOn = !torchOn
+                        controller.setTorch(torchOn)
+                    }, CircleShape),
+            ) {
+                Icon(
+                    painterResource(if (torchOn) R.drawable.ic_flash_on else R.drawable.ic_flash_off),
+                    stringResource(if (torchOn) R.string.capture_torch_off else R.string.capture_torch_on),
+                    tint = if (torchOn) Neon.OnNeon else Neon.Yellow,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+        }
+
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -293,15 +340,7 @@ private fun CameraContent(
             )
             LargeFloatingActionButton(
                 shape = CircleShape,
-                onClick = {
-                    if (hasPermission && !capturing) {
-                        capturing = true
-                        controller.takePhoto(context) { uri ->
-                            capturing = false
-                            if (uri != null) viewModel.onPhoto(uri) else viewModel.onCaptureFailed()
-                        }
-                    }
-                },
+                onClick = ::shoot,
             ) {
                 if (capturing) {
                     CircularProgressIndicator(modifier = Modifier.size(32.dp))

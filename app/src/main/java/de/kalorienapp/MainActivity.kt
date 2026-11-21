@@ -2,6 +2,8 @@ package de.kalorienapp
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
+import de.kalorienapp.ui.capture.HardwareShutter
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -56,6 +58,17 @@ class MainActivity : ComponentActivity() {
     }
 
     /** singleTask: weiteres Teilen bzw. Antippen einer Benachrichtigung, während die App offen ist. */
+    /** Lauter/Leiser löst in der Kamera aus (wie in der Kamera-App), sonst normale Lautstärke. */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val volumeKey = event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
+        val shutter = HardwareShutter.onPress
+        if (volumeKey && shutter != null) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) shutter()
+            return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handledIntentKey = null
