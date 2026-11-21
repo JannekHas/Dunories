@@ -49,7 +49,7 @@ class AppContainer(context: Context) {
     val settings = AppSettings(context)
 
     val foodEntryDao = database.foodEntryDao()
-    val profileRepository = ProfileRepository(database.profileDao())
+    val profileRepository = ProfileRepository(database.profileDao(), database.bodyMeasurementDao())
     val foodEntryRepository = FoodEntryRepository(foodEntryDao)
     val foodLibraryRepository = FoodLibraryRepository(database.favoriteFoodDao(), foodEntryDao, database.mealComboDao())
     val mealPlanRepository = MealPlanRepository(database.mealPlanDao(), settings)
@@ -67,7 +67,7 @@ class AppContainer(context: Context) {
 
     val foodAnalyzer = FoodAnalyzer(
         context = context,
-        openFoodFacts = OpenFoodFactsClient(),
+        openFoodFacts = OpenFoodFactsClient(context.cacheDir),
         gemini = gemini,
     )
 

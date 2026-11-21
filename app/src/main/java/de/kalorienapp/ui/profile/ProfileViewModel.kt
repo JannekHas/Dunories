@@ -32,6 +32,8 @@ data class ProfileUiState(
     val autoTargets: DailyTargets? = null,
     /** Standard-Protein pro kg für das gewählte Ziel. */
     val defaultProteinPerKg: Double = 0.0,
+    /** Gewicht, auf das sich Protein pro kg bezieht (siehe GoalCalculator.proteinReferenceWeight). */
+    val proteinReferenceKg: Double? = null,
     /** Onboarding: Eingabe des ersten Gewichtsziels. */
     val goalForm: GoalFormState = GoalFormState(),
     /** Aktives Ziel (Profil) bzw. eingegebenes Ziel (Onboarding) mit heutigem Plan. */
@@ -58,6 +60,7 @@ class ProfileViewModel(
     private var saveJob: Job? = null
     private var activeGoal: WeightGoal? = null
     private var lastSavedWeightKg: Double? = null
+    private var bodyFatPercent: Double? = null
 
     init {
         viewModelScope.launch {
@@ -67,6 +70,12 @@ class ProfileViewModel(
             _uiState.value = withTargets(ProfileUiState(form = form, isLoading = false))
             if (autoSave) {
                 lastSavedWeightKg = existing?.weightKg
+                launch {
+                    repository.bodyFatPercent.collect { value ->
+                        bodyFatPercent = value
+                        _uiState.update(::withTargets)
+                    }
+                }
                 launch {
                     goalRepository.activeGoal.collect { goal ->
                         activeGoal = goal
@@ -122,7 +131,7 @@ class ProfileViewModel(
 
     private fun withTargets(state: ProfileUiState): ProfileUiState {
         val form = state.form
-        val profile = form.toProfile(currentYear)
+        val profile = form.toProfile(currentYear)?.copy(bodyFatPercent = bodyFatPercent)
         // Im Onboarding gibt es noch kein gespeichertes Ziel → das eingegebene zählt.
         val goal = if (autoSave) activeGoal else profile?.let { state.goalForm.toGoal(it.weightKg) }
         val goalState = profile?.let { GoalState.of(it, goal, LocalDate.now()) }
@@ -140,6 +149,9 @@ class ProfileViewModel(
                 ).targets
             },
             defaultProteinPerKg = GoalCalculator.defaultProteinPerKg(goalState?.direction ?: Goal.MAINTAIN),
+            proteinReferenceKg = goalState?.let {
+                GoalCalculator.proteinReferenceWeight(it.profile, it.direction, it.goal?.targetWeightKg)
+            },
         )
     }
 }

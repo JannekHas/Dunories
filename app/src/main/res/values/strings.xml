@@ -72,7 +72,8 @@
     <string name="targets_incomplete">Bitte Körperdaten vollständig ausfüllen.</string>
     <string name="targets_macros">Protein %1$d g · KH %2$d g · Fett %3$d g</string>
     <string name="targets_override_hint">Leere Felder werden automatisch berechnet. Trage einen Wert ein, um ihn festzulegen.</string>
-    <string name="targets_protein_per_kg">Protein pro kg (beim Abnehmen: Wunschgewicht)</string>
+    <string name="targets_protein_per_kg">Protein pro kg</string>
+    <string name="targets_protein_reference">Bezogen auf %1$s kg statt deines vollen Gewichts – Protein richtet sich nach der fettfreien Masse. Mit einer Körperfett-Messung (Gewicht → Körpermaße) wird es genauer.</string>
     <string name="targets_kcal">Kalorienziel</string>
 
     <!-- Onboarding -->

@@ -46,8 +46,8 @@ object GoalCalculator {
     /**
      * Tagesziele; manuelle Overrides haben Vorrang vor den berechneten Werten.
      * [direction] und [adjustmentKcal] kommen aus dem aktiven Gewichtsziel (ohne Ziel: Halten, 0).
-     * Protein bezieht sich beim Abnehmen auf das Wunschgewicht ([targetWeightKg]) – sonst bekäme man bei
-     * viel Übergewicht so viel Protein, dass für Kohlenhydrate kaum etwas bleibt.
+     * Protein bezieht sich auf [proteinReferenceWeight] – sonst bekäme man bei viel Übergewicht so viel
+     * Protein, dass für Kohlenhydrate kaum etwas bleibt.
      */
     fun targets(
         profile: Profile,
@@ -58,7 +58,7 @@ object GoalCalculator {
     ): DailyTargets {
         val kcal = profile.kcalTargetOverride ?: calculatedKcalTarget(profile, currentYear, adjustmentKcal)
         val proteinPerKg = profile.proteinPerKg ?: defaultProteinPerKg(direction)
-        val proteinWeight = proteinReferenceWeight(profile.weightKg, direction, targetWeightKg)
+        val proteinWeight = proteinReferenceWeight(profile, direction, targetWeightKg)
         val protein = profile.proteinOverrideG ?: (proteinPerKg * proteinWeight).roundToInt()
         val fat = profile.fatOverrideG ?: (kcal * FAT_KCAL_SHARE / KCAL_PER_G_FAT).roundToInt()
         val carbs = profile.carbsOverrideG
@@ -68,9 +68,37 @@ object GoalCalculator {
         return DailyTargets(kcal = kcal, proteinG = protein, carbsG = carbs, fatG = fat)
     }
 
-    /** Gewicht, auf das sich „Protein pro kg“ bezieht: beim Abnehmen das (niedrigere) Wunschgewicht. */
-    fun proteinReferenceWeight(weightKg: Double, direction: Goal, targetWeightKg: Double?): Double =
-        if (direction == Goal.LOSE && targetWeightKg != null) minOf(weightKg, targetWeightKg) else weightKg
+    /** Obergrenze „gesundes Gewicht“ ohne Körperfett-Messung: Gewicht bei BMI 25. */
+    const val HEALTHY_BMI = 25.0
+
+    /**
+     * Gewicht, auf das sich „Protein pro kg“ bezieht (Nov. 2026, Wunsch des Nutzers: g/kg gilt bei Übergewicht
+     * nicht fürs volle Körpergewicht – eigentlich zählt die fettfreie Masse). Das Kleinste aus:
+     * - aktuellem Gewicht,
+     * - „gesundem Gewicht“: mit Körperfett-Messung fettfreie Masse bei normalem Körperfett ([normalBodyFat]),
+     *   sonst Gewicht bei BMI 25 (dann ist z. B. ein sehr muskulöser Mensch etwas zu niedrig – er kann
+     *   Körperfett eintragen oder Protein pro kg selbst erhöhen),
+     * - beim Abnehmen dem Wunschgewicht.
+     */
+    fun proteinReferenceWeight(profile: Profile, direction: Goal, targetWeightKg: Double?): Double {
+        val weight = profile.weightKg
+        val bodyFat = profile.bodyFatPercent?.takeIf { it in 3.0..70.0 }
+        val healthy = if (bodyFat != null) {
+            weight * (1 - bodyFat / 100) / (1 - normalBodyFat(profile.sex))
+        } else {
+            val heightM = profile.heightCm / 100
+            HEALTHY_BMI * heightM * heightM
+        }
+        var reference = minOf(weight, healthy)
+        if (direction == Goal.LOSE && targetWeightKg != null) reference = minOf(reference, targetWeightKg)
+        return reference
+    }
+
+    /** Normaler Körperfettanteil (als Anteil) für die Umrechnung der fettfreien Masse. */
+    fun normalBodyFat(sex: Sex): Double = when (sex) {
+        Sex.MALE -> 0.15
+        Sex.FEMALE -> 0.25
+    }
 
     /** Verbleibend = Ziel + selbst eingetragene Aktivitäten − Gegessenes. */
     fun daySummary(targets: DailyTargets, eaten: Nutrients, activityKcal: Int = 0): DaySummary = DaySummary(

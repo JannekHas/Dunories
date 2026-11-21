@@ -76,6 +76,43 @@ class GoalCalculatorTest {
     }
 
     @Test
+    fun `uebergewicht ohne abnehmziel - protein auf gewicht bei bmi 25`() {
+        // 180 cm, 120 kg, Halten: 25 * 1.8² = 81 kg → 1.6 * 81 = 129.6 → 130 g statt 192 g
+        val t = GoalCalculator.targets(profile(weightKg = 120.0), year)
+        assertEquals(130, t.proteinG)
+    }
+
+    @Test
+    fun `normalgewicht - protein unveraendert aufs aktuelle gewicht`() {
+        assertEquals(75.0, GoalCalculator.proteinReferenceWeight(profile(weightKg = 75.0), Goal.MAINTAIN, null), 0.001)
+    }
+
+    @Test
+    fun `mit koerperfett - fettfreie masse statt bmi`() {
+        // 120 kg, 35 % Fett: fettfreie Masse 78 kg → bei 15 % Fett 78 / 0.85 = 91.76 kg
+        val p = profile(weightKg = 120.0).copy(bodyFatPercent = 35.0)
+        assertEquals(91.76, GoalCalculator.proteinReferenceWeight(p, Goal.MAINTAIN, null), 0.01)
+        // muskulös, BMI 27.8 aber 10 % Fett: volles Gewicht (BMI-Grenze greift mit Messung nicht)
+        val muscular = profile(weightKg = 90.0).copy(bodyFatPercent = 10.0)
+        assertEquals(90.0, GoalCalculator.proteinReferenceWeight(muscular, Goal.MAINTAIN, null), 0.001)
+        // Frau 90 kg, 40 % Fett: 54 / 0.75 = 72 kg
+        val woman = profile(sex = Sex.FEMALE, heightCm = 165.0, weightKg = 90.0).copy(bodyFatPercent = 40.0)
+        assertEquals(72.0, GoalCalculator.proteinReferenceWeight(woman, Goal.MAINTAIN, null), 0.001)
+    }
+
+    @Test
+    fun `abnehmen - kleinstes aus wunschgewicht und gesundem gewicht`() {
+        // 120 kg, Wunsch 100 kg: BMI-25-Gewicht 81 kg ist kleiner
+        assertEquals(81.0, GoalCalculator.proteinReferenceWeight(profile(weightKg = 120.0), Goal.LOSE, 100.0), 0.001)
+    }
+
+    @Test
+    fun `unplausibles koerperfett wird ignoriert`() {
+        val p = profile(weightKg = 120.0).copy(bodyFatPercent = 90.0)
+        assertEquals(81.0, GoalCalculator.proteinReferenceWeight(p, Goal.MAINTAIN, null), 0.001)
+    }
+
+    @Test
     fun `kcal ziel faellt nicht unter minimum`() {
         val p = profile(sex = Sex.FEMALE, age = 80, heightCm = 150.0, weightKg = 40.0)
         assertEquals(GoalCalculator.MIN_KCAL_TARGET, GoalCalculator.targets(p, year, Goal.LOSE, -1100).kcal)

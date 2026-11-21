@@ -166,6 +166,15 @@ fun TargetAdjustmentsSection(state: ProfileUiState, onUpdate: FormUpdate) {
             errorText = stringResource(R.string.error_protein_per_kg),
             modifier = Modifier.fillMaxWidth(),
         )
+        val reference = state.proteinReferenceKg
+        val weight = state.goalState?.profile?.weightKg
+        if (reference != null && weight != null && reference < weight - 0.5) {
+            Text(
+                stringResource(R.string.targets_protein_reference, reference.format(0)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         NumberField(
             value = form.kcalOverride,
             onValueChange = { v -> onUpdate { it.copy(kcalOverride = v) } },

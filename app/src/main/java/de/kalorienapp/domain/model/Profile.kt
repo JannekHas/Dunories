@@ -30,6 +30,8 @@ data class Profile(
     val fatOverrideG: Int? = null,
     val carbsOverrideG: Int? = null,
     val lifestyle: Lifestyle = Lifestyle.SEDENTARY,
+    /** Letzte Körperfett-Messung (Körpermaße, höchstens 1 Jahr alt) – nicht im Profil gespeichert. */
+    val bodyFatPercent: Double? = null,
 ) {
     fun ageIn(year: Int): Int = year - birthYear
 }
