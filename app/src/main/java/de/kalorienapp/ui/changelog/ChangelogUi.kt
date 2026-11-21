@@ -1,5 +1,9 @@
 package de.kalorienapp.ui.changelog
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,7 +55,8 @@ private val accents = listOf(Neon.Cyan, Neon.Orange, Neon.Magenta, Neon.Green, N
 
 /**
  * „Neu in Dunories“: großes Fenster über „Heute“ nach einem Update (bis es einmal geschlossen wurde),
- * später auch über Profil → Einstellungen → „Was ist neu?“. Jeder Punkt als kleine Karte mit Emoji.
+ * später auch über Profil → Einstellungen → „Was ist neu?“. Jeder Punkt als kleine Karte mit farbiger Kante
+ * (keine Emojis – Entscheidung des Nutzers Nov. 2026).
  */
 @Composable
 fun ChangelogDialog(versions: List<ChangelogVersion>, onClose: () -> Unit) {
@@ -97,8 +102,8 @@ fun ChangelogDialog(versions: List<ChangelogVersion>, onClose: () -> Unit) {
                             )
                         }
                         stringArrayResource(version.arrayRes).forEachIndexed { i, raw ->
-                            val parts = raw.split('|', limit = 3)
-                            if (parts.size == 3) ChangelogItem(parts[0], parts[1], parts[2], accents[i % accents.size])
+                            val parts = raw.split('|', limit = 2)
+                            if (parts.size == 2) ChangelogItem(parts[0], parts[1], accents[i % accents.size])
                         }
                     }
                 }
@@ -113,18 +118,17 @@ fun ChangelogDialog(versions: List<ChangelogVersion>, onClose: () -> Unit) {
 }
 
 @Composable
-private fun ChangelogItem(emoji: String, title: String, text: String, accent: Color) {
+private fun ChangelogItem(title: String, text: String, accent: Color) {
     Row(
         Modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Min)
             .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(18.dp))
             .padding(14.dp),
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.size(40.dp).background(accent.copy(alpha = 0.2f), CircleShape),
-        ) { Text(emoji, style = MaterialTheme.typography.titleMedium) }
-        Column(Modifier.padding(start = 12.dp)) {
+        // Farbige Kante statt Emoji
+        Box(Modifier.width(4.dp).fillMaxHeight().background(accent, RoundedCornerShape(2.dp)))
+        Column(Modifier.padding(start = 14.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = accent)
             Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
         }

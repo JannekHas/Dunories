@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.onboarding
 
+import de.kalorienapp.ui.components.tabularNums
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -88,7 +89,7 @@ fun PlanReveal(targets: DailyTargets, goalState: GoalState?, onStart: () -> Unit
                     LaunchedEffect(targets.kcal) { target = targets.kcal }
                     val shown by animateIntAsState(target, tween(1200), label = "kcal")
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(shown.format(), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
+                        Text(shown.format(), style = MaterialTheme.typography.headlineLarge.tabularNums(), fontWeight = FontWeight.ExtraBold)
                         Text(
                             stringResource(R.string.plan_reveal_kcal_label),
                             style = MaterialTheme.typography.titleSmall,

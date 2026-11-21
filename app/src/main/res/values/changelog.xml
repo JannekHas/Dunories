@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Patchnotes für das Fenster „Neu in Dunories“ (ui/changelog). Je Version ein Array, Einträge: Emoji|Titel|Text.
+<!-- Patchnotes für das Fenster „Neu in Dunories“ (ui/changelog). Je Version ein Array, Einträge: Titel|Text (keine Emojis).
      Neue Version: Array anlegen und in ChangelogUi.VERSIONS eintragen. -->
 <resources>
     <string-array name="changelog_7">
-        <item>🔦|Taschenlampe beim Foto|In der Kamera gibt es jetzt rechts einen Blitz-Knopf: Taschenlampe an für dunkle Teller oder Restaurants, nochmal tippen – aus.</item>
-        <item>🔊|Foto mit der Lautstärketaste|Handy in einer Hand, Essen in der anderen? Drück einfach Lauter oder Leiser – wie in der Kamera-App wird das Foto gemacht.</item>
-        <item>📊|Wochenauswertung kommt wieder zuverlässig|Die KI-Auswertung am Montag ist manchmal ausgefallen. Das ist behoben – und wurde ein Montag verpasst (z. B. Handy aus), holt Dunories die Auswertung beim nächsten Öffnen nach.</item>
-        <item>💪|Protein passend zu deinem Körper|Protein richtet sich nach der fettfreien Masse, nicht nach dem vollen Körpergewicht. Bei Übergewicht rechnet Dunories deshalb mit einem gesunden Bezugsgewicht – und hast du unter Statistik → Körper deinen Körperfettanteil eingetragen, noch genauer.</item>
-        <item>🥩|Nur Protein tracken|Kalorien sind dir egal? Unter Profil → Ziele → „Nur Protein tracken“ verschwinden Kalorien, KH und Fett überall – Ring, Kalender, Statistik und Benachrichtigung zeigen nur noch dein Protein. Zurückschalten geht jederzeit, nichts geht verloren.</item>
-        <item>⚖️|Gewicht ist umgezogen|Gewicht, Körpermaße und erreichte Ziele findest du jetzt unter Statistik → Körper. Unten in der Leiste ist dafür Platz für etwas Neues ✨ – und wer sich nicht wiegen mag, schaltet unter Profil → Ziele „Gewicht tracken“ aus.</item>
-        <item>💡|Tipps im richtigen Moment|Trägst du etwas zum dritten Mal ein, fragt Dunories, ob es ein Favorit werden soll – und sieht dein Frühstück aus wie neulich, schlägt es eine Kombi vor. Höchstens ein Tipp pro Tag, jeder nur einmal.</item>
-        <item>≈|Geschätzt oder genau?|Was die KI per Foto oder Beschreibung geschätzt hat, bekommt ein „≈“ vor den kcal – Werte vom Etikett oder Barcode nicht. Öffnest du einen Eintrag, steht oben, woher die Werte stammen. Korrigierst du die Nährwerte selbst, verschwindet das „≈“.</item>
-        <item>🧪|Vier neue Nährstoffe|Vitamin B3, Vitamin B5, Kupfer und Mangan. Du siehst sie unter „Alle Nährwerte“, sobald ein Eintrag sie enthält – sonst bleiben sie unsichtbar.</item>
-        <item>⚡|Barcode schneller|Einmal gescannte Produkte merkt sich Dunories 30 Tage – der zweite Scan ist sofort da und klappt auch ohne Internet.</item>
-        <item>🔧|Feinschliff|Beim Warten auf die KI siehst du schon die Form des Vorschlags. Mit großer Systemschrift wird nichts mehr abgeschnitten.</item>
+        <item>Taschenlampe beim Foto|In der Kamera gibt es jetzt rechts einen Blitz-Knopf: Taschenlampe an für dunkle Teller oder Restaurants, nochmal tippen – aus.</item>
+        <item>Foto mit der Lautstärketaste|Handy in einer Hand, Essen in der anderen? Drück einfach Lauter oder Leiser – wie in der Kamera-App wird das Foto gemacht.</item>
+        <item>Wochenauswertung kommt wieder zuverlässig|Die KI-Auswertung am Montag ist manchmal ausgefallen. Das ist behoben – und wurde ein Montag verpasst (z. B. Handy aus), holt Dunories die Auswertung beim nächsten Öffnen nach.</item>
+        <item>Protein passend zu deinem Körper|Protein richtet sich nach der fettfreien Masse, nicht nach dem vollen Körpergewicht. Bei Übergewicht rechnet Dunories deshalb mit einem gesunden Bezugsgewicht – und hast du unter Statistik → Körper deinen Körperfettanteil eingetragen, noch genauer.</item>
+        <item>Nur Protein tracken|Kalorien sind dir egal? Unter Profil → Ziele → „Nur Protein tracken“ verschwinden Kalorien, KH und Fett überall – Ring, Kalender, Statistik und Benachrichtigung zeigen nur noch dein Protein. Zurückschalten geht jederzeit, nichts geht verloren.</item>
+        <item>Gewicht ist umgezogen|Gewicht, Körpermaße und erreichte Ziele findest du jetzt unter Statistik → Körper. Unten in der Leiste ist dafür Platz für etwas Neues – und wer sich nicht wiegen mag, schaltet unter Profil → Ziele „Gewicht tracken“ aus.</item>
+        <item>Tipps im richtigen Moment|Trägst du etwas zum dritten Mal ein, fragt Dunories, ob es ein Favorit werden soll – und sieht dein Frühstück aus wie neulich, schlägt es eine Kombi vor. Höchstens ein Tipp pro Tag, jeder nur einmal.</item>
+        <item>Geschätzt oder genau?|Was die KI per Foto oder Beschreibung geschätzt hat, bekommt ein „≈“ vor den kcal – Werte vom Etikett oder Barcode nicht. Öffnest du einen Eintrag, steht oben, woher die Werte stammen. Korrigierst du die Nährwerte selbst, verschwindet das „≈“.</item>
+        <item>Vier neue Nährstoffe|Vitamin B3, Vitamin B5, Kupfer und Mangan. Du siehst sie unter „Alle Nährwerte“, sobald ein Eintrag sie enthält – sonst bleiben sie unsichtbar.</item>
+        <item>Barcode schneller|Einmal gescannte Produkte merkt sich Dunories 30 Tage – der zweite Scan ist sofort da und klappt auch ohne Internet.</item>
+        <item>Feinschliff|Beim Warten auf die KI siehst du schon die Form des Vorschlags. Mit großer Systemschrift wird nichts mehr abgeschnitten.</item>
     </string-array>
     <string-array name="changelog_6">
-        <item>📋|Ernährungsplan: Wiederholen und Laufzeit|Oben steht jetzt „Wiederholt sich alle 7 Tage“ – du trägst nur diese Tage ein, danach beginnt der Plan wieder bei Tag 1. Darunter stellst du ein, wie lange er läuft: bis zu einem Datum oder ohne Ende. Isst du jede Woche gleich, reichen also 7 Tage, auch wenn der Plan einen Monat geht. Danke Tristan!</item>
-        <item>📷|Plan per Kamera, PDF oder Sprache|Beim „Plan importieren“ kannst du deinen Plan jetzt direkt fotografieren, eine PDF wählen oder ihn einsprechen – zusätzlich zu Fotos und Text. Alles lässt sich kombinieren.</item>
-        <item>✨|Was ist neu?|Nach jedem Update zeigt dir Dunories einmal kurz, was neu ist – so wie jetzt. Später findest du es unter Profil → Einstellungen → „Was ist neu?“.</item>
-        <item>🔧|Kleinigkeit|Die Reiter in der Statistik (Ernährung | Kalender | KI) sind wieder gleich breit.</item>
+        <item>Ernährungsplan: Wiederholen und Laufzeit|Oben steht jetzt „Wiederholt sich alle 7 Tage“ – du trägst nur diese Tage ein, danach beginnt der Plan wieder bei Tag 1. Darunter stellst du ein, wie lange er läuft: bis zu einem Datum oder ohne Ende. Isst du jede Woche gleich, reichen also 7 Tage, auch wenn der Plan einen Monat geht. Danke Tristan!</item>
+        <item>Plan per Kamera, PDF oder Sprache|Beim „Plan importieren“ kannst du deinen Plan jetzt direkt fotografieren, eine PDF wählen oder ihn einsprechen – zusätzlich zu Fotos und Text. Alles lässt sich kombinieren.</item>
+        <item>Was ist neu?|Nach jedem Update zeigt dir Dunories einmal kurz, was neu ist – so wie jetzt. Später findest du es unter Profil → Einstellungen → „Was ist neu?“.</item>
+        <item>Kleinigkeit|Die Reiter in der Statistik (Ernährung | Kalender | KI) sind wieder gleich breit.</item>
     </string-array>
 </resources>

@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.today
 
+import de.kalorienapp.ui.components.tabularNums
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
@@ -613,7 +614,7 @@ private fun SummaryCard(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     shownKcal.format(),
-                    style = MaterialTheme.typography.displaySmall,
+                    style = MaterialTheme.typography.displaySmall.tabularNums(),
                     fontWeight = FontWeight.Bold,
                     color = if (over) Neon.Red else Neon.TextPrimary,
                 )
@@ -686,7 +687,7 @@ private fun ProteinSummaryCard(summary: DaySummary, onNutrientClick: (RankedNutr
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     stringResource(R.string.grams_value, shown.format()),
-                    style = MaterialTheme.typography.displaySmall,
+                    style = MaterialTheme.typography.displaySmall.tabularNums(),
                     fontWeight = FontWeight.Bold,
                     color = if (reached) Neon.Green else Neon.TextPrimary,
                 )
@@ -838,7 +839,7 @@ private fun MacroLegend(label: String, eatenG: Double, targetG: Int, color: Colo
         )
         Text(
             stringResource(R.string.macro_progress_value, eatenG.format(), targetG.format()),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.tabularNums(),
             fontWeight = FontWeight.Medium,
             color = if (over) Neon.Red else Neon.TextPrimary,
         )

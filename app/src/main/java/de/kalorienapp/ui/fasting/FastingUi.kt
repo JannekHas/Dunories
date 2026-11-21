@@ -1,5 +1,6 @@
 package de.kalorienapp.ui.fasting
 
+import de.kalorienapp.ui.components.tabularNums
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -244,7 +245,7 @@ fun FastingCard(config: FastingConfig, sex: Sex?, eatenKcal: Double, entriesInFa
                             durationText(Duration.between(now, status.phaseEnd)),
                             status.phaseEnd.toLocalTime().toString(),
                         ),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.tabularNums(),
                     )
                 }
                 FastingPhase.FAST_DAY -> {
