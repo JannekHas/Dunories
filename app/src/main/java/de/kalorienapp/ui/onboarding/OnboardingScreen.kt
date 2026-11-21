@@ -23,6 +23,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -54,6 +55,14 @@ fun OnboardingScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var step by rememberSaveable { mutableIntStateOf(0) }
+    // Nach dem Speichern: „Dein Plan steht“ als Erfolgsmoment, erst dann zu „Heute“.
+    var saved by rememberSaveable { mutableStateOf(false) }
+    val targets = state.targets
+    if (saved && targets != null) {
+        BackHandler { onFinished() }
+        PlanReveal(targets, state.goalState, onStart = onFinished)
+        return
+    }
 
     BackHandler(enabled = step > 0) { step-- }
 
@@ -93,7 +102,7 @@ fun OnboardingScreen(
                 Button(
                     enabled = stepValid,
                     onClick = {
-                        if (step < STEP_COUNT - 1) step++ else viewModel.save(onFinished)
+                        if (step < STEP_COUNT - 1) step++ else viewModel.save { saved = true }
                     },
                 ) {
                     Text(stringResource(if (step < STEP_COUNT - 1) R.string.next else R.string.finish))

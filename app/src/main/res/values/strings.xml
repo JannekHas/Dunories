@@ -82,6 +82,16 @@
     <string name="onboarding_body_intro">Für die Berechnung deines Kalorienbedarfs brauchen wir ein paar Angaben.</string>
     <string name="onboarding_goal_intro">Was ist dein Ziel?</string>
     <string name="onboarding_targets_intro">Das sind deine berechneten Ziele. Du kannst sie jederzeit im Profil anpassen.</string>
+    <string name="plan_reveal_title">Dein Plan steht!</string>
+    <string name="plan_reveal_kcal_label">kcal am Tag</string>
+    <string name="plan_reveal_text">So viel darfst du jeden Tag essen, um dein Ziel zu erreichen.</string>
+    <string name="plan_reveal_text_maintain">So viel darfst du jeden Tag essen, um dein Gewicht zu halten.</string>
+    <string name="plan_reveal_goal">%1$s → %2$s kg bis %3$s</string>
+    <string name="plan_reveal_goal_maintain">%1$s kg halten</string>
+    <string name="plan_reveal_pace_lose">%1$s kg pro Woche weniger – gesund und machbar</string>
+    <string name="plan_reveal_pace_gain">%1$s kg pro Woche mehr – gesund und machbar</string>
+    <string name="plan_reveal_hint">Trag einfach ein, was du isst – per Foto, Barcode oder in einem Satz. Den Rest rechnet Dunories.</string>
+    <string name="plan_reveal_start">Los geht\'s</string>
 
     <!-- Tagesübersicht -->
     <string name="today">Heute</string>
