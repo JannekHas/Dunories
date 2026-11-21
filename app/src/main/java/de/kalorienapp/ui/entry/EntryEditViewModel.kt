@@ -28,6 +28,8 @@ data class EntryEditState(
     val form: FoodForm = FoodForm(),
     /** Gericht mit Zutaten; null = einzelnes Lebensmittel in [form]. */
     val dish: DishForm? = null,
+    /** Herkunft des vorhandenen Eintrags (null = neu); nach eigener Nährwert-Änderung [EntrySource.MANUAL]. */
+    val source: EntrySource? = null,
 ) {
     val isValid: Boolean get() = dish?.isValid ?: form.isValid
 }
@@ -58,6 +60,7 @@ class EntryEditViewModel(
                     mealType = entry.mealType,
                     form = FoodForm.of(entry.name, amount, entry.unit, entry.nutrients.amountToPer100(amount)),
                     dish = entry.takeIf { it.isDish }?.let { DishForm.of(it.name, it.components) { nextPartId++ } },
+                    source = entry.source,
                 )
             } else {
                 EntryEditState(
@@ -70,7 +73,11 @@ class EntryEditViewModel(
 
     private var nextPartId = 1L
 
-    fun onFormChange(form: FoodForm) = _state.update { it.copy(form = form) }
+    fun onFormChange(form: FoodForm) = _state.update {
+        // Nährwerte selbst geändert → nicht mehr „geschätzt“ (Name/Menge ändern lässt die Herkunft stehen).
+        val nutrientsEdited = form.per100 != it.form.per100 || form.micros != it.form.micros
+        it.copy(form = form, source = if (nutrientsEdited) it.source?.afterNutrientEdit() else it.source)
+    }
 
     fun onDishChange(dish: DishForm) = _state.update { it.copy(dish = dish) }
 
@@ -97,6 +104,7 @@ class EntryEditViewModel(
             val form = current.form
             val total = form.totalNutrients() ?: return
             base(current).copy(name = form.name.trim(), amount = form.amountValue, unit = form.unit, nutrients = total)
+                .let { e -> current.source?.let { e.copy(source = it) } ?: e }
         }
         saving = true
         viewModelScope.launch {

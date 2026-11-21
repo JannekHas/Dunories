@@ -40,6 +40,8 @@ Beachte:
 - Das Budget ist Grundumsatz ± Zielanpassung + selbst eingetragene Aktivitäten.
 - Keine medizinischen Diagnosen; keine extremen Diäten (nie unter 1200 kcal raten).
 - Die App ändert nichts automatisch: Formuliere Änderungen als Vorschläge.
+- „KI-geschätzt“ heißt: per Foto/Beschreibung geschätzt, nicht vom Etikett. Ist ein großer Teil einer Mahlzeit oder
+  eines häufigen Lebensmittels geschätzt, darfst du einmal kurz vorschlagen, dort Barcode oder Nährwerttabelle zu nutzen.
 
 Felder:
 - headline: kurze, motivierende Überschrift (max. 6 Wörter).

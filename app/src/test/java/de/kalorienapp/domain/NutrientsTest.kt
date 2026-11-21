@@ -58,4 +58,21 @@ class NutrientsTest {
         assertEquals(mapOf(Micro.ZINC to 1.0), Micro.decode("ZINC=1.0;JOD=5;IRON=abc;;"))
         assertEquals(emptyMap<Micro, Double>(), Micro.decode(null))
     }
+
+    @Test
+    fun `nur ki quellen gelten als geschaetzt und eigene aenderung hebt das auf`() {
+        val estimates = de.kalorienapp.domain.model.EntrySource.entries.filter { it.isEstimate }
+        org.junit.Assert.assertEquals(
+            listOf(de.kalorienapp.domain.model.EntrySource.AI_PHOTO, de.kalorienapp.domain.model.EntrySource.AI_TEXT),
+            estimates,
+        )
+        org.junit.Assert.assertEquals(
+            de.kalorienapp.domain.model.EntrySource.MANUAL,
+            de.kalorienapp.domain.model.EntrySource.AI_PHOTO.afterNutrientEdit(),
+        )
+        org.junit.Assert.assertEquals(
+            de.kalorienapp.domain.model.EntrySource.LABEL,
+            de.kalorienapp.domain.model.EntrySource.LABEL.afterNutrientEdit(),
+        )
+    }
 }

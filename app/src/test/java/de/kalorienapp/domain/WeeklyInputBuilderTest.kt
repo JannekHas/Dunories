@@ -74,6 +74,16 @@ class WeeklyInputBuilderTest {
     }
 
     @Test
+    fun `ki geschaetzte eintraege werden gekennzeichnet`() {
+        val base = input()
+        val estimated = base.entries.map { if (it.name == "Chips") it.copy(source = de.kalorienapp.domain.model.EntrySource.AI_PHOTO) else it }
+        val text = WeeklyInputBuilder.build(base.copy(entries = estimated), zone)
+        assertTrue(text, text.contains("Chips: 1× , zusammen 950 kcal (KI-geschätzt)"))
+        assertTrue(text, text.contains("% KI-geschätzt)"))
+        assertTrue(text, !WeeklyInputBuilder.build(base, zone).contains("(KI-geschätzt)"))
+    }
+
+    @Test
     fun `nur eiweiss steht als verbindlicher modus im datenblock`() {
         assertTrue(WeeklyInputBuilder.build(input().copy(proteinOnly = true), zone).contains("MODUS NUR EIWEISS"))
         assertTrue(!WeeklyInputBuilder.build(input(), zone).contains("MODUS NUR EIWEISS"))

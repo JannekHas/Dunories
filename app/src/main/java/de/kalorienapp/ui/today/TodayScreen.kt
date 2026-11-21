@@ -967,7 +967,8 @@ private fun EntryRow(
         supportingContent = { Text(entrySubtitle(entry)) },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(entryValueText(n), style = MaterialTheme.typography.labelLarge)
+                // „≈“ = von der KI geschätzt (Foto/Beschreibung)
+                Text(entryValueText(n, entry.isEstimate), style = MaterialTheme.typography.labelLarge)
                 Box {
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, stringResource(R.string.more_options))
@@ -1001,9 +1002,11 @@ private fun EntryRow(
 
 /** Wert rechts an Einträgen und Mahlzeiten: „320 kcal“, im Modus „Nur Eiweiß“ „25 g Eiweiß“. */
 @Composable
-internal fun entryValueText(n: Nutrients): String =
-    if (LocalProteinOnly.current) stringResource(R.string.protein_value, n.proteinG.format())
-    else stringResource(R.string.kcal_value, n.kcal.format())
+internal fun entryValueText(n: Nutrients, estimate: Boolean = false): String = when {
+    LocalProteinOnly.current ->
+        stringResource(if (estimate) R.string.protein_value_estimate else R.string.protein_value, n.proteinG.format())
+    else -> stringResource(if (estimate) R.string.kcal_value_estimate else R.string.kcal_value, n.kcal.format())
+}
 
 /** „150 g · P 5 g · KH 4 g · F 1 g“ – Unterzeile eines Eintrags (Liste und Zieh-Karte); „Nur Eiweiß“: nur die Menge. */
 @Composable

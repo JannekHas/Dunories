@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import androidx.compose.material3.MaterialTheme
+import de.kalorienapp.domain.model.EntrySource
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.MealTypePicker
 import de.kalorienapp.ui.food.DishFormFields
@@ -81,6 +83,7 @@ fun EntryEditScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            state.source?.let { EntryOriginLine(it) }
             val dish = state.dish
             if (dish != null) {
                 DishFormFields(
@@ -110,4 +113,28 @@ fun EntryEditScreen(
             }
         }
     }
+}
+
+/** Woher die Werte stammen: „✓ Von der Nährwerttabelle“, „≈ Von der KI geschätzt (Foto)“ … */
+@Composable
+private fun EntryOriginLine(source: EntrySource) {
+    Text(
+        stringResource(
+            when (source) {
+                EntrySource.LABEL -> R.string.origin_label
+                EntrySource.BARCODE -> R.string.origin_barcode
+                EntrySource.AI_PHOTO -> R.string.origin_ai_photo
+                EntrySource.AI_TEXT -> R.string.origin_ai_text
+                EntrySource.RECIPE -> R.string.origin_recipe
+                EntrySource.PLAN -> R.string.origin_plan
+                EntrySource.MANUAL -> R.string.origin_manual
+            },
+        ),
+        style = MaterialTheme.typography.bodySmall,
+        color = when {
+            source.isEstimate -> Neon.Yellow
+            source == EntrySource.LABEL || source == EntrySource.BARCODE -> Neon.Green
+            else -> Neon.TextSecondary
+        },
+    )
 }

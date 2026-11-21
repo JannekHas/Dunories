@@ -19,7 +19,19 @@ enum class MealType {
 }
 
 /** Herkunft eines Eintrags (wird als Text gespeichert – neue Werte brauchen keine Migration). */
-enum class EntrySource { MANUAL, BARCODE, AI_PHOTO, AI_TEXT, RECIPE, LABEL, PLAN }
+enum class EntrySource {
+    MANUAL, BARCODE, AI_PHOTO, AI_TEXT, RECIPE, LABEL, PLAN;
+
+    /**
+     * Von der KI geschätzt (Foto vom Essen oder Beschreibung) → „≈“ vor den kcal (Nov. 2026).
+     * Etikett und Barcode gelten als genau; Manuell, Rezept und Plan bleiben neutral.
+     * Ändert man die Nährwerte selbst, wird der Eintrag zu [MANUAL] (siehe [afterNutrientEdit]).
+     */
+    val isEstimate: Boolean get() = this == AI_PHOTO || this == AI_TEXT
+
+    /** Nährwerte von Hand geändert → nicht mehr „geschätzt“. */
+    fun afterNutrientEdit(): EntrySource = if (isEstimate) MANUAL else this
+}
 
 enum class AmountUnit { GRAM, MILLILITER }
 
@@ -45,6 +57,9 @@ data class FoodEntry(
     val lastAddedAt: Long? = null,
 ) {
     val isDish: Boolean get() = components.isNotEmpty()
+
+    /** KI-Schätzung (siehe [EntrySource.isEstimate]). */
+    val isEstimate: Boolean get() = source.isEstimate
 
     /** Sortierschlüssel in der Tagesansicht. */
     val orderKey: Long get() = sortKey ?: createdAt

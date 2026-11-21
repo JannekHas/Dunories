@@ -238,6 +238,15 @@
     <string name="soon_title">Hier entsteht etwas Neues</string>
     <string name="soon_text">An diesem Platz bauen wir gerade etwas, das Dunories noch mehr Spaß macht. Gewicht und Körpermaße findest du jetzt unter Statistik → Körper.</string>
     <string name="tip_label">Tipp</string>
+    <string name="origin_label">✓ Von der Nährwerttabelle abgelesen</string>
+    <string name="origin_barcode">✓ Barcode – Packungsangaben aus Open Food Facts</string>
+    <string name="origin_ai_photo">≈ Von der KI geschätzt (Foto vom Essen)</string>
+    <string name="origin_ai_text">≈ Von der KI geschätzt (Beschreibung)</string>
+    <string name="origin_recipe">Aus einem Rezept berechnet</string>
+    <string name="origin_plan">Aus dem Ernährungsplan</string>
+    <string name="origin_manual">Selbst eingetragen</string>
+    <string name="kcal_value_estimate">≈ %1$s kcal</string>
+    <string name="protein_value_estimate">≈ %1$s g Protein</string>
     <string name="tip_dismiss">Verstanden</string>
     <string name="tip_no_thanks">Nein, danke</string>
     <string name="btip_favorite">%1$s isst du öfter. Als Favorit gespeichert trägst du es beim nächsten Mal mit einem Fingertipp ein.</string>

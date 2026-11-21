@@ -316,7 +316,7 @@ fun EntryDragGhost(state: EntryDragState, mealColor: (MealType) -> Color) {
                 supportingContent = { Text(entrySubtitle(entry)) },
                 trailingContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(entryValueText(entry.nutrients), style = MaterialTheme.typography.labelLarge)
+                        Text(entryValueText(entry.nutrients, entry.isEstimate), style = MaterialTheme.typography.labelLarge)
                         // Platz des ⋮-Knopfs, damit die kcal genau an derselben Stelle stehen wie in der Zeile.
                         Spacer(Modifier.width(48.dp))
                     }

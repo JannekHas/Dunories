@@ -152,19 +152,26 @@ object WeeklyInputBuilder {
         appendLine()
         val entries = input.entries
         if (entries.isNotEmpty()) {
-            appendLine("MAHLZEITEN (Ø kcal pro erfasstem Tag):")
+            appendLine("MAHLZEITEN (Ø kcal pro erfasstem Tag; Anteil KI-geschätzt = per Foto/Beschreibung geschätzt statt Etikett/Barcode):")
             val logged = loggedDays(input).coerceAtLeast(1)
             MealType.entries.forEach { meal ->
-                val kcal = entries.filter { it.mealType == meal }.sumOf { it.nutrients.kcal }
-                appendLine("- ${meal.german()}: ${(kcal / logged).roundToInt()} kcal")
+                val list = entries.filter { it.mealType == meal }
+                val kcal = list.sumOf { it.nutrients.kcal }
+                val estimated = list.filter { it.isEstimate }.sumOf { it.nutrients.kcal }
+                append("- ${meal.german()}: ${(kcal / logged).roundToInt()} kcal")
+                if (kcal > 0 && estimated > 0) append(" (davon ${(estimated / kcal * 100).roundToInt()} % KI-geschätzt)")
+                appendLine()
             }
             appendLine()
             appendLine("HÄUFIGSTE / KALORIENREICHSTE LEBENSMITTEL:")
             entries.groupBy { it.name.trim().lowercase() }
-                .map { (_, list) -> Triple(list.first().name.trim(), list.size, list.sumOf { it.nutrients.kcal }) }
+                .map { (_, list) -> Triple(list, list.size, list.sumOf { it.nutrients.kcal }) }
                 .sortedByDescending { it.third }
                 .take(TOP_FOODS)
-                .forEach { (name, count, kcal) -> appendLine("- $name: ${count}× , zusammen ${kcal.roundToInt()} kcal") }
+                .forEach { (list, count, kcal) ->
+                    val note = if (list.all { it.isEstimate }) " (KI-geschätzt)" else ""
+                    appendLine("- ${list.first().name.trim()}: ${count}× , zusammen ${kcal.roundToInt()} kcal$note")
+                }
             appendLine()
             // Wann eingetragen wird (Hinweis auf Essenszeiten, z. B. spätes Snacken).
             val late = entries.filter { it.createdAt.localHour(zone) >= 21 }.sumOf { it.nutrients.kcal }

@@ -227,7 +227,14 @@ class CaptureViewModel(
     // --- Vorschlag bearbeiten ---
 
     fun updateItem(id: Long, form: FoodForm) = updateProposal { p ->
-        p.copy(items = p.items.map { if (it.id == id) it.copy(form = form) else it })
+        p.copy(
+            items = p.items.map { item ->
+                if (item.id != id) return@map item
+                // Nährwerte selbst korrigiert → nicht mehr „geschätzt“.
+                val edited = form.per100 != item.form.per100 || form.micros != item.form.micros
+                item.copy(form = form, source = if (edited) item.source.afterNutrientEdit() else item.source)
+            },
+        )
     }
 
     fun updateDish(id: Long, dish: DishForm) = updateProposal { p ->

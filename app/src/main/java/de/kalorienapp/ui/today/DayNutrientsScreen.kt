@@ -222,7 +222,10 @@ private fun RankedEntryRow(ranked: RankedEntry, nutrient: RankedNutrient, onClic
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        ranked.value?.let { valueText(nutrient, it) } ?: stringResource(R.string.value_missing),
+                        ranked.value?.let {
+                            // „≈“ = von der KI geschätzt
+                            (if (entry.isEstimate) "≈ " else "") + valueText(nutrient, it)
+                        } ?: stringResource(R.string.value_missing),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
