@@ -34,6 +34,9 @@ import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import de.kalorienapp.ui.components.GlowBackground
+import de.kalorienapp.ui.components.FitText
+import de.kalorienapp.ui.components.LimitFontScale
+import androidx.compose.material3.MaterialTheme
 import de.kalorienapp.ui.components.LocalBottomBarPadding
 import de.kalorienapp.ui.components.LocalTips
 import de.kalorienapp.ui.components.Tip
@@ -145,7 +148,8 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
         // Insets übernehmen die Screens selbst (eigene Scaffolds mit TopAppBar).
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (showBottomBar) {
+            // Feste Leistenhöhe → Systemschrift begrenzen (wie iOS-Tableisten), Texte notfalls etwas kleiner.
+            if (showBottomBar) LimitFontScale {
                 NavigationBar(
                     containerColor = Color.Transparent,
                     modifier = Modifier
@@ -163,7 +167,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             // Kurz nach der Einrichtung gesperrt: ein Doppeltipp auf „Fertig“ landete sonst im Profil.
                             onClick = { if (System.currentTimeMillis() > navUnlockedAt) navController.navigateTopLevel(dest.route) },
                             icon = { Icon(dest.icon(), contentDescription = null) },
-                            label = { Text(stringResource(dest.labelRes), maxLines = 1) },
+                            label = { FitText(stringResource(dest.labelRes), style = MaterialTheme.typography.labelMedium) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Neon.OnNeon,
                                 selectedTextColor = Neon.Cyan,

@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import de.kalorienapp.R
 import de.kalorienapp.ui.theme.Neon
 
+private const val MAX_NUMBER_CHARS = 8
+
 /** Einzeiliges Zahlenfeld (Komma oder Punkt als Dezimaltrenner). */
 @Composable
 fun NumberField(
@@ -40,7 +42,10 @@ fun NumberField(
 ) {
     OutlinedTextField(
         value = value,
-        onValueChange = { new -> onValueChange(new.filter { it.isDigit() || (decimal && (it == ',' || it == '.')) }) },
+        // Nur Ziffern und Komma/Punkt (nie Minus) und höchstens 8 Zeichen – unsinnig große Zahlen gar nicht erst.
+        onValueChange = { new ->
+            onValueChange(new.filter { it.isDigit() || (decimal && (it == ',' || it == '.')) }.take(MAX_NUMBER_CHARS))
+        },
         label = { Text(label) },
         modifier = modifier,
         singleLine = true,

@@ -34,8 +34,8 @@ fun NeonPill(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
         ) {
-            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium)
+            FitText(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            FitText(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium)
         }
     }
 }

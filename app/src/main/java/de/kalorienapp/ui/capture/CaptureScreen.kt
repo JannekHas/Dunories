@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
@@ -82,6 +84,11 @@ import de.kalorienapp.ui.components.Tip
 import de.kalorienapp.ui.components.TipCaret
 import de.kalorienapp.ui.components.TipSlot
 import de.kalorienapp.ui.components.AiWaitProgress
+import de.kalorienapp.ui.components.GlassCard
+import de.kalorienapp.ui.components.FitText
+import de.kalorienapp.ui.components.LimitFontScale
+import androidx.compose.ui.unit.sp
+import de.kalorienapp.ui.components.ProposalSkeleton
 import de.kalorienapp.capture.AnalysisStage
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.ui.AppViewModelProvider
@@ -315,6 +322,8 @@ private fun CameraContent(
             }
         }
 
+        // Feste Knopfleiste → Systemschrift begrenzen (Beschriftungen werden notfalls etwas kleiner).
+        LimitFontScale {
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -325,6 +334,7 @@ private fun CameraContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CameraAction(
+                modifier = Modifier.weight(1f),
                 label = stringResource(R.string.capture_gallery_short),
                 icon = R.drawable.ic_capture_gallery,
                 color = Neon.Magenta,
@@ -333,6 +343,7 @@ private fun CameraContent(
                 },
             )
             CameraAction(
+                modifier = Modifier.weight(1f),
                 label = stringResource(R.string.quick_short),
                 icon = R.drawable.ic_capture_favorites,
                 color = Neon.Yellow,
@@ -353,28 +364,37 @@ private fun CameraContent(
                 }
             }
             CameraAction(
+                modifier = Modifier.weight(1f),
                 label = stringResource(R.string.capture_describe),
                 icon = R.drawable.ic_capture_describe,
                 color = Neon.Violet,
                 onClick = viewModel::showTextInput,
             )
             CameraAction(
+                modifier = Modifier.weight(1f),
                 label = stringResource(R.string.capture_manual),
                 icon = R.drawable.ic_capture_manual,
                 color = Neon.Green,
                 onClick = onManualEntry,
             )
         }
+        }
     }
 }
 
 /** Kleiner Knopf mit Beschriftung in der Kameraleiste: farbig getönter Glaskreis mit Neon-Icon. */
 @Composable
-private fun CameraAction(label: String, @DrawableRes icon: Int, color: Color, onClick: () -> Unit) {
+private fun CameraAction(
+    label: String,
+    @DrawableRes icon: Int,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     // Ganze Spalte antippbar, damit auch die Beschriftung reagiert.
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .pressable(onClick, MaterialTheme.shapes.medium)
             .padding(4.dp),
     ) {
@@ -387,10 +407,11 @@ private fun CameraAction(label: String, @DrawableRes icon: Int, color: Color, on
         ) {
             Icon(painterResource(icon), contentDescription = null, tint = color, modifier = Modifier.size(26.dp))
         }
-        Text(
+        FitText(
             label,
             color = Color.White,
             style = MaterialTheme.typography.labelSmall,
+            minFontSize = 7.sp,
             modifier = Modifier.padding(top = 4.dp),
         )
     }
@@ -406,6 +427,8 @@ private fun TextInputContent(
     Column(
         modifier = modifier
             .imePadding()
+            // scrollbar, sonst verdeckt die Tastatur bei großer Schrift den Knopf „Schätzen lassen“
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -432,23 +455,12 @@ private fun TextInputContent(
 
 @Composable
 private fun AnalyzingContent(stage: AnalysisStage, modifier: Modifier) {
+    // Statt Kreisel: was gerade passiert + Skelett des kommenden Vorschlags (zeigt, was gleich kommt).
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier.padding(horizontal = 24.dp, vertical = 32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (stage == AnalysisStage.AI) {
-            Text(
-                stringResource(R.string.capture_stage_ai),
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(20.dp))
-            AiWaitProgress(expectedSeconds = 8)
-            return@Column
-        }
-        CircularProgressIndicator()
-        Spacer(Modifier.height(24.dp))
         Text(
             stringResource(
                 when (stage) {
@@ -460,6 +472,14 @@ private fun AnalyzingContent(stage: AnalysisStage, modifier: Modifier) {
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
         )
+        if (stage == AnalysisStage.AI) {
+            Spacer(Modifier.height(20.dp))
+            AiWaitProgress(expectedSeconds = 8)
+        }
+        Spacer(Modifier.height(28.dp))
+        GlassCard(Modifier.fillMaxWidth()) {
+            ProposalSkeleton(Modifier.padding(16.dp))
+        }
     }
 }
 

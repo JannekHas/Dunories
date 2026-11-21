@@ -56,12 +56,14 @@ fun TabbedPages(
     val scope = rememberCoroutineScope()
     val measurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelLarge
-    val density = LocalDensity.current
     Column(modifier) {
+        // Reiter haben feste Höhe/Breite → Systemschrift begrenzen; die Seiten selbst skalieren voll.
+        LimitFontScale {
         BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
         // Passen alle Texte (+ Rand) in gleich breite Reiter?
         val equalWidth = maxWidth / tabs.size
-        val allFit = remember(tabs, labelStyle, equalWidth) {
+        val density = LocalDensity.current
+        val allFit = remember(tabs, labelStyle, equalWidth, density) {
             tabs.all { title ->
                 val textWidth = with(density) { measurer.measure(title, labelStyle).size.width.toDp() }
                 textWidth + TAB_SIDE_SPACE * 2 <= equalWidth
@@ -95,6 +97,7 @@ fun TabbedPages(
                     }
                 }
             }
+        }
         }
         }
         HorizontalDivider(color = Neon.TextSecondary.copy(alpha = 0.25f))

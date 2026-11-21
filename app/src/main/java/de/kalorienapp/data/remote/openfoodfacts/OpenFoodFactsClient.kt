@@ -12,24 +12,60 @@ import de.kalorienapp.domain.model.EntrySource
 import de.kalorienapp.domain.model.FoodDraft
 import de.kalorienapp.domain.model.Nutrients
 import kotlinx.serialization.json.JsonObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.IOException
 
-/** Produktsuche per Barcode über die öffentliche Open-Food-Facts-API (kein Key nötig). */
-class OpenFoodFactsClient {
+/**
+ * Produktsuche per Barcode über die öffentliche Open-Food-Facts-API (kein Key nötig).
+ * Gefundene Produkte werden [CACHE_DAYS] Tage in [cacheDir] gemerkt: der zweite Scan ist sofort da und
+ * klappt auch ohne Netz (Nov. 2026).
+ */
+class OpenFoodFactsClient(private val cacheDir: File? = null) {
 
     /** @return Vorschlag mit Nährwerten pro 100 g/ml, oder null wenn das Produkt unbekannt ist. */
-    suspend fun lookup(barcode: String): FoodDraft? {
+    suspend fun lookup(barcode: String): FoodDraft? = withContext(Dispatchers.IO) { lookupBlocking(barcode) }
+
+    private suspend fun lookupBlocking(barcode: String): FoodDraft? {
+        // Nur echte Strichcodes (EAN/UPC) – nie beliebigen Text in die URL bzw. den Dateinamen.
+        if (!BARCODE.matches(barcode)) return null
+        val cached = cacheFile(barcode)
+        val fresh = cached?.takeIf {
+            it.exists() && System.currentTimeMillis() - it.lastModified() < CACHE_DAYS * DAY_MS
+        }
+        fresh?.let { file -> runCatching { OpenFoodFactsParser.parse(file.readText()) }.getOrNull()?.let { return it } }
+
         val url = "https://world.openfoodfacts.org/api/v2/product/$barcode.json?fields=$FIELDS"
         val body = try {
             Http.get(url)
         } catch (e: HttpStatusException) {
             if (e.code == 404) return null else throw e
+        } catch (e: IOException) {
+            // Kein Netz: notfalls ein älterer gemerkter Stand
+            cached?.takeIf { it.exists() }?.let { file ->
+                runCatching { OpenFoodFactsParser.parse(file.readText()) }.getOrNull()?.let { return it }
+            }
+            throw e
         }
-        return OpenFoodFactsParser.parse(body)
+        val draft = OpenFoodFactsParser.parse(body)
+        if (draft != null && cached != null) {
+            runCatching {
+                cached.parentFile?.mkdirs()
+                cached.writeText(body)
+            }
+        }
+        return draft
     }
+
+    private fun cacheFile(barcode: String): File? = cacheDir?.let { File(File(it, "off"), "$barcode.json") }
 
     private companion object {
         const val FIELDS = "product_name,product_name_de,brands,nutriments," +
             "product_quantity_unit,serving_quantity,nutrition_data_per,categories_tags"
+        val BARCODE = Regex("[0-9]{6,14}")
+        const val CACHE_DAYS = 30L
+        const val DAY_MS = 24L * 60 * 60 * 1000
     }
 }
 
@@ -42,9 +78,11 @@ internal object OpenFoodFactsParser {
         val product = root["product"].asObject() ?: return null
         val n = product["nutriments"].asObject() ?: JsonObject(emptyMap())
 
-        val kcal = n.number("energy-kcal_100g")
-            ?: n.number("energy-kj_100g")?.div(KJ_PER_KCAL)
-            ?: n.number("energy_100g")?.div(KJ_PER_KCAL)
+        // Fehlerhafte Datensätze in OFF können negative Werte haben → nie unter 0.
+        fun JsonObject.amount(key: String) = number(key)?.coerceAtLeast(0.0)
+        val kcal = n.amount("energy-kcal_100g")
+            ?: n.amount("energy-kj_100g")?.div(KJ_PER_KCAL)
+            ?: n.amount("energy_100g")?.div(KJ_PER_KCAL)
         val name = product.string("product_name_de") ?: product.string("product_name")
         // Ohne Namen und ohne Energie ist der Datensatz unbrauchbar.
         if (name == null && kcal == null) return null
@@ -68,13 +106,13 @@ internal object OpenFoodFactsParser {
             unit = if (liquid) AmountUnit.MILLILITER else AmountUnit.GRAM,
             per100 = Nutrients(
                 kcal = kcal ?: 0.0,
-                fatG = n.number("fat_100g") ?: 0.0,
-                saturatedFatG = n.number("saturated-fat_100g"),
-                carbsG = n.number("carbohydrates_100g") ?: 0.0,
-                sugarG = n.number("sugars_100g"),
-                fiberG = n.number("fiber_100g"),
-                proteinG = n.number("proteins_100g") ?: 0.0,
-                saltG = n.number("salt_100g"),
+                fatG = n.amount("fat_100g") ?: 0.0,
+                saturatedFatG = n.amount("saturated-fat_100g"),
+                carbsG = n.amount("carbohydrates_100g") ?: 0.0,
+                sugarG = n.amount("sugars_100g"),
+                fiberG = n.amount("fiber_100g"),
+                proteinG = n.amount("proteins_100g") ?: 0.0,
+                saltG = n.amount("salt_100g"),
                 micros = MicroFields.readOpenFoodFacts(n, categories),
             ),
             source = EntrySource.BARCODE,
