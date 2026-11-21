@@ -42,6 +42,10 @@ android {
         }
     }
 
+    // `-PcleanTest`: als zweite App daneben installieren (Debug und Release) → Einrichtung wie ein neuer Nutzer
+    // testen oder Daten-Varianten ausprobieren, ohne den Speicherstand der eigentlichen App anzufassen
+    if (providers.gradleProperty("cleanTest").isPresent) defaultConfig.applicationIdSuffix = ".cleantest"
+
     buildTypes {
         release {
             // Kleine APK zum Weitergeben: Code und Ressourcen schrumpfen (R8)
@@ -51,9 +55,6 @@ android {
             // Privat-App: Release mit Debug-Key signieren, damit die APK direkt installierbar ist
             // und Debug- und Release-Version sich gegenseitig ohne Datenverlust ersetzen können
             signingConfig = signingConfigs.getByName("debug")
-            // `-PcleanTest`: als zweite App daneben installieren → Einrichtung wie ein neuer Nutzer testen,
-            // ohne den Speicherstand der eigentlichen App anzufassen
-            if (providers.gradleProperty("cleanTest").isPresent) applicationIdSuffix = ".cleantest"
         }
     }
 
