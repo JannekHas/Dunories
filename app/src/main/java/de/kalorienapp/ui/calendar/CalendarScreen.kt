@@ -1,5 +1,9 @@
 package de.kalorienapp.ui.calendar
 
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.background
@@ -168,17 +172,31 @@ private fun DayCell(date: LocalDate, stats: DayStats?, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            date.dayOfMonth.toString(),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (onNeon) FontWeight.Bold else FontWeight.Normal,
-            color = when {
-                onNeon -> Neon.OnNeon
-                future -> Neon.TextSecondary.copy(alpha = 0.5f)
-                else -> Neon.TextSecondary
-            },
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                date.dayOfMonth.toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (onNeon) FontWeight.Bold else FontWeight.Normal,
+                color = when {
+                    onNeon -> Neon.OnNeon
+                    future -> Neon.TextSecondary.copy(alpha = 0.5f)
+                    else -> Neon.TextSecondary
+                },
+            )
+            // Zeichen zusätzlich zur Farbe – bei Rot-Grün-Schwäche sind die Farben kaum zu unterscheiden.
+            if (!future) statusIcon(stats?.status ?: DayStatus.NO_DATA)?.let { icon ->
+                Icon(icon, contentDescription = null, tint = Neon.OnNeon, modifier = Modifier.size(12.dp))
+            }
+        }
     }
+}
+
+/** ✓ im Budget/Protein erreicht, + knapp drüber, ↑ drüber; sonst kein Zeichen. */
+private fun statusIcon(status: DayStatus): ImageVector? = when (status) {
+    DayStatus.ON_TARGET -> Icons.Filled.Check
+    DayStatus.SLIGHTLY_OVER -> Icons.Filled.Add
+    DayStatus.OVER -> Icons.Filled.KeyboardArrowUp
+    else -> null
 }
 
 private val cellDateFormatter = DateTimeFormatter.ofPattern("d. MMMM", Locale.GERMAN)
@@ -204,24 +222,26 @@ fun statusColor(status: DayStatus): Color = when (status) {
 private fun Legend() {
     if (LocalProteinOnly.current) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            LegendItem(Neon.Green, stringResource(R.string.calendar_protein_reached))
+            LegendItem(Neon.Green, stringResource(R.string.calendar_protein_reached), statusIcon(DayStatus.ON_TARGET))
             LegendItem(Neon.Yellow, stringResource(R.string.calendar_protein_partial))
             LegendItem(Neon.Track, stringResource(R.string.calendar_protein_low))
         }
         return
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        LegendItem(Neon.Green, stringResource(R.string.calendar_on_target))
-        LegendItem(Neon.Yellow, stringResource(R.string.calendar_slightly_over))
-        LegendItem(Neon.Red, stringResource(R.string.calendar_over))
+        LegendItem(Neon.Green, stringResource(R.string.calendar_on_target), statusIcon(DayStatus.ON_TARGET))
+        LegendItem(Neon.Yellow, stringResource(R.string.calendar_slightly_over), statusIcon(DayStatus.SLIGHTLY_OVER))
+        LegendItem(Neon.Red, stringResource(R.string.calendar_over), statusIcon(DayStatus.OVER))
         LegendItem(Neon.Track, stringResource(R.string.calendar_no_data))
     }
 }
 
 @Composable
-private fun LegendItem(color: Color, label: String) {
+private fun LegendItem(color: Color, label: String, icon: ImageVector? = null) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(10.dp).clip(CircleShape).background(color))
+        Box(Modifier.size(14.dp).clip(CircleShape).background(color), contentAlignment = Alignment.Center) {
+            if (icon != null) Icon(icon, contentDescription = null, tint = Neon.OnNeon, modifier = Modifier.size(11.dp))
+        }
         Text(label, style = MaterialTheme.typography.labelSmall, color = Neon.TextSecondary, modifier = Modifier.padding(start = 6.dp))
     }
 }
