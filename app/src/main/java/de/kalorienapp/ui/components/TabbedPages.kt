@@ -19,6 +19,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -102,17 +107,30 @@ fun TabbedPages(
         }
         HorizontalDivider(color = Neon.TextSecondary.copy(alpha = 0.25f))
         HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { index ->
+            val scrollState = rememberScrollState()
+            val pageScroll = remember(scrollState) { PageScroll(scrollState) }
+            CompositionLocalProvider(LocalPageScroll provides pageScroll) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    // vor verticalScroll: Lage des sichtbaren Ausschnitts (für ExpandableCard)
+                    .onGloballyPositioned { pageScroll.viewport = it }
+                    .verticalScroll(scrollState)
                     .padding(horizontal = 16.dp)
                     .padding(top = 12.dp, bottom = 24.dp + LocalBottomBarPadding.current),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) { page(index) }
+            }
         }
     }
 }
+
+/** Scrollzustand und sichtbarer Ausschnitt der aktuellen Seite – damit Inhalte sich selbst nach oben holen können. */
+class PageScroll(val state: ScrollState) {
+    var viewport: LayoutCoordinates? = null
+}
+
+val LocalPageScroll = staticCompositionLocalOf<PageScroll?> { null }
 
 /** Mindestabstand links und rechts vom Reitertext. */
 private val TAB_SIDE_SPACE = 12.dp
