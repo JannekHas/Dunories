@@ -60,6 +60,17 @@
   .axis { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 4px; }
   a { color: var(--cyan); }
   .newcode { margin-top: 10px; font-size: 22px; }
+  .fb { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-top: 10px; background: rgba(0,0,0,0.15); }
+  .fb.rated { opacity: .72; }
+  .fb .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+  .fb .text { white-space: pre-wrap; margin: 8px 0; }
+  .fb .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .fb .actions button { padding: 5px 12px; }
+  .fb .actions button.sel { background: var(--yellow); color: #1a1600; border-color: transparent; }
+  .fb img { max-width: 260px; max-height: 420px; border-radius: 10px; margin-top: 6px; display: block; }
+  .type-bug { color: var(--red); } .type-idea { color: var(--cyan); } .type-praise { color: var(--green); }
+  .tabs { display: flex; gap: 6px; }
+  .tabs button { padding: 6px 12px; }
 </style>
 </head>
 <body>
@@ -127,6 +138,25 @@
       <div style="margin-top:12px"><button onclick="createCode()">Code erzeugen</button></div>
       <div class="newcode" id="newCode"></div>
       <div class="msg" id="nMsg"></div>
+    </section>
+
+    <section class="card wide">
+      <div class="row" style="align-items:center">
+        <h2 style="margin:0">Feedback</h2>
+        <div class="tabs" style="flex:0 0 auto">
+          <button id="fbUnrated" onclick="setFbFilter('unrated')">Unbewertet</button>
+          <button id="fbAll" class="ghost" onclick="setFbFilter('all')">Alle</button>
+        </div>
+        <button class="ghost" style="flex:0 0 auto" onclick="loadFeedback()">Aktualisieren</button>
+      </div>
+      <div class="hint">Punkte: −1 Spam · 0 nichts Neues · +1 okay · +3 hilfreich · +5 richtig stark. Wer Punkte bekommt, sieht beim nächsten Öffnen ein „Danke“. Feedback wird nach 2 Jahren automatisch gelöscht.</div>
+      <div id="feedback"></div>
+    </section>
+
+    <section class="card wide">
+      <div class="row" style="align-items:center"><h2 style="margin:0">Tester-Rangliste</h2><button class="ghost" style="flex:0 0 auto" onclick="loadTesters()">Aktualisieren</button></div>
+      <div class="hint">Für das Ende der Testphase: Wer am meisten Punkte hat, bekommt eine Belohnung. „Danke-Liste“ = Name darf in der App genannt werden.</div>
+      <table id="testers" style="margin-top:8px"></table>
     </section>
 
     <section class="card wide">
@@ -276,9 +306,72 @@ async function removeGrant(uid) {
   try { await api("/admin/user", "PUT", { uid, remove: true }); findUsers(); loadStats(); } catch (e) { alert(e.message); }
 }
 
+let fbFilter = "unrated";
+const TYPES = { bug: "Fehler", idea: "Idee", praise: "Lob" };
+const when = (ms) => new Date(ms).toLocaleString("de-DE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+function setFbFilter(f) {
+  fbFilter = f;
+  $("fbUnrated").className = f === "unrated" ? "" : "ghost";
+  $("fbAll").className = f === "all" ? "" : "ghost";
+  loadFeedback();
+}
+
+async function loadFeedback() {
+  try {
+    const list = await api(`/admin/feedback?filter=${fbFilter}&limit=200`);
+    $("feedback").innerHTML = list.length ? list.map((f) => `
+      <div class="fb ${f.rated ? "rated" : ""}" id="fb${f.id}">
+        <div class="head">
+          <b class="type-${esc(f.type)}">${esc(TYPES[f.type] || f.type)}</b>
+          <span>${when(f.ts)}</span>
+          <span>· <code style="font-size:12px">${esc(f.uid)}</code></span>
+          ${f.name ? `<span>· ${esc(f.name)}${f.credits ? ' <span class="pill on">Danke-Liste ok</span>' : ""}</span>` : ""}
+          <span>· ${esc(f.app)} · ${esc(f.device)} · Android-SDK ${esc(f.android)}</span>
+          ${f.rated ? `<span class="pill on">bewertet: ${f.points > 0 ? "+" : ""}${f.points}</span>` : ""}
+        </div>
+        <div class="text">${esc(f.text) || '<span class="hint">(nur Screenshot)</span>'}</div>
+        ${f.hasShot ? `<div id="shot${f.id}"><button class="ghost" onclick="showShot(${f.id})">Screenshot anzeigen</button></div>` : ""}
+        <div class="actions" style="margin-top:8px">
+          ${[-1, 0, 1, 3, 5].map((p) => `<button class="ghost ${f.rated && f.points === p ? "sel" : ""}" onclick="rate(${f.id},${p})">${p > 0 ? "+" + p : p === 0 ? "0" : "−1"}</button>`).join("")}
+          <span style="flex:1"></span>
+          <button class="danger" onclick="delFeedback(${f.id})">Löschen</button>
+        </div>
+      </div>`).join("") : `<div class="hint" style="margin-top:10px">${fbFilter === "unrated" ? "Alles bewertet – nichts Neues." : "Noch kein Feedback."}</div>`;
+  } catch (e) { $("feedback").innerHTML = `<div class="hint">Laden fehlgeschlagen: ${esc(e.message)}</div>`; }
+}
+
+async function showShot(id) {
+  try {
+    const r = await api(`/admin/feedback/shot?id=${id}`);
+    $("shot" + id).innerHTML = r.screenshot ? `<img alt="Screenshot" src="data:image/jpeg;base64,${r.screenshot}">` : '<span class="hint">Kein Screenshot.</span>';
+  } catch (e) { alert(e.message); }
+}
+
+async function rate(id, points) {
+  try { await api("/admin/feedback/rate", "POST", { id, points }); loadFeedback(); loadTesters(); } catch (e) { alert(e.message); }
+}
+
+async function delFeedback(id) {
+  if (!confirm("Dieses Feedback endgültig löschen? Vergebene Punkte gehen damit verloren.")) return;
+  try { await api("/admin/feedback/delete", "POST", { id }); loadFeedback(); loadTesters(); } catch (e) { alert(e.message); }
+}
+
+async function loadTesters() {
+  try {
+    const t = await api("/admin/testers");
+    $("testers").innerHTML = t.length ? "<tr><th>#</th><th>Kennung</th><th>Name</th><th>Punkte</th><th>Feedbacks</th><th>Unbewertet</th><th>Danke-Liste</th><th>Zuletzt</th></tr>" +
+      t.map((r, i) => `<tr><td class="num">${i + 1}</td><td><code>${esc(r.uid)}</code></td><td>${esc(r.name ?? "")}</td><td class="num"><b>${r.points}</b></td>
+        <td class="num">${r.feedbacks}</td><td class="num">${r.unrated}</td><td>${r.credits ? '<span class="pill on">ja</span>' : '<span class="pill">nein</span>'}</td>
+        <td>${when(r.last)}</td></tr>`).join("") : '<tr><td class="hint">Noch keine Tester mit Feedback.</td></tr>';
+  } catch (e) { $("testers").innerHTML = `<tr><td class="hint">Laden fehlgeschlagen: ${esc(e.message)}</td></tr>`; }
+}
+
 $("days").addEventListener("change", loadStats);
 $("uPrefix").addEventListener("keydown", (e) => { if (e.key === "Enter") findUsers(); });
 loadStats();
+loadFeedback();
+loadTesters();
 loadCodes();
 </script>
 </body>

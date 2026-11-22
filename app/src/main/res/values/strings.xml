@@ -1005,7 +1005,22 @@
     <string name="feedback_screenshot_remove">Screenshot entfernen</string>
     <string name="feedback_image_loading">Bild wird vorbereitet …</string>
     <string name="feedback_name">Dein Name (freiwillig)</string>
-    <string name="feedback_privacy">Mitgeschickt werden nur App-Version, Handy-Modell und Android-Version – keine Einträge, kein Gewicht, keine anderen Daten aus der App.</string>
+    <string name="feedback_privacy">Mitgeschickt werden nur App-Version, Handy-Modell, Android-Version und deine Kennung (für die Tester-Punkte) – keine Einträge, kein Gewicht, keine anderen Daten aus der App.</string>
+    <string name="feedback_reward_hint">Besonders hilfreiches Feedback belohnen wir mit Tester-Punkten – die fleißigsten Tester bekommen zum Start eine Belohnung.</string>
+    <string name="feedback_credits">Name in die Danke-Liste</string>
+    <string name="feedback_credits_text">Zum Start nennt Dunories die fleißigsten Tester in einer Danke-Liste in der App.</string>
+    <string name="tester_points">Tester-Punkte: %1$d</string>
+    <string name="tester_name">Dein Tester-Name</string>
+    <string name="tester_name_save">Speichern</string>
+    <string name="feedback_sent_as">Du sendest als „%1$s“. Name und Danke-Liste änderst du unter Profil → Einstellungen.</string>
+    <string name="feedback_sent_as_credits">Du sendest als „%1$s“ (Danke-Liste: an). Ändern unter Profil → Einstellungen.</string>
+    <string name="reward_title">Danke für dein Feedback!</string>
+    <plurals name="reward_text">
+        <item quantity="one">Dein Feedback wurde gelesen – dafür bekommst du %2$d Tester-Punkte. Insgesamt hast du jetzt %3$d.</item>
+        <item quantity="other">%1$d deiner Feedbacks wurden gelesen – dafür bekommst du %2$d Tester-Punkte. Insgesamt hast du jetzt %3$d.</item>
+    </plurals>
+    <string name="reward_hint">Die fleißigsten Tester bekommen zum Start von Dunories eine Belohnung.</string>
+    <string name="reward_ok">Super</string>
     <string name="feedback_send">Senden</string>
     <string name="feedback_failed">Das hat nicht geklappt. Bist du online? Versuch es gleich noch einmal.</string>
     <string name="feedback_thanks">Danke!</string>

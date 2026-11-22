@@ -26,6 +26,7 @@ data class FeedbackUiState(
     val type: FeedbackType = FeedbackType.BUG,
     val text: String = "",
     val name: String = "",
+    val credits: Boolean = false,
     val screenshot: Bitmap? = null,
     val screenshotBase64: String? = null,
     val loadingImage: Boolean = false,
@@ -36,19 +37,26 @@ data class FeedbackUiState(
     val canSend get() = !sending && !loadingImage && Feedback.canSend(text, screenshotBase64 != null)
 }
 
+/** Schon gespeicherter Tester-Name → Formular fragt nicht mehr (änderbar unter Profil → Einstellungen). */
+data class TesterProfile(val name: String, val credits: Boolean)
+
 class FeedbackViewModel(
     private val appContext: Context,
     private val client: FeedbackClient,
     private val settings: AppSettings,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(FeedbackUiState(name = settings.feedbackName))
+    /** Beim Öffnen gespeicherter Name: dann kein Namensfeld/Schalter im Formular. */
+    val savedProfile: TesterProfile? = settings.feedbackName.takeIf { it.isNotBlank() }?.let { TesterProfile(it, settings.feedbackCredits) }
+
+    private val _state = MutableStateFlow(FeedbackUiState(name = settings.feedbackName, credits = settings.feedbackCredits))
     val state: StateFlow<FeedbackUiState> = _state.asStateFlow()
 
     fun setType(type: FeedbackType) = _state.update { it.copy(type = type, failed = false) }
     fun setText(text: String) = _state.update { it.copy(text = text, failed = false) }
     fun setName(name: String) = _state.update { it.copy(name = name.take(Feedback.MAX_NAME)) }
+    fun setCredits(on: Boolean) = _state.update { it.copy(credits = on) }
     /** „Noch etwas melden“: neues, leeres Formular (Name und Art bleiben). */
-    fun again() = _state.update { FeedbackUiState(type = it.type, name = it.name) }
+    fun again() = _state.update { FeedbackUiState(type = it.type, name = it.name, credits = it.credits) }
 
     fun removeScreenshot() = _state.update { it.copy(screenshot = null, screenshotBase64 = null) }
 
@@ -82,6 +90,7 @@ class FeedbackViewModel(
         if (!s.canSend) return
         _state.update { it.copy(sending = true, failed = false) }
         settings.setFeedbackName(s.name.trim())
+        settings.setFeedbackCredits(s.credits && s.name.isNotBlank())
         viewModelScope.launch {
             val ok = runCatching {
                 client.send(
@@ -89,6 +98,7 @@ class FeedbackViewModel(
                         type = s.type,
                         text = s.text,
                         name = s.name,
+                        credits = s.credits,
                         screenshotJpegBase64 = s.screenshotBase64,
                         appVersion = BuildConfig.VERSION_NAME,
                         versionCode = BuildConfig.VERSION_CODE,

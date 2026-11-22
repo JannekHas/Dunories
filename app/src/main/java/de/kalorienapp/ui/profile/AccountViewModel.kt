@@ -78,6 +78,27 @@ class AccountViewModel(
         refreshStatus()
     }
 
+    /** Tester-Profil (Name, Danke-Liste) – angezeigt, sobald einmal ein Name angegeben wurde. */
+    val testerName: StateFlow<String> = settings.testerName
+    val testerCredits: StateFlow<Boolean> = settings.testerCredits
+
+    fun saveTesterName(name: String) {
+        val clean = name.trim().take(de.kalorienapp.domain.Feedback.MAX_NAME)
+        settings.setFeedbackName(clean)
+        if (clean.isBlank()) settings.setFeedbackCredits(false)
+        pushTester()
+    }
+
+    fun setTesterCredits(on: Boolean) {
+        settings.setFeedbackCredits(on && settings.feedbackName.isNotBlank())
+        pushTester()
+    }
+
+    private fun pushTester() {
+        if (!account.hasAnyUser) return
+        viewModelScope.launch { premium.saveTester(settings.feedbackName, settings.feedbackCredits) }
+    }
+
     fun refreshStatus() {
         if (!account.available) return
         viewModelScope.launch { premium.status()?.let { _aiStatus.value = it } }

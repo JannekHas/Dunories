@@ -88,6 +88,7 @@ class BackupManager(
                 weeklyDoneFor = settings.weeklyDoneFor?.toEpochDay(),
                 changelogSeen = settings.changelogSeen.value,
                 feedbackName = settings.feedbackName.ifBlank { null },
+                feedbackCredits = settings.feedbackCredits.takeIf { it },
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
                         .joinToString(";")
@@ -201,6 +202,7 @@ class BackupManager(
                 settings.restoreTips(all.toSet(), emptySet(), 0)
             }
             m.feedbackName?.let(settings::setFeedbackName)
+            m.feedbackCredits?.let(settings::setFeedbackCredits)
             m.weeklyDoneFor?.let { settings.weeklyDoneFor = LocalDate.ofEpochDay(it) }
             // Sicherung aus ≤ 0.6.0 (Umzug auf de.dunories): einmal „Neu in 0.6.1“ zeigen.
             settings.markChangelogSeen(m.changelogSeen ?: OLD_BACKUP_CHANGELOG)

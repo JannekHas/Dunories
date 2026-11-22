@@ -3,7 +3,7 @@
 // und leitet an Gemini weiter. Inhalte (Fotos, Texte, Antworten) werden weder gespeichert noch geloggt – nur Zähler.
 import { DurableObject } from "cloudflare:workers";
 import {
-  KINDS, MAX_BODY, base64UrlDecode, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays,
+  FEEDBACK_POINTS, KINDS, MAX_BODY, MAX_FEEDBACK_PER_DAY, base64UrlDecode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays,
   modelFromPath, normalizeCode, safeEqual, tierOf,
 } from "./logic.js";
 
@@ -37,6 +37,30 @@ async function app(request, env, url) {
 
   if (url.pathname === "/v1/status" && request.method === "GET") {
     return json(await usage.status(person, day, now, defaults(env)));
+  }
+
+  // Feedback (Tester-Belohnungsprogramm): landet im Postfach des Admin-Dashboards.
+  if (url.pathname === "/v1/feedback" && request.method === "POST") {
+    const length = Number(request.headers.get("Content-Length") ?? "NaN");
+    if (!Number.isFinite(length) || length > 1_200_000) return json({ error: "too_large" }, 413);
+    const feedback = cleanFeedback(await request.json().catch(() => null));
+    if (!feedback) return json({ error: "bad_request" }, 400);
+    const result = await usage.addFeedback(person.uid, feedback, day, now);
+    return result === "ok" ? json({ ok: true }) : json({ error: result }, 429);
+  }
+
+  // Tester-Profil: aktueller Name und ob er in die Danke-Liste darf (am Ende zählt, was gerade eingestellt ist).
+  if (url.pathname === "/v1/tester" && request.method === "POST") {
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") return json({ error: "bad_request" }, 400);
+    await usage.setTester(person.uid, String(body.name ?? "").trim().slice(0, 60), body.credits === true, now);
+    return json({ ok: true });
+  }
+
+  // Danke-Nachricht gezeigt → neu bewertete Feedbacks als gesehen markieren.
+  if (url.pathname === "/v1/rewards/seen" && request.method === "POST") {
+    await usage.rewardsSeen(person.uid);
+    return json({ ok: true });
   }
 
   if (url.pathname === "/v1/redeem" && request.method === "POST") {
@@ -228,6 +252,29 @@ async function admin(request, env, url) {
     await usage.disableCode(code);
     return ok({ ok: true });
   }
+  if (url.pathname === "/admin/feedback" && request.method === "GET") {
+    const filter = url.searchParams.get("filter") === "all" ? "all" : "unrated";
+    return ok(await usage.listFeedback(filter, Math.min(num(url.searchParams.get("limit"), 100), 500)));
+  }
+  if (url.pathname === "/admin/feedback/shot" && request.method === "GET") {
+    const id = Number(url.searchParams.get("id"));
+    if (!Number.isInteger(id)) return bad();
+    return ok({ screenshot: await usage.feedbackShot(id) });
+  }
+  if (url.pathname === "/admin/feedback/rate" && request.method === "POST") {
+    const id = Number(body?.id);
+    const points = Number(body?.points);
+    if (!Number.isInteger(id) || !FEEDBACK_POINTS.has(points)) return bad();
+    await usage.rateFeedback(id, points, now);
+    return ok({ ok: true });
+  }
+  if (url.pathname === "/admin/feedback/delete" && request.method === "POST") {
+    const id = Number(body?.id);
+    if (!Number.isInteger(id)) return bad();
+    await usage.deleteFeedback(id);
+    return ok({ ok: true });
+  }
+  if (url.pathname === "/admin/testers" && request.method === "GET") return ok(await usage.testers());
   if (url.pathname === "/admin/users" && request.method === "GET") {
     const prefix = (url.searchParams.get("prefix") ?? "").trim();
     if (prefix.length < 4 || prefix.length > 128) return bad();
@@ -269,6 +316,11 @@ export class Usage extends DurableObject {
       CREATE TABLE IF NOT EXISTS codes (code TEXT PRIMARY KEY, days INTEGER NOT NULL, max_uses INTEGER NOT NULL, used INTEGER NOT NULL, expires INTEGER, note TEXT, created INTEGER NOT NULL, disabled INTEGER NOT NULL DEFAULT 0);
       CREATE TABLE IF NOT EXISTS redemptions (code TEXT NOT NULL, uid TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (code, uid));
       CREATE TABLE IF NOT EXISTS attempts (uid TEXT NOT NULL, ts INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS feedback (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT NOT NULL, ts INTEGER NOT NULL, day TEXT NOT NULL, type TEXT NOT NULL,
+        text TEXT NOT NULL, name TEXT, credits INTEGER NOT NULL, screenshot TEXT, app TEXT, version_code INTEGER, device TEXT,
+        android INTEGER, points INTEGER, rated INTEGER, notified INTEGER NOT NULL DEFAULT 0);
+      CREATE TABLE IF NOT EXISTS testers (uid TEXT PRIMARY KEY, name TEXT, credits INTEGER NOT NULL, updated INTEGER NOT NULL);
     `);
   }
 
@@ -321,9 +373,13 @@ export class Usage extends DurableObject {
   status(person, day, now, d) {
     const cfg = this.config(d);
     const t = this.tier(person, now, cfg);
+    const pts = this.points(person.uid);
     return {
       ...t,
       anonymous: person.anonymous,
+      testerPoints: pts.total,
+      newRewards: pts.newCount,
+      newPoints: pts.newPoints,
       usedToday: this.used(person.uid, day),
       dailyLimit: cfg.dailyLimit,
       freeLeft: t.tier === "guest" ? Math.max(cfg.guestFree - this.total(person.uid), 0) : null,
@@ -361,6 +417,73 @@ export class Usage extends DurableObject {
     this.cleanup(day);
   }
 
+  /** Punkte einer Person; „neu“ = bewertet, aber Danke-Nachricht noch nicht gezeigt. */
+  points(uid) {
+    const row = this.sql.exec(
+      `SELECT COALESCE(SUM(points), 0) AS total,
+              COALESCE(SUM(CASE WHEN rated IS NOT NULL AND notified = 0 AND points > 0 THEN 1 ELSE 0 END), 0) AS newCount,
+              COALESCE(SUM(CASE WHEN rated IS NOT NULL AND notified = 0 AND points > 0 THEN points ELSE 0 END), 0) AS newPoints
+       FROM feedback WHERE uid = ?`, uid,
+    ).toArray()[0];
+    return { total: row.total, newCount: row.newCount, newPoints: row.newPoints };
+  }
+
+  addFeedback(uid, f, day, now) {
+    const today = this.sql.exec("SELECT COUNT(*) AS n FROM feedback WHERE uid = ? AND day = ?", uid, day).toArray()[0].n;
+    if (today >= MAX_FEEDBACK_PER_DAY) return "too_many";
+    if (f.name) this.setTester(uid, f.name, f.credits, now);
+    this.sql.exec(
+      `INSERT INTO feedback (uid, ts, day, type, text, name, credits, screenshot, app, version_code, device, android)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      uid, now, day, f.type, f.text, f.name || null, f.credits ? 1 : 0, f.screenshot, f.appVersion, f.versionCode, f.device, f.android,
+    );
+    return "ok";
+  }
+
+  setTester(uid, name, credits, now) {
+    this.sql.exec(
+      `INSERT INTO testers (uid, name, credits, updated) VALUES (?, ?, ?, ?)
+       ON CONFLICT (uid) DO UPDATE SET name = excluded.name, credits = excluded.credits, updated = excluded.updated`,
+      uid, name || null, credits && name ? 1 : 0, now,
+    );
+  }
+
+  rewardsSeen(uid) {
+    this.sql.exec("UPDATE feedback SET notified = 1 WHERE uid = ? AND rated IS NOT NULL AND notified = 0", uid);
+  }
+
+  listFeedback(filter, limit) {
+    const where = filter === "all" ? "" : "WHERE rated IS NULL";
+    return this.sql.exec(
+      `SELECT id, uid, ts, type, text, name, credits, screenshot IS NOT NULL AS hasShot, app, version_code AS versionCode, device,
+              android, points, rated FROM feedback ${where} ORDER BY ts DESC LIMIT ${Math.max(1, Math.floor(limit))}`,
+    ).toArray().map((f) => ({ ...f, uid: f.uid.slice(0, 8), credits: !!f.credits, hasShot: !!f.hasShot }));
+  }
+
+  feedbackShot(id) {
+    return this.sql.exec("SELECT screenshot FROM feedback WHERE id = ?", id).toArray()[0]?.screenshot ?? null;
+  }
+
+  /** Bewerten (auch umbewerten: dann wird die Danke-Nachricht erneut fällig, falls es jetzt Punkte gibt). */
+  rateFeedback(id, points, now) {
+    this.sql.exec("UPDATE feedback SET points = ?, rated = ?, notified = 0 WHERE id = ?", points, now, id);
+  }
+
+  deleteFeedback(id) {
+    this.sql.exec("DELETE FROM feedback WHERE id = ?", id);
+  }
+
+  /** Rangliste fürs Release: Punkte, Anzahl Feedbacks, letzter Name und ob er in die Danke-Liste darf. */
+  testers() {
+    return this.sql.exec(
+      `SELECT f.uid AS uid, SUM(COALESCE(f.points, 0)) AS points, COUNT(*) AS feedbacks,
+              SUM(CASE WHEN f.rated IS NULL THEN 1 ELSE 0 END) AS unrated,
+              t.name AS name, COALESCE(t.credits, 0) AS credits, MAX(f.ts) AS last
+       FROM feedback f LEFT JOIN testers t ON t.uid = f.uid
+       GROUP BY f.uid ORDER BY points DESC, feedbacks DESC LIMIT 200`,
+    ).toArray().map((t) => ({ ...t, uid: t.uid.slice(0, 8), credits: !!t.credits }));
+  }
+
   error(day, code) {
     this.sql.exec("INSERT INTO errors (day, code, n) VALUES (?, ?, 1) ON CONFLICT (day, code) DO UPDATE SET n = n + 1", day, code);
   }
@@ -372,6 +495,8 @@ export class Usage extends DurableObject {
     this.sql.exec("DELETE FROM usage WHERE day < ?", oldest);
     this.sql.exec("DELETE FROM errors WHERE day < ?", oldest);
     this.sql.exec("DELETE FROM weekly WHERE week < ?", isoWeek(oldest));
+    // Feedback spätestens nach zwei Jahren löschen (so in der Datenschutzerklärung).
+    this.sql.exec("DELETE FROM feedback WHERE ts < ?", Date.now() - 730 * 86400000);
   }
 
   grant(uid, days, source, note, now) {

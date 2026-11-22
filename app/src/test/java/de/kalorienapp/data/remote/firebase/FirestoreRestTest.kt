@@ -19,28 +19,26 @@ class FirestoreRestTest {
         createdAt = Instant.parse("2026-11-22T10:15:30Z"),
     )
 
-    private fun fields(doc: String) = Json.parseToJsonElement(doc).jsonObject["fields"]!!.jsonObject
-
-    private fun value(doc: String, field: String, type: String) =
-        fields(doc)[field]!!.jsonObject[type]!!.jsonPrimitive.content
+    private fun field(body: String, name: String) = Json.parseToJsonElement(body).jsonObject[name]?.jsonPrimitive?.content
 
     @Test
-    fun `feedback wird als firestore dokument geschrieben`() {
-        val doc = FirestoreRest.feedbackDocument(feedback())
-        assertEquals("bug", value(doc, "type", "stringValue"))
-        assertEquals("Knopf hängt", value(doc, "text", "stringValue"))
-        assertEquals("8", value(doc, "versionCode", "integerValue"))
-        assertEquals("36", value(doc, "android", "integerValue"))
-        assertEquals("2026-11-22T10:15:30Z", value(doc, "createdAt", "timestampValue"))
-        assertFalse("screenshot" in fields(doc))
+    fun `feedback geht als json an den worker`() {
+        val body = FeedbackClient.body(feedback())
+        assertEquals("bug", field(body, "type"))
+        assertEquals("Knopf hängt", field(body, "text"))
+        assertEquals("8", field(body, "versionCode"))
+        assertEquals("36", field(body, "android"))
+        assertNull(field(body, "screenshot"))
     }
 
     @Test
-    fun `zu langer text und name werden gekuerzt, screenshot kommt mit`() {
-        val doc = FirestoreRest.feedbackDocument(feedback(text = "x".repeat(6_000), name = "n".repeat(100), shot = "QUJD"))
-        assertEquals(Feedback.MAX_TEXT, value(doc, "text", "stringValue").length)
-        assertEquals(Feedback.MAX_NAME, value(doc, "name", "stringValue").length)
-        assertEquals("QUJD", value(doc, "screenshot", "stringValue"))
+    fun `zu langer text und name werden gekuerzt, screenshot kommt mit, danke-liste nur mit name`() {
+        val body = FeedbackClient.body(feedback(text = "x".repeat(6_000), name = "n".repeat(100), shot = "QUJD").copy(credits = true))
+        assertEquals(Feedback.MAX_TEXT, field(body, "text")!!.length)
+        assertEquals(Feedback.MAX_NAME, field(body, "name")!!.length)
+        assertEquals("QUJD", field(body, "screenshot"))
+        assertEquals("true", field(body, "credits"))
+        assertEquals("false", field(FeedbackClient.body(feedback(name = " ").copy(credits = true)), "credits"))
     }
 
     @Test

@@ -232,10 +232,28 @@ class AppSettings(context: Context) {
         _cloudBackupOn.value = false
     }
 
-    /** Freiwilliger Name beim Feedback (wird beim nächsten Mal vorausgefüllt). */
-    val feedbackName: String get() = prefs.getString(KEY_FEEDBACK_NAME, null).orEmpty()
+    private val _testerName = MutableStateFlow(prefs.getString(KEY_FEEDBACK_NAME, null).orEmpty())
+    private val _testerCredits = MutableStateFlow(prefs.getBoolean(KEY_FEEDBACK_CREDITS, false))
 
-    fun setFeedbackName(name: String) = prefs.edit().putString(KEY_FEEDBACK_NAME, name).apply()
+    /**
+     * Tester-Name (freiwillig, einmal beim Feedback angegeben, danach unter Einstellungen änderbar) und ob er in die
+     * Danke-Liste darf. Am Ende der Testphase zählt, was gerade eingestellt ist.
+     */
+    val testerName: StateFlow<String> = _testerName.asStateFlow()
+    val testerCredits: StateFlow<Boolean> = _testerCredits.asStateFlow()
+
+    val feedbackName: String get() = _testerName.value
+    val feedbackCredits: Boolean get() = _testerCredits.value
+
+    fun setFeedbackName(name: String) {
+        prefs.edit().putString(KEY_FEEDBACK_NAME, name).apply()
+        _testerName.value = name
+    }
+
+    fun setFeedbackCredits(on: Boolean) {
+        prefs.edit().putBoolean(KEY_FEEDBACK_CREDITS, on).apply()
+        _testerCredits.value = on
+    }
 
     private val _feedbackOnToday = MutableStateFlow(prefs.getBoolean(KEY_FEEDBACK_TODAY, true))
 
@@ -423,6 +441,7 @@ class AppSettings(context: Context) {
         private const val DISLIKE_SEPARATOR = "\n"
         private const val KEY_SEEN_TIPS = "seen_tips"
         private const val KEY_FEEDBACK_NAME = "feedback_name"
+        private const val KEY_FEEDBACK_CREDITS = "feedback_credits"
         private const val KEY_CLOUD_UID = "cloud_uid"
         private const val KEY_CLOUD_AT = "cloud_last_upload_at"
         private const val KEY_CLOUD_HASH = "cloud_last_hash"

@@ -83,7 +83,8 @@ class AppContainer(context: Context) {
         BuildConfig.FIREBASE_PROJECT_ID,
         BuildConfig.FIREBASE_API_KEY,
         AppIdentity.headers(context),
-    )
+        BuildConfig.AI_BASE_URL,
+    ) { account.aiToken() }
 
     /** Per Teilen-Menü empfangene Inhalte für den Rezept-Import. */
     val shareInbox = ShareInbox(ShareGuard(BuildConfig.APPLICATION_ID))

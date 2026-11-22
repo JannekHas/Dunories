@@ -22,21 +22,6 @@ object FirestoreRest {
     fun documentsUrl(projectId: String) =
         "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents"
 
-    /** Feedback als Firestore-Dokument (`{"fields": {...}}`). Text/Name werden auf die erlaubte Länge gekürzt. */
-    fun feedbackDocument(feedback: Feedback): String = buildJsonObject {
-        putJsonObject("fields") {
-            string("type", feedback.type.key)
-            string("text", feedback.text.trim().take(Feedback.MAX_TEXT))
-            string("name", feedback.name.trim().take(Feedback.MAX_NAME))
-            feedback.screenshotJpegBase64?.let { string("screenshot", it) }
-            string("appVersion", feedback.appVersion)
-            integer("versionCode", feedback.versionCode.toLong())
-            string("device", feedback.device)
-            integer("android", feedback.androidSdk.toLong())
-            putJsonObject("createdAt") { put("timestampValue", feedback.createdAt.toString()) }
-        }
-    }.toString()
-
     /** Schalter aus `config/app`; null = Feld fehlt oder Antwort unlesbar. */
     fun booleanField(documentJson: String, field: String): Boolean? = runCatching {
         val fields = json.parseToJsonElement(documentJson).jsonObject["fields"]?.jsonObject ?: return null

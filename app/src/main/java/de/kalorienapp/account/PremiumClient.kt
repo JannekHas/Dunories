@@ -29,6 +29,11 @@ data class AiStatus(
     val trialDays: Int,
     /** Kurze Kennung für den Support (erste 8 Zeichen). */
     val id: String,
+    /** Tester-Belohnungsprogramm: Summe der Punkte für bewertetes Feedback. */
+    val testerPoints: Int = 0,
+    /** Neu bewertete Feedbacks mit Punkten, für die noch keine Danke-Nachricht kam. */
+    val newRewards: Int = 0,
+    val newPoints: Int = 0,
 ) {
     val premium get() = tier == AiTier.PREMIUM
 
@@ -62,6 +67,9 @@ data class AiStatus(
                 freeLeft = o.number("freeLeft")?.toInt(),
                 trialDays = o.number("trialDays")?.toInt() ?: 0,
                 id = o.string("id").orEmpty(),
+                testerPoints = o.number("testerPoints")?.toInt() ?: 0,
+                newRewards = o.number("newRewards")?.toInt() ?: 0,
+                newPoints = o.number("newPoints")?.toInt() ?: 0,
             )
         }
     }
@@ -82,6 +90,22 @@ class PremiumClient(
         if (baseUrl.isBlank()) return null
         val h = runCatching { headers() }.getOrNull() ?: return null
         return runCatching { AiStatus.parse(Http.get("$baseUrl/v1/status", h, timeoutMs = 15_000)) }.getOrNull()
+    }
+
+    /** Tester-Name und Danke-Liste beim Worker aktualisieren (nur wenn schon angemeldet – Gast oder Konto). */
+    suspend fun saveTester(name: String, credits: Boolean) {
+        val h = runCatching { headers() }.getOrNull() ?: return
+        val body = buildJsonObject {
+            put("name", name)
+            put("credits", credits)
+        }.toString()
+        runCatching { Http.postJson("$baseUrl/v1/tester", body, h, timeoutMs = 15_000) }
+    }
+
+    /** Danke-Nachricht wurde gezeigt. */
+    suspend fun rewardsSeen() {
+        val h = runCatching { headers() }.getOrNull() ?: return
+        runCatching { Http.postJson("$baseUrl/v1/rewards/seen", "{}", h, timeoutMs = 15_000) }
     }
 
     suspend fun redeem(code: String): Pair<RedeemResult, AiStatus?> {

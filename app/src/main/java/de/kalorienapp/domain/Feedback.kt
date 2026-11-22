@@ -6,7 +6,8 @@ import java.time.Instant
 enum class FeedbackType(val key: String) { BUG("bug"), IDEA("idea"), PRAISE("praise") }
 
 /**
- * Feedback aus der App (Phase 1 Backend, Nov. 2026): geht ohne Konto an Firestore (`feedback`).
+ * Feedback aus der App: geht (seit dem Tester-Belohnungsprogramm) an den eigenen Worker → Postfach im Admin-Dashboard,
+ * mit der Kennung (Gast-Konto oder Konto), damit gutes Feedback mit Tester-Punkten belohnt werden kann.
  * Enthält bewusst **keine** Ernährungs- oder Körperdaten – nur, was der Nutzer schreibt/anhängt, und Gerätedaten.
  */
 data class Feedback(
@@ -14,6 +15,8 @@ data class Feedback(
     val text: String,
     /** Freiwillig, damit der Entwickler weiß, von wem es kommt. */
     val name: String = "",
+    /** Darf der Name zum Start in der Danke-Liste stehen? */
+    val credits: Boolean = false,
     /** Verkleinerter Screenshot als JPEG in Base64 (null = keiner). */
     val screenshotJpegBase64: String? = null,
     val appVersion: String,

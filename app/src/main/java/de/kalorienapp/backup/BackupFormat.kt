@@ -68,6 +68,8 @@ object BackupFormat {
         val changelogSeen: Int? = null,
         /** Freiwilliger Name beim Feedback. */
         val feedbackName: String? = null,
+        /** Name darf in die Danke-Liste (Tester-Belohnungsprogramm). */
+        val feedbackCredits: Boolean? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

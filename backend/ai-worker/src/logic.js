@@ -73,6 +73,35 @@ export function safeEqual(a, b) {
   return diff === 0;
 }
 
+/** Feedback-Arten und erlaubte Punkte pro Feedback (Tester-Belohnungsprogramm). */
+export const FEEDBACK_TYPES = new Set(["bug", "idea", "praise"]);
+export const FEEDBACK_POINTS = new Set([-1, 0, 1, 3, 5]);
+export const MAX_FEEDBACK_TEXT = 5000;
+export const MAX_FEEDBACK_NAME = 60;
+export const MAX_SCREENSHOT = 800000;
+/** Höchstens so viele Feedbacks pro Person und Tag (gegen Spam). */
+export const MAX_FEEDBACK_PER_DAY = 10;
+
+/** Feedback aus der App prüfen und auf erlaubte Felder kürzen. @return Objekt oder null */
+export function cleanFeedback(body) {
+  if (!body || typeof body !== "object" || !FEEDBACK_TYPES.has(body.type)) return null;
+  const text = String(body.text ?? "").trim().slice(0, MAX_FEEDBACK_TEXT);
+  const shot = typeof body.screenshot === "string" && body.screenshot.length > 0 ? body.screenshot : null;
+  if (shot && (shot.length > MAX_SCREENSHOT || !/^[A-Za-z0-9+/=]+$/.test(shot))) return null;
+  if (!text && !shot) return null;
+  return {
+    type: body.type,
+    text,
+    name: String(body.name ?? "").trim().slice(0, MAX_FEEDBACK_NAME),
+    credits: body.credits === true,
+    screenshot: shot,
+    appVersion: String(body.appVersion ?? "").slice(0, 20),
+    versionCode: Number.isInteger(body.versionCode) ? body.versionCode : 0,
+    device: String(body.device ?? "").slice(0, 80),
+    android: Number.isInteger(body.android) ? body.android : 0,
+  };
+}
+
 /** Code-Alphabet ohne verwechselbare Zeichen (0/O, 1/I/L). */
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 

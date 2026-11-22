@@ -113,7 +113,25 @@ class TodayViewModel(
     private val activityRepository: ActivityEntryRepository,
     statsRepository: StatsRepository,
     private val mealPlan: MealPlanRepository,
+    private val account: de.kalorienapp.account.AccountManager,
+    private val premium: de.kalorienapp.account.PremiumClient,
 ) : ViewModel() {
+
+    /** Tester-Belohnungsprogramm: neu bewertetes Feedback → einmal „Danke, du hast x Punkte bekommen“. */
+    private val _reward = MutableStateFlow<de.kalorienapp.account.AiStatus?>(null)
+    val reward: StateFlow<de.kalorienapp.account.AiStatus?> = _reward.asStateFlow()
+
+    init {
+        // Nur fragen, wenn schon angemeldet (Gast oder Konto) – sonst entstünde nur dafür ein Gast-Konto.
+        if (account.hasAnyUser) viewModelScope.launch {
+            premium.status()?.takeIf { it.newRewards > 0 && it.newPoints > 0 }?.let { _reward.value = it }
+        }
+    }
+
+    fun rewardSeen() {
+        _reward.value = null
+        viewModelScope.launch { premium.rewardsSeen() }
+    }
 
     /** Tage in Folge im Ziel bis gestern – Erfolgsmoment auf „Heute“ (0 = nichts zeigen). */
     val streak: StateFlow<Int> = LocalDate.now().let { today ->

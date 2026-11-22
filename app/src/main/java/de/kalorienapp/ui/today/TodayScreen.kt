@@ -161,8 +161,11 @@ fun TodayScreen(
     val goalSkipped by viewModel.goalSkipped.collectAsStateWithLifecycle()
     // Nach einem Update einmal „Neu in Dunories“ zeigen (nur auf dem echten „Heute“, nicht im Kalender-Tag)
     val unseenChangelog by viewModel.unseenChangelog.collectAsStateWithLifecycle()
+    val reward by viewModel.reward.collectAsStateWithLifecycle()
     if (onBack == null && unseenChangelog.isNotEmpty()) {
         ChangelogDialog(ChangelogUi.byCodes(unseenChangelog), onClose = viewModel::changelogRead)
+    } else if (onBack == null) {
+        reward?.let { RewardDialog(it, onClose = viewModel::rewardSeen) }
     }
     LaunchedEffect(requestedDay) {
         requestedDay?.let { viewModel.showDate(it); onDayShown() }
@@ -1071,4 +1074,30 @@ private fun FeedbackBubble(onClick: () -> Unit, modifier: Modifier = Modifier) {
     ) {
         Icon(painterResource(R.drawable.ic_feedback), stringResource(R.string.feedback_title), tint = Neon.Cyan, modifier = Modifier.size(22.dp))
     }
+}
+
+/** Tester-Belohnungsprogramm: Danke-Nachricht beim Start, wenn Feedback mit Punkten bewertet wurde. */
+@Composable
+private fun RewardDialog(status: de.kalorienapp.account.AiStatus, onClose: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(androidx.compose.ui.res.stringResource(R.string.reward_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    androidx.compose.ui.res.pluralStringResource(
+                        R.plurals.reward_text, status.newRewards, status.newRewards, status.newPoints, status.testerPoints,
+                    ),
+                )
+                Text(
+                    androidx.compose.ui.res.stringResource(R.string.reward_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = de.kalorienapp.ui.theme.Neon.TextSecondary,
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onClose) { Text(androidx.compose.ui.res.stringResource(R.string.reward_ok)) }
+        },
+    )
 }

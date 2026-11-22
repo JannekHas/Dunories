@@ -68,6 +68,9 @@ class AccountManager(private val context: Context) {
         auth?.addAuthStateListener { a -> _user.value = a.currentUser?.toAccount() }
     }
 
+    /** Gibt es schon eine Anmeldung (Konto oder Gast)? Dann darf man den Worker fragen, ohne ein Gast-Konto anzulegen. */
+    val hasAnyUser: Boolean get() = auth?.currentUser != null
+
     /**
      * Token für den KI-Worker: vom Konto oder – ohne Konto – vom Gast-Konto, das hier beim ersten Mal still angelegt wird.
      * null = Firebase nicht eingerichtet.

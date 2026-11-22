@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays, modelFromPath, normalizeCode, safeEqual, tierOf } from "../src/logic.js";
+import { cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays, modelFromPath, normalizeCode, safeEqual, tierOf } from "../src/logic.js";
 
 test("Tag nach deutscher Zeit: 23:30 UTC im Winter ist schon der nächste Tag", () => {
   assert.equal(berlinDay(Date.UTC(2026, 10, 22, 22, 59)), "2026-11-22");
@@ -92,6 +92,17 @@ test("Codes", () => {
   assert.equal(normalizeCode(" duno abcd efgh "), "DUNO-ABCD-EFGH");
   assert.equal(normalizeCode("abcd-efgh"), "DUNO-ABCD-EFGH");
   assert.equal(normalizeCode("abc"), null);
+});
+
+test("Feedback prüfen", () => {
+  assert.equal(cleanFeedback({ type: "spam", text: "x" }), null);
+  assert.equal(cleanFeedback({ type: "bug", text: "  " }), null);
+  assert.equal(cleanFeedback({ type: "bug", text: "", screenshot: "<script>" }), null);
+  const f = cleanFeedback({ type: "idea", text: " Hallo ", name: "Tim", credits: true, screenshot: "QUJD", device: "Pixel" });
+  assert.equal(f.text, "Hallo");
+  assert.equal(f.credits, true);
+  assert.equal(f.screenshot, "QUJD");
+  assert.equal(cleanFeedback({ type: "praise", text: "x".repeat(6000) }).text.length, 5000);
 });
 
 test("safeEqual", () => {

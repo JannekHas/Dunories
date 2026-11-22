@@ -142,13 +142,35 @@ fun FeedbackScreen(
                 ) { Text(stringResource(R.string.feedback_screenshot_add)) }
             }
 
-            OutlinedTextField(
-                value = state.name,
-                onValueChange = viewModel::setName,
-                label = { Text(stringResource(R.string.feedback_name)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            val saved = viewModel.savedProfile
+            if (saved != null) {
+                // Name schon einmal angegeben → nicht jedes Mal fragen (Wunsch des Nutzers), änderbar in den Einstellungen.
+                Text(
+                    stringResource(
+                        if (saved.credits) R.string.feedback_sent_as_credits else R.string.feedback_sent_as,
+                        saved.name,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Neon.TextSecondary,
+                )
+            } else {
+                OutlinedTextField(
+                    value = state.name,
+                    onValueChange = viewModel::setName,
+                    label = { Text(stringResource(R.string.feedback_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (state.name.isNotBlank()) {
+                    de.kalorienapp.ui.components.SettingSwitchRow(
+                        title = stringResource(R.string.feedback_credits),
+                        text = stringResource(R.string.feedback_credits_text),
+                        checked = state.credits,
+                        onChange = viewModel::setCredits,
+                    )
+                }
+            }
+            Text(stringResource(R.string.feedback_reward_hint), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
             Text(stringResource(R.string.feedback_privacy), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
             if (state.failed) {
                 Text(stringResource(R.string.feedback_failed), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
