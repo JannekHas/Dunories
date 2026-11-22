@@ -3,6 +3,7 @@
      Neue Version: Array anlegen und in ChangelogUi.VERSIONS eintragen. -->
 <resources>
     <string-array name="changelog_8">
+        <item>Neu: Social|Der Reiter „Bald“ heißt jetzt „Social“: dein Profil mit Name und Lieblings-Abzeichen, Level und Erfolge. Erfahrungspunkte gibt es fürs Dranbleiben – jeder Tag mit Einträgen zählt. Wer das nicht mag, schaltet es unter Profil → Bereiche aus.</item>
         <item>Tester-Punkte|Besonders hilfreiches Feedback wird jetzt mit Tester-Punkten belohnt – die fleißigsten Tester bekommen zum Start von Dunories eine Belohnung. Deine Punkte siehst du unter Profil → Einstellungen. Auf Wunsch kommt dein Name in die Danke-Liste.</item>
         <item>KI &amp; Premium|Unter Profil → Einstellungen siehst du jetzt, wie viele KI-Aufrufe du heute schon genutzt hast. Während der Testphase ist Premium für alle Tester frei. Hast du einen Code bekommen? Mit Konto löst du ihn dort unter „Code einlösen“ ein.</item>
         <item>KI über einen eigenen Server|Fotos und Beschreibungen gehen jetzt über einen kleinen Dunories-Server an die KI – der Schlüssel steckt nicht mehr in der App. Jede Person hat 40 KI-Aufrufe pro Tag, ab Mitternacht geht es weiter. Die automatische Wochenauswertung am Montag zählt nicht mit.</item>

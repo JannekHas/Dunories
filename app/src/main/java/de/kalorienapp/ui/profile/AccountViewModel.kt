@@ -101,7 +101,12 @@ class AccountViewModel(
 
     fun refreshStatus() {
         if (!account.available) return
-        viewModelScope.launch { premium.status()?.let { _aiStatus.value = it } }
+        viewModelScope.launch {
+            premium.status()?.let {
+                _aiStatus.value = it
+                settings.setTesterPoints(it.testerPoints)
+            }
+        }
     }
 
     fun openRedeem() {

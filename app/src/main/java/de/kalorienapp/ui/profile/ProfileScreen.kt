@@ -102,6 +102,9 @@ fun ProfileScreen(
                     WeightTrackingSection()
                     BodyAnalysisSettingSection()
                     MeasuresSettingSection()
+                    HorizontalDivider()
+                    SectionTitle(stringResource(R.string.areas_social))
+                    GamificationSettingSection()
                 }
                 // Einstellungen: Hinweise und darunter Datensicherung (4 statt 5 Reiter – Wunsch des Nutzers)
                 else -> {

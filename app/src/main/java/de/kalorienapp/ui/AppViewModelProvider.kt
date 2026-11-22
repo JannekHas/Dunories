@@ -44,7 +44,11 @@ object AppViewModelProvider {
                 container().mealPlanRepository,
                 container().account,
                 container().premium,
+                container().gameRepository,
             )
+        }
+        initializer {
+            de.kalorienapp.ui.social.SocialViewModel(container().gameRepository, container().settings, container().account, container().premium)
         }
         initializer {
             de.kalorienapp.ui.stats.AllReportsViewModel(container().weeklyReportRepository)

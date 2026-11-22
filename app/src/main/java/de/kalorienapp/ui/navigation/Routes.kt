@@ -70,6 +70,10 @@ data class MealPlanDayRoute(val dayIndex: Int)
 @Serializable
 data object MealPlanImportRoute
 
+/** Social-Reiter (früher Platzhalter „Bald“): Profil, Level & Erfolge, Tester-Bereich. */
+@Serializable
+data object SocialRoute
+
 /** Dunories Premium (Konto-Karte, KI-Fehler „Gratis aufgebraucht“/„nur Premium“). */
 @Serializable
 data object PaywallRoute

@@ -242,6 +242,65 @@ class AppSettings(context: Context) {
     val testerName: StateFlow<String> = _testerName.asStateFlow()
     val testerCredits: StateFlow<Boolean> = _testerCredits.asStateFlow()
 
+    // ------------------------------------------------------------ Social: Level & Erfolge
+    private val _gamificationEnabled = MutableStateFlow(prefs.getBoolean(KEY_GAME_ENABLED, true))
+
+    /** Level & Erfolge (Profil → Bereiche, Standard an). Aus: Social zeigt nur Profil/Tester, keine Karte auf „Heute“. */
+    val gamificationEnabled: StateFlow<Boolean> = _gamificationEnabled.asStateFlow()
+
+    fun setGamificationEnabled(on: Boolean) {
+        prefs.edit().putBoolean(KEY_GAME_ENABLED, on).apply()
+        _gamificationEnabled.value = on
+    }
+
+    private val _celebrated = MutableStateFlow(prefs.getStringSet(KEY_GAME_CELEBRATED, emptySet())!!.toSet())
+
+    /** Schon gefeierte Erfolge (Schlüssel) – die Karte auf „Heute“ kommt je Erfolg nur einmal. */
+    val celebratedAchievements: StateFlow<Set<String>> = _celebrated.asStateFlow()
+
+    fun markCelebrated(keys: Collection<String>) {
+        val next = _celebrated.value + keys
+        prefs.edit().putStringSet(KEY_GAME_CELEBRATED, next).putBoolean(KEY_GAME_INIT, true).apply()
+        _celebrated.value = next
+    }
+
+    /** Beim ersten Mal (Update) bereits Erreichtes still als gefeiert markieren – keine Flut an Karten. */
+    val gamificationInitialized: Boolean get() = prefs.getBoolean(KEY_GAME_INIT, false)
+
+    private val _favoriteBadge = MutableStateFlow(prefs.getString(KEY_GAME_BADGE, null))
+
+    /** Lieblings-Abzeichen neben dem Namen (Schlüssel eines Erfolgs oder „tester“). */
+    val favoriteBadge: StateFlow<String?> = _favoriteBadge.asStateFlow()
+
+    fun setFavoriteBadge(key: String?) {
+        prefs.edit().putString(KEY_GAME_BADGE, key).apply()
+        _favoriteBadge.value = key
+    }
+
+    private val _feedbackSent = MutableStateFlow(prefs.getInt(KEY_FEEDBACK_SENT, 0))
+
+    /** Gesendete Feedbacks (für den Erfolg „Erstes Feedback“). */
+    val feedbackSentCount: StateFlow<Int> = _feedbackSent.asStateFlow()
+
+    fun countFeedbackSent(total: Int = _feedbackSent.value + 1) {
+        prefs.edit().putInt(KEY_FEEDBACK_SENT, total).apply()
+        _feedbackSent.value = total
+    }
+
+    private val _testerPoints = MutableStateFlow(prefs.getInt(KEY_TESTER_POINTS, 0))
+
+    /** Zuletzt vom Server gesehene Tester-Punkte (für das Tester-Abzeichen auch offline). */
+    val testerPoints: StateFlow<Int> = _testerPoints.asStateFlow()
+
+    fun setTesterPoints(points: Int) {
+        if (points == _testerPoints.value) return
+        prefs.edit().putInt(KEY_TESTER_POINTS, points).apply()
+        _testerPoints.value = points
+    }
+
+    /** Hat die Danke-Liste je eingeschaltet → Schalter bleibt im Social-Reiter sichtbar (Wunsch des Nutzers). */
+    val creditsEverOn: Boolean get() = prefs.getBoolean(KEY_CREDITS_EVER, false) || _testerCredits.value
+
     val feedbackName: String get() = _testerName.value
     val feedbackCredits: Boolean get() = _testerCredits.value
 
@@ -252,6 +311,7 @@ class AppSettings(context: Context) {
 
     fun setFeedbackCredits(on: Boolean) {
         prefs.edit().putBoolean(KEY_FEEDBACK_CREDITS, on).apply()
+        if (on) prefs.edit().putBoolean(KEY_CREDITS_EVER, true).apply()
         _testerCredits.value = on
     }
 
@@ -442,6 +502,13 @@ class AppSettings(context: Context) {
         private const val KEY_SEEN_TIPS = "seen_tips"
         private const val KEY_FEEDBACK_NAME = "feedback_name"
         private const val KEY_FEEDBACK_CREDITS = "feedback_credits"
+        private const val KEY_CREDITS_EVER = "feedback_credits_ever"
+        private const val KEY_GAME_ENABLED = "game_enabled"
+        private const val KEY_GAME_CELEBRATED = "game_celebrated"
+        private const val KEY_GAME_INIT = "game_initialized"
+        private const val KEY_GAME_BADGE = "game_badge"
+        private const val KEY_FEEDBACK_SENT = "feedback_sent"
+        private const val KEY_TESTER_POINTS = "tester_points"
         private const val KEY_CLOUD_UID = "cloud_uid"
         private const val KEY_CLOUD_AT = "cloud_last_upload_at"
         private const val KEY_CLOUD_HASH = "cloud_last_hash"

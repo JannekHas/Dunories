@@ -108,6 +108,7 @@ class FeedbackViewModel(
                     ),
                 )
             }.isSuccess
+            if (ok) settings.countFeedbackSent()
             _state.update { if (ok) it.copy(sending = false, sent = true) else it.copy(sending = false, failed = true) }
         }
     }

@@ -42,6 +42,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -132,6 +133,8 @@ fun TodayScreen(
     onSetGoal: () -> Unit,
     /** Feedback geben (Symbol unten rechts, nur in der Testphase per Fernschalter). */
     onFeedback: (() -> Unit)? = null,
+    /** Erfolgs-Karte antippen → Social-Reiter. */
+    onOpenSocial: () -> Unit = {},
     onGoalEnded: (Long) -> Unit = {},
     /** Im Kalender angetippter Tag → hier anzeigen (danach [onDayShown]). */
     requestedDay: LocalDate? = null,
@@ -162,6 +165,7 @@ fun TodayScreen(
     // Nach einem Update einmal „Neu in Dunories“ zeigen (nur auf dem echten „Heute“, nicht im Kalender-Tag)
     val unseenChangelog by viewModel.unseenChangelog.collectAsStateWithLifecycle()
     val reward by viewModel.reward.collectAsStateWithLifecycle()
+    val newAchievement by viewModel.newAchievement.collectAsStateWithLifecycle()
     if (onBack == null && unseenChangelog.isNotEmpty()) {
         ChangelogDialog(ChangelogUi.byCodes(unseenChangelog), onClose = viewModel::changelogRead)
     } else if (onBack == null) {
@@ -174,6 +178,10 @@ fun TodayScreen(
     val scope = rememberCoroutineScope()
     val dragState = rememberEntryDragState()
     val listState = rememberLazyListState()
+    // Neue Erfolgs-Karte erscheint oberhalb der Ringe → wer oben ist, sieht sie auch (Liste hält sonst die Position).
+    LaunchedEffect(newAchievement) {
+        if (newAchievement != null && listState.firstVisibleItemIndex <= 1) listState.animateScrollToItem(0)
+    }
     val currentMeals by rememberUpdatedState(state.meals)
     dragState.mealEntries = { currentMeals.associate { it.mealType to it.entries } }
     var comboToSave by remember { mutableStateOf<MealGroup?>(null) }
@@ -388,6 +396,18 @@ fun TodayScreen(
             if (!state.hasGoal && state.isToday && !proteinOnly && weightEnabled && !goalSkipped) {
                 item(key = "goal_banner") { GoalBanner(onSetGoal) }
             }
+            newAchievement?.takeIf { state.isToday && onBack == null }?.let { a ->
+                item(key = "achievement") {
+                    AchievementBanner(
+                        a,
+                        onOpen = {
+                            viewModel.achievementSeen(a)
+                            onOpenSocial()
+                        },
+                        onDismiss = { viewModel.achievementSeen(a) },
+                    )
+                }
+            }
             if (streak > 0 && state.isToday) {
                 item(key = "streak") { StreakBanner(streak) }
             }
@@ -545,6 +565,35 @@ private fun StreakBanner(days: Int) {
                     stringResource(if (days == 1) R.string.streak_text_first else R.string.streak_text_more),
                     style = MaterialTheme.typography.bodySmall,
                 )
+            }
+        }
+    }
+}
+
+/** Erfolg freigeschaltet (Social): kurz, ohne Vibration; antippen öffnet den Social-Reiter, ✕ schließt. */
+@Composable
+private fun AchievementBanner(
+    achievement: de.kalorienapp.domain.Gamification.Achievement,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    GlassCard(strong = true, onClick = onOpen) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            de.kalorienapp.ui.social.BadgeIcon(achievement.key, size = 40)
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.achievement_unlocked), style = MaterialTheme.typography.labelMedium, color = Neon.Yellow)
+                Text(
+                    de.kalorienapp.ui.social.badgeTitle(achievement.key) + " · " + stringResource(R.string.social_xp_reward, achievement.xp),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            androidx.compose.material3.IconButton(onClick = onDismiss) {
+                Icon(Icons.Filled.Clear, stringResource(R.string.goal_celebrate_close), tint = Neon.TextSecondary)
             }
         }
     }

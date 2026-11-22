@@ -107,25 +107,20 @@ import de.kalorienapp.ui.stats.FoodPreferencesScreen
 import de.kalorienapp.ui.stats.AllReportsScreen
 import de.kalorienapp.ui.today.DayNutrientsScreen
 
-/** Eintrag der unteren Leiste; [route] == [SoonSlot] = Platzhalter „Bald“ (öffnet nur einen Hinweis). */
+/** Eintrag der unteren Leiste. */
 private data class TopLevelDestination(val route: Any, val icon: @Composable () -> ImageVector, val labelRes: Int)
-
-/**
- * Platzhalter in der Leiste, wo früher „Gewicht“ war (Gewicht ist jetzt der Reiter „Körper“ in der Statistik).
- * Hält den Platz für einen späteren Bereich (z. B. Social) frei – Entscheidung des Nutzers Nov. 2026.
- */
-private object SoonSlot
 
 private val topLevelDestinations = listOf(
     TopLevelDestination(TodayRoute, { Icons.Filled.Home }, R.string.nav_today),
     TopLevelDestination(StatsRoute, { ImageVector.vectorResource(R.drawable.ic_bar_chart) }, R.string.nav_stats),
-    TopLevelDestination(SoonSlot, { ImageVector.vectorResource(R.drawable.ic_sparkle) }, R.string.nav_soon),
+    // Früher Platzhalter „Bald“, seit Nov. 2026 „Social“: Profil, Level & Erfolge, später Ranglisten.
+    TopLevelDestination(SocialRoute, { ImageVector.vectorResource(R.drawable.ic_sparkle) }, R.string.nav_social),
     TopLevelDestination(RecipesRoute, { ImageVector.vectorResource(R.drawable.ic_restaurant) }, R.string.nav_recipes),
     TopLevelDestination(ProfileRoute, { Icons.Filled.Person }, R.string.nav_profile),
 ).filter { it.route != RecipesRoute || BuildConfig.FEATURE_RECIPES }
 
 private fun NavDestination?.isTopLevel() =
-    this != null && topLevelDestinations.any { it.route != SoonSlot && hasRoute(it.route::class) }
+    this != null && topLevelDestinations.any { hasRoute(it.route::class) }
 
 /** Reiterwechsel blenden nur über; Unterseiten kommen von rechts und gehen dorthin zurück. */
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch() =
@@ -146,7 +141,6 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
     val currentDestination = backStackEntry?.destination
     val showBottomBar = currentDestination.isTopLevel()
     var navUnlockedAt by remember { mutableStateOf(0L) }
-    var showSoon by remember { mutableStateOf(false) }
     val weightEnabled = container.settings.weightEnabled.collectAsStateWithLifecycle().value
     // Inhalte laufen unter der gläsernen Leiste durch; sie wird daraus weichgezeichnet.
     val hazeState = rememberHazeState()
@@ -174,12 +168,11 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     topLevelDestinations.forEachIndexed { index, dest ->
                         if (index == middle) AddButton(onClick = addEntry)
                         NavigationBarItem(
-                            selected = dest.route != SoonSlot && currentDestination?.hasRoute(dest.route::class) == true,
+                            selected = currentDestination?.hasRoute(dest.route::class) == true,
                             // Kurz nach der Einrichtung gesperrt: ein Doppeltipp auf „Fertig“ landete sonst im Profil.
                             onClick = {
                                 when {
                                     System.currentTimeMillis() <= navUnlockedAt -> Unit
-                                    dest.route == SoonSlot -> showSoon = true
                                     else -> navController.navigateTopLevel(dest.route)
                                 }
                             },
@@ -229,16 +222,6 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                 askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-        if (showSoon) {
-            AlertDialog(
-                onDismissRequest = { showSoon = false },
-                icon = { Icon(ImageVector.vectorResource(R.drawable.ic_sparkle), contentDescription = null, tint = Neon.Cyan) },
-                title = { Text(stringResource(R.string.soon_title)) },
-                text = { Text(stringResource(R.string.soon_text)) },
-                confirmButton = { TextButton(onClick = { showSoon = false }) { Text(stringResource(R.string.ok)) } },
-                containerColor = Neon.SurfaceHigh,
-            )
-        }
         CompositionLocalProvider(
             LocalBottomBarPadding provides padding.calculateBottomPadding(),
             LocalTips provides container.settings,
@@ -283,6 +266,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     screen<TodayRoute> {
                         TodayScreen(
                             onFeedback = { navController.navigate(FeedbackRoute) },
+                            onOpenSocial = { navController.navigateTopLevel(SocialRoute) },
                             onGoalEnded = { navController.navigate(GoalCelebrationRoute(it)) },
                             requestedDay = container.navRequests.showDay.collectAsStateWithLifecycle().value,
                             onDayShown = container.navRequests::dayShown,
@@ -319,6 +303,9 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onWeighDialogShown = container.navRequests::weighDialogShown,
                             onAddAnalysis = { navController.navigate(BodyAnalysisRoute) },
                         )
+                    }
+                    screen<SocialRoute> {
+                        de.kalorienapp.ui.social.SocialScreen()
                     }
                     screen<PaywallRoute> {
                         de.kalorienapp.ui.profile.PaywallScreen(

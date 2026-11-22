@@ -89,6 +89,12 @@ class BackupManager(
                 changelogSeen = settings.changelogSeen.value,
                 feedbackName = settings.feedbackName.ifBlank { null },
                 feedbackCredits = settings.feedbackCredits.takeIf { it },
+                feedbackCreditsEver = settings.creditsEverOn.takeIf { it },
+                gamificationEnabled = settings.gamificationEnabled.value,
+                celebratedAchievements = settings.celebratedAchievements.value.toList(),
+                favoriteBadge = settings.favoriteBadge.value,
+                feedbackSent = settings.feedbackSentCount.value,
+                testerPoints = settings.testerPoints.value,
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
                         .joinToString(";")
@@ -203,6 +209,15 @@ class BackupManager(
             }
             m.feedbackName?.let(settings::setFeedbackName)
             m.feedbackCredits?.let(settings::setFeedbackCredits)
+            if (m.feedbackCreditsEver == true && m.feedbackCredits != true) {
+                settings.setFeedbackCredits(true)
+                settings.setFeedbackCredits(false)
+            }
+            m.gamificationEnabled?.let(settings::setGamificationEnabled)
+            m.celebratedAchievements?.let { settings.markCelebrated(it) }
+            m.favoriteBadge?.let(settings::setFavoriteBadge)
+            m.feedbackSent?.let { settings.countFeedbackSent(it) }
+            m.testerPoints?.let(settings::setTesterPoints)
             m.weeklyDoneFor?.let { settings.weeklyDoneFor = LocalDate.ofEpochDay(it) }
             // Sicherung aus ≤ 0.6.0 (Umzug auf de.dunories): einmal „Neu in 0.6.1“ zeigen.
             settings.markChangelogSeen(m.changelogSeen ?: OLD_BACKUP_CHANGELOG)

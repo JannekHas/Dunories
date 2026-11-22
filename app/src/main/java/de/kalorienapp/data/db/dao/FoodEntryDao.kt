@@ -38,6 +38,14 @@ interface FoodEntryDao {
     @Query("SELECT COUNT(*) FROM food_entry WHERE dateEpochDay = :epochDay")
     suspend fun countForDay(epochDay: Long): Int
 
+    /** Für Level & Erfolge: Anzahl aller Einträge. */
+    @Query("SELECT COUNT(*) FROM food_entry")
+    fun observeCount(): kotlinx.coroutines.flow.Flow<Int>
+
+    /** Für Level & Erfolge: alle Tage mit mindestens einem Eintrag. */
+    @Query("SELECT DISTINCT dateEpochDay FROM food_entry")
+    fun observeLoggedDays(): kotlinx.coroutines.flow.Flow<List<Long>>
+
     /** Je Tag der Zeitpunkt des ersten Eintrags (für die übliche Uhrzeit der ersten Mahlzeit). */
     @Query("SELECT dateEpochDay, MIN(createdAt) AS firstCreatedAt FROM food_entry WHERE dateEpochDay >= :fromEpochDay GROUP BY dateEpochDay")
     suspend fun firstEntryPerDay(fromEpochDay: Long): List<FirstEntryRow>

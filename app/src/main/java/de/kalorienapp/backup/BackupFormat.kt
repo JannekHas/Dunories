@@ -70,6 +70,13 @@ object BackupFormat {
         val feedbackName: String? = null,
         /** Name darf in die Danke-Liste (Tester-Belohnungsprogramm). */
         val feedbackCredits: Boolean? = null,
+        val feedbackCreditsEver: Boolean? = null,
+        /** Social: Level & Erfolge an/aus, gefeierte Erfolge, Lieblings-Abzeichen, gesendete Feedbacks, Tester-Punkte. */
+        val gamificationEnabled: Boolean? = null,
+        val celebratedAchievements: List<String>? = null,
+        val favoriteBadge: String? = null,
+        val feedbackSent: Int? = null,
+        val testerPoints: Int? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

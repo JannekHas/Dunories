@@ -29,6 +29,8 @@ class WaterSettingsViewModel(private val settings: AppSettings) : ViewModel() {
     val measuresEnabled = settings.measuresEnabled
 
     fun setMeasuresEnabled(enabled: Boolean) = settings.setMeasuresEnabled(enabled)
+    val gamificationEnabled = settings.gamificationEnabled
+    fun setGamificationEnabled(enabled: Boolean) = settings.setGamificationEnabled(enabled)
 
     fun setBodyAnalysisEnabled(enabled: Boolean) = settings.setBodyAnalysisEnabled(enabled)
 }
@@ -64,6 +66,13 @@ fun ProteinOnlySection(viewModel: WaterSettingsViewModel = viewModel(factory = A
 fun WaterSettingsSection(viewModel: WaterSettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
     val enabled by viewModel.enabled.collectAsStateWithLifecycle()
     SettingSwitchRow(stringResource(R.string.water_enable), stringResource(R.string.water_enable_text), enabled, viewModel::setEnabled)
+}
+
+/** Level & Erfolge (Social-Reiter, Karte auf „Heute“) – standardmäßig an. */
+@Composable
+fun GamificationSettingSection(viewModel: WaterSettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
+    val enabled by viewModel.gamificationEnabled.collectAsStateWithLifecycle()
+    SettingSwitchRow(stringResource(R.string.game_enable), stringResource(R.string.game_enable_text), enabled, viewModel::setGamificationEnabled)
 }
 
 /** „Körpermaße“ (Umfänge) – standardmäßig aus, unabhängig von Gewicht und Körperanalyse. */

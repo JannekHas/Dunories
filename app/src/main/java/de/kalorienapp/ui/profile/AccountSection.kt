@@ -87,7 +87,6 @@ fun AccountSection(
             signedIn = state.user != null,
             onPremium = onPremium,
             onRedeem = viewModel::openRedeem,
-            testerProfile = { TesterProfileRows(viewModel) },
         )
     }
 
@@ -208,7 +207,6 @@ private fun PremiumCard(
     signedIn: Boolean,
     onPremium: () -> Unit,
     onRedeem: () -> Unit,
-    testerProfile: @Composable () -> Unit = {},
 ) {
     GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -232,39 +230,11 @@ private fun PremiumCard(
             if (status.testerPoints > 0) {
                 Text(stringResource(R.string.tester_points, status.testerPoints), style = MaterialTheme.typography.bodyMedium, color = Neon.Green)
             }
-            testerProfile()
             if (status.id.isNotBlank()) {
                 Text(stringResource(R.string.premium_id, status.id), style = MaterialTheme.typography.labelSmall, color = Neon.TextSecondary)
             }
         }
     }
-}
-
-/** Tester-Name und Danke-Liste: erst sichtbar, wenn einmal ein Name beim Feedback angegeben wurde. */
-@Composable
-private fun TesterProfileRows(viewModel: AccountViewModel) {
-    val savedName by viewModel.testerName.collectAsStateWithLifecycle()
-    val credits by viewModel.testerCredits.collectAsStateWithLifecycle()
-    if (savedName.isBlank()) return
-    var name by remember(savedName) { mutableStateOf(savedName) }
-    OutlinedTextField(
-        value = name,
-        onValueChange = { name = it.take(de.kalorienapp.domain.Feedback.MAX_NAME) },
-        label = { Text(stringResource(R.string.tester_name)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
-        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { viewModel.saveTesterName(name) }),
-        trailingIcon = {
-            if (name.trim() != savedName) TextButton(onClick = { viewModel.saveTesterName(name) }) { Text(stringResource(R.string.tester_name_save)) }
-        },
-        modifier = Modifier.fillMaxWidth(),
-    )
-    SettingSwitchRow(
-        title = stringResource(R.string.feedback_credits),
-        text = stringResource(R.string.feedback_credits_text),
-        checked = credits,
-        onChange = viewModel::setTesterCredits,
-    )
 }
 
 @Composable
