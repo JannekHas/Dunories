@@ -305,7 +305,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                         )
                     }
                     screen<SocialRoute> {
-                        de.kalorienapp.ui.social.SocialScreen()
+                        de.kalorienapp.ui.social.SocialScreen(onPrivacy = { navController.navigate(PrivacyRoute) })
                     }
                     screen<PaywallRoute> {
                         de.kalorienapp.ui.profile.PaywallScreen(

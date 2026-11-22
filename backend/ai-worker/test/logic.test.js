@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays, modelFromPath, normalizeCode, safeEqual, tierOf } from "../src/logic.js";
+import { cleanSocialProfile, friendView, makeFriendCode, normalizeFriendCode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays, modelFromPath, normalizeCode, safeEqual, tierOf } from "../src/logic.js";
 
 test("Tag nach deutscher Zeit: 23:30 UTC im Winter ist schon der nächste Tag", () => {
   assert.equal(berlinDay(Date.UTC(2026, 10, 22, 22, 59)), "2026-11-22");
@@ -103,6 +103,25 @@ test("Feedback prüfen", () => {
   assert.equal(f.credits, true);
   assert.equal(f.screenshot, "QUJD");
   assert.equal(cleanFeedback({ type: "praise", text: "x".repeat(6000) }).text.length, 5000);
+});
+
+test("Freundescode", () => {
+  assert.match(makeFriendCode(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])), /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+  assert.equal(normalizeFriendCode(" abcd efgh "), "ABCD-EFGH");
+  assert.equal(normalizeFriendCode("ABCD-EFG0"), null); // 0 gibt es nicht
+  assert.equal(normalizeFriendCode("abc"), null);
+});
+
+test("Freunde sehen nur Freigegebenes, standardmäßig privat", () => {
+  const p = cleanSocialProfile({ name: "Tim", badge: "days_7", streak: 12, achievements: ["days_7", "<x>"] });
+  assert.deepEqual(p.achievements, ["days_7"]);
+  const view = friendView({ ...p, code: "ABCD-EFGH" });
+  assert.deepEqual(view, { code: "ABCD-EFGH", name: "Tim", badge: null, achievements: null, streak: null });
+  const shared = friendView({ ...cleanSocialProfile({ name: "Tim", badge: "days_7", streak: 12, share: { streak: true, badges: true } }), code: "X" });
+  assert.equal(shared.streak, 12);
+  assert.equal(shared.badge, "days_7");
+  assert.equal(shared.achievements, null);
+  assert.equal("weight" in shared || "kcal" in shared, false);
 });
 
 test("safeEqual", () => {

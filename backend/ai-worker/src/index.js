@@ -3,7 +3,7 @@
 // und leitet an Gemini weiter. Inhalte (Fotos, Texte, Antworten) werden weder gespeichert noch geloggt – nur Zähler.
 import { DurableObject } from "cloudflare:workers";
 import {
-  FEEDBACK_POINTS, KINDS, MAX_BODY, MAX_FEEDBACK_PER_MINUTE, base64UrlDecode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays,
+  FEEDBACK_POINTS, KINDS, MAX_FRIENDS, cleanSocialProfile, friendView, makeFriendCode, normalizeFriendCode, MAX_BODY, MAX_FEEDBACK_PER_MINUTE, base64UrlDecode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays,
   modelFromPath, normalizeCode, safeEqual, tierOf,
 } from "./logic.js";
 
@@ -61,6 +61,43 @@ async function app(request, env, url) {
   if (url.pathname === "/v1/rewards/seen" && request.method === "POST") {
     await usage.rewardsSeen(person.uid);
     return json({ ok: true });
+  }
+
+  // ---------- Freunde (nur mit Konto) ----------
+  if (url.pathname.startsWith("/v1/social")) {
+    // ALLOW_ANON_SOCIAL nur für lokale Tests (`wrangler dev --var ALLOW_ANON_SOCIAL:true`), nie im echten Worker gesetzt.
+    if (person.anonymous && env.ALLOW_ANON_SOCIAL !== "true") return json({ error: "needs_account" }, 403);
+    const body = request.method === "POST" ? await request.json().catch(() => null) : null;
+    if (url.pathname === "/v1/social" && request.method === "GET") return json(await usage.socialState(person.uid));
+    if (url.pathname === "/v1/social/profile" && request.method === "POST") {
+      const profile = cleanSocialProfile(body);
+      if (!profile) return json({ error: "bad_request" }, 400);
+      return json(await usage.saveSocialProfile(person.uid, profile, now));
+    }
+    if (url.pathname === "/v1/social/request" && request.method === "POST") {
+      const code = normalizeFriendCode(body?.code);
+      if (!code) return json({ error: "invalid_code" }, 400);
+      const result = await usage.friendRequest(person.uid, code, now);
+      return result === "ok" || result === "accepted" ? json({ result, ...(await usage.socialState(person.uid)) }) : json({ error: result }, 400);
+    }
+    if (url.pathname === "/v1/social/respond" && request.method === "POST") {
+      const code = normalizeFriendCode(body?.code);
+      if (!code) return json({ error: "invalid_code" }, 400);
+      await usage.friendRespond(person.uid, code, body?.accept === true, now);
+      return json(await usage.socialState(person.uid));
+    }
+    if (url.pathname === "/v1/social/remove" && request.method === "POST") {
+      const code = normalizeFriendCode(body?.code);
+      if (!code) return json({ error: "invalid_code" }, 400);
+      await usage.friendRemove(person.uid, code);
+      return json(await usage.socialState(person.uid));
+    }
+    // Konto löschen: alles zu Freunden und Profil entfernen.
+    if (url.pathname === "/v1/social/delete" && request.method === "POST") {
+      await usage.socialDelete(person.uid);
+      return json({ ok: true });
+    }
+    return json({ error: "not_found" }, 404);
   }
 
   if (url.pathname === "/v1/redeem" && request.method === "POST") {
@@ -364,6 +401,12 @@ export class Usage extends DurableObject {
         android INTEGER, points INTEGER, rated INTEGER, notified INTEGER NOT NULL DEFAULT 0);
       CREATE TABLE IF NOT EXISTS testers (uid TEXT PRIMARY KEY, name TEXT, credits INTEGER NOT NULL, updated INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS blocked (uid TEXT PRIMARY KEY, ts INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS profiles (
+        uid TEXT PRIMARY KEY, code TEXT NOT NULL UNIQUE, name TEXT, badge TEXT, streak INTEGER NOT NULL DEFAULT 0,
+        achievements TEXT NOT NULL DEFAULT '[]', share_badges INTEGER NOT NULL DEFAULT 0,
+        share_achievements INTEGER NOT NULL DEFAULT 0, share_streak INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS friend_requests (from_uid TEXT NOT NULL, to_uid TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (from_uid, to_uid));
+      CREATE TABLE IF NOT EXISTS friends (a TEXT NOT NULL, b TEXT NOT NULL, since INTEGER NOT NULL, PRIMARY KEY (a, b));
     `);
   }
 
@@ -491,6 +534,107 @@ export class Usage extends DurableObject {
        ON CONFLICT (uid) DO UPDATE SET name = excluded.name, credits = excluded.credits, updated = excluded.updated`,
       uid, name || null, credits && name ? 1 : 0, now,
     );
+  }
+
+  // ---------------- Freunde ----------------
+
+  profileRow(uid) {
+    const p = this.sql.exec("SELECT * FROM profiles WHERE uid = ?", uid).toArray()[0];
+    if (!p) return null;
+    return {
+      uid: p.uid, code: p.code, name: p.name, badge: p.badge, streak: p.streak, achievements: JSON.parse(p.achievements || "[]"),
+      shareBadges: !!p.share_badges, shareAchievements: !!p.share_achievements, shareStreak: !!p.share_streak,
+    };
+  }
+
+  /** Profil anlegen/aktualisieren; beim ersten Mal bekommt die Person ihren festen Freundescode. */
+  saveSocialProfile(uid, p, now) {
+    let code = this.sql.exec("SELECT code FROM profiles WHERE uid = ?", uid).toArray()[0]?.code;
+    if (!code) {
+      do { code = makeFriendCode(crypto.getRandomValues(new Uint8Array(8))); }
+      while (this.sql.exec("SELECT 1 FROM profiles WHERE code = ?", code).toArray().length);
+    }
+    this.sql.exec(
+      `INSERT INTO profiles (uid, code, name, badge, streak, achievements, share_badges, share_achievements, share_streak, updated)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (uid) DO UPDATE SET name = excluded.name, badge = excluded.badge, streak = excluded.streak,
+         achievements = excluded.achievements, share_badges = excluded.share_badges,
+         share_achievements = excluded.share_achievements, share_streak = excluded.share_streak, updated = excluded.updated`,
+      uid, code, p.name || null, p.badge, p.streak, JSON.stringify(p.achievements),
+      p.shareBadges ? 1 : 0, p.shareAchievements ? 1 : 0, p.shareStreak ? 1 : 0, now,
+    );
+    return this.socialState(uid);
+  }
+
+  uidByCode(code) {
+    return this.sql.exec("SELECT uid FROM profiles WHERE code = ?", code).toArray()[0]?.uid ?? null;
+  }
+
+  areFriends(a, b) {
+    return this.sql.exec("SELECT 1 FROM friends WHERE a = ? AND b = ?", a, b).toArray().length > 0;
+  }
+
+  friendCount(uid) {
+    return this.sql.exec("SELECT COUNT(*) AS n FROM friends WHERE a = ?", uid).toArray()[0].n;
+  }
+
+  makeFriends(a, b, now) {
+    this.sql.exec("INSERT OR IGNORE INTO friends (a, b, since) VALUES (?, ?, ?)", a, b, now);
+    this.sql.exec("INSERT OR IGNORE INTO friends (a, b, since) VALUES (?, ?, ?)", b, a, now);
+    this.sql.exec("DELETE FROM friend_requests WHERE (from_uid = ? AND to_uid = ?) OR (from_uid = ? AND to_uid = ?)", a, b, b, a);
+  }
+
+  /** Anfrage senden. Hat die andere Person schon angefragt, seid ihr direkt befreundet. */
+  friendRequest(uid, code, now) {
+    if (!this.profileRow(uid)) return "no_profile";
+    const target = this.uidByCode(code);
+    if (!target) return "unknown_code";
+    if (target === uid) return "self";
+    if (this.areFriends(uid, target)) return "already_friends";
+    if (this.friendCount(uid) >= MAX_FRIENDS || this.friendCount(target) >= MAX_FRIENDS) return "too_many_friends";
+    const recent = this.sql.exec("SELECT COUNT(*) AS n FROM friend_requests WHERE from_uid = ? AND ts > ?", uid, now - 3600000).toArray()[0].n;
+    if (recent >= 20) return "too_many_requests";
+    if (this.sql.exec("SELECT 1 FROM friend_requests WHERE from_uid = ? AND to_uid = ?", target, uid).toArray().length) {
+      this.makeFriends(uid, target, now);
+      return "accepted";
+    }
+    this.sql.exec("INSERT OR IGNORE INTO friend_requests (from_uid, to_uid, ts) VALUES (?, ?, ?)", uid, target, now);
+    return "ok";
+  }
+
+  friendRespond(uid, code, accept, now) {
+    const from = this.uidByCode(code);
+    if (!from) return;
+    const exists = this.sql.exec("SELECT 1 FROM friend_requests WHERE from_uid = ? AND to_uid = ?", from, uid).toArray().length;
+    if (!exists) return;
+    if (accept && this.friendCount(uid) < MAX_FRIENDS && this.friendCount(from) < MAX_FRIENDS) this.makeFriends(uid, from, now);
+    else this.sql.exec("DELETE FROM friend_requests WHERE from_uid = ? AND to_uid = ?", from, uid);
+  }
+
+  /** Freund entfernen oder eigene Anfrage zurückziehen – sofort, für beide. */
+  friendRemove(uid, code) {
+    const other = this.uidByCode(code);
+    if (!other) return;
+    this.sql.exec("DELETE FROM friends WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)", uid, other, other, uid);
+    this.sql.exec("DELETE FROM friend_requests WHERE (from_uid = ? AND to_uid = ?) OR (from_uid = ? AND to_uid = ?)", uid, other, other, uid);
+  }
+
+  socialDelete(uid) {
+    this.sql.exec("DELETE FROM friends WHERE a = ? OR b = ?", uid, uid);
+    this.sql.exec("DELETE FROM friend_requests WHERE from_uid = ? OR to_uid = ?", uid, uid);
+    this.sql.exec("DELETE FROM profiles WHERE uid = ?", uid);
+  }
+
+  /** Alles für die App: eigener Code, Freunde (nur Freigegebenes), eingehende und ausgehende Anfragen. */
+  socialState(uid) {
+    const me = this.profileRow(uid);
+    const friends = this.sql.exec("SELECT b FROM friends WHERE a = ?", uid).toArray()
+      .map((r) => this.profileRow(r.b)).filter(Boolean).map(friendView);
+    const incoming = this.sql.exec("SELECT from_uid FROM friend_requests WHERE to_uid = ? ORDER BY ts DESC", uid).toArray()
+      .map((r) => this.profileRow(r.from_uid)).filter(Boolean).map((p) => ({ code: p.code, name: p.name || "" }));
+    const outgoing = this.sql.exec("SELECT to_uid FROM friend_requests WHERE from_uid = ? ORDER BY ts DESC", uid).toArray()
+      .map((r) => this.profileRow(r.to_uid)).filter(Boolean).map((p) => ({ code: p.code, name: p.name || "" }));
+    return { code: me?.code ?? null, friends, incoming, outgoing };
   }
 
   /** Sperren/entsperren; beim Sperren auf Wunsch alle unbewerteten Feedbacks dieser Person löschen. */

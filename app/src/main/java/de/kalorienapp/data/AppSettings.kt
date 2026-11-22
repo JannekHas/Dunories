@@ -298,6 +298,30 @@ class AppSettings(context: Context) {
         _testerPoints.value = points
     }
 
+    private val _shareBadges = MutableStateFlow(prefs.getBoolean(KEY_SHARE_BADGES, false))
+    private val _shareAchievements = MutableStateFlow(prefs.getBoolean(KEY_SHARE_ACHIEVEMENTS, false))
+    private val _shareStreak = MutableStateFlow(prefs.getBoolean(KEY_SHARE_STREAK, false))
+
+    /** Was Freunde sehen dürfen – jedes einzeln freigegeben, standardmäßig privat. Gewicht/Kalorien nie. */
+    val shareBadges: StateFlow<Boolean> = _shareBadges.asStateFlow()
+    val shareAchievements: StateFlow<Boolean> = _shareAchievements.asStateFlow()
+    val shareStreak: StateFlow<Boolean> = _shareStreak.asStateFlow()
+
+    fun setShareBadges(on: Boolean) {
+        prefs.edit().putBoolean(KEY_SHARE_BADGES, on).apply()
+        _shareBadges.value = on
+    }
+
+    fun setShareAchievements(on: Boolean) {
+        prefs.edit().putBoolean(KEY_SHARE_ACHIEVEMENTS, on).apply()
+        _shareAchievements.value = on
+    }
+
+    fun setShareStreak(on: Boolean) {
+        prefs.edit().putBoolean(KEY_SHARE_STREAK, on).apply()
+        _shareStreak.value = on
+    }
+
     /** Hat die Danke-Liste je eingeschaltet → Schalter bleibt im Social-Reiter sichtbar (Wunsch des Nutzers). */
     val creditsEverOn: Boolean get() = prefs.getBoolean(KEY_CREDITS_EVER, false) || _testerCredits.value
 
@@ -503,6 +527,9 @@ class AppSettings(context: Context) {
         private const val KEY_FEEDBACK_NAME = "feedback_name"
         private const val KEY_FEEDBACK_CREDITS = "feedback_credits"
         private const val KEY_CREDITS_EVER = "feedback_credits_ever"
+        private const val KEY_SHARE_BADGES = "share_badges"
+        private const val KEY_SHARE_ACHIEVEMENTS = "share_achievements"
+        private const val KEY_SHARE_STREAK = "share_streak"
         private const val KEY_GAME_ENABLED = "game_enabled"
         private const val KEY_GAME_CELEBRATED = "game_celebrated"
         private const val KEY_GAME_INIT = "game_initialized"

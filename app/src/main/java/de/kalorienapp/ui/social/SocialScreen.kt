@@ -74,6 +74,7 @@ import de.kalorienapp.domain.Gamification
 import de.kalorienapp.domain.Gamification.Achievement
 import de.kalorienapp.domain.Gamification.Rarity
 import de.kalorienapp.ui.AppViewModelProvider
+import de.kalorienapp.ui.components.ExpandableCard
 import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.ui.components.LocalBottomBarPadding
 import de.kalorienapp.ui.components.SettingSwitchRow
@@ -86,7 +87,10 @@ import de.kalorienapp.ui.theme.Neon
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SocialScreen(viewModel: SocialViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
+fun SocialScreen(
+    onPrivacy: () -> Unit = {},
+    viewModel: SocialViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LifecycleResumeEffect(Unit) {
         viewModel.refresh()
@@ -142,13 +146,25 @@ fun SocialScreen(viewModel: SocialViewModel = viewModel(factory = AppViewModelPr
             }
         }
 
+        // ---------------- Freunde (Konto) ----------------
+        FriendsSection(
+            viewModel = viewModel,
+            signedIn = state.signedIn,
+            myName = state.name,
+            myStreak = game?.stats?.currentStreak ?: 0,
+            onPrivacy = onPrivacy,
+        )
+        if (state.signedIn) ShareSettingsCard(viewModel, state.share)
+
         if (!state.gamificationEnabled) {
             Text(stringResource(R.string.social_game_off), style = MaterialTheme.typography.bodyMedium, color = Neon.TextSecondary)
         } else if (game != null) {
-            // ---------------- Abzeichen ----------------
-            GlassCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.social_badges), style = MaterialTheme.typography.titleMedium)
+            // ---------------- Abzeichen (ausklappbar – Wunsch des Nutzers: weniger scrollen) ----------------
+            ExpandableCard(
+                title = stringResource(R.string.social_badges),
+                summary = pluralStringResource(R.plurals.social_badges_count, game.badges.size, game.badges.size),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (game.badges.isEmpty()) {
                         Text(stringResource(R.string.social_badges_empty), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
                     } else {
@@ -179,10 +195,12 @@ fun SocialScreen(viewModel: SocialViewModel = viewModel(factory = AppViewModelPr
                 }
             }
 
-            // ---------------- Erfolge ----------------
-            GlassCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text(stringResource(R.string.social_achievements), style = MaterialTheme.typography.titleMedium)
+            // ---------------- Erfolge (ausklappbar) ----------------
+            ExpandableCard(
+                title = stringResource(R.string.social_achievements),
+                summary = stringResource(R.string.social_count, game.progress.count { it.unlocked }, game.progress.size),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(stringResource(R.string.social_achievements_hint), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
                     game.progress.forEach { p -> AchievementRow(p) }
                 }

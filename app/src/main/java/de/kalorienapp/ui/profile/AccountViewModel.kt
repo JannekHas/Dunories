@@ -62,6 +62,7 @@ class AccountViewModel(
     private val settings: AppSettings,
     private val scheduler: WorkScheduler,
     private val premium: PremiumClient,
+    private val social: de.kalorienapp.account.SocialClient,
 ) : ViewModel() {
 
     /** KI-Stufe vom Worker (Gast/Konto/Premium); null = unbekannt (offline oder nicht eingerichtet). */
@@ -257,6 +258,7 @@ class AccountViewModel(
         _dialog.value = null
         run(AccountBusy.DELETING) {
             cloud.deleteAll()
+            social.deleteAll()
             account.deleteAccount(activity)
             scheduler.cancelCloudBackup()
             settings.clearCloud()

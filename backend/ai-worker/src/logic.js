@@ -108,6 +108,57 @@ export function cleanFeedback(body) {
 /** Code-Alphabet ohne verwechselbare Zeichen (0/O, 1/I/L). */
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
+/** Höchstzahl Freunde pro Person. */
+export const MAX_FRIENDS = 100;
+
+/** Freundescode „ABCD-2345“ (8 Zeichen, ohne verwechselbare Zeichen). */
+export function makeFriendCode(bytes) {
+  let out = "";
+  for (let i = 0; i < 8; i++) out += CODE_CHARS[bytes[i] % CODE_CHARS.length];
+  return `${out.slice(0, 4)}-${out.slice(4)}`;
+}
+
+/** Eingabe vereinheitlichen; null = kein gültiger Freundescode. */
+export function normalizeFriendCode(input) {
+  const raw = String(input ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (raw.length !== 8 || [...raw].some((c) => !CODE_CHARS.includes(c))) return null;
+  return `${raw.slice(0, 4)}-${raw.slice(4)}`;
+}
+
+/**
+ * Profil aus der App prüfen. Geteilt wird nur, was die Person einzeln freigibt (Standard: privat).
+ * Gewicht und Kalorien gibt es hier gar nicht – sie können also nie geteilt werden.
+ */
+export function cleanSocialProfile(body) {
+  if (!body || typeof body !== "object") return null;
+  const name = String(body.name ?? "").trim().slice(0, 60);
+  const keys = Array.isArray(body.achievements) ? body.achievements.filter((k) => typeof k === "string" && /^[a-z0-9_]{1,30}$/.test(k)).slice(0, 100) : [];
+  const badge = typeof body.badge === "string" && /^[a-z0-9_]{1,30}$/.test(body.badge) ? body.badge : null;
+  const streak = Number.isInteger(body.streak) && body.streak >= 0 && body.streak < 100000 ? body.streak : 0;
+  const share = body.share && typeof body.share === "object" ? body.share : {};
+  return {
+    name,
+    badge,
+    streak,
+    achievements: keys,
+    shareBadges: share.badges === true,
+    shareAchievements: share.achievements === true,
+    shareStreak: share.streak === true,
+  };
+}
+
+/** Was ein Freund von dieser Person sieht – nur Freigegebenes. */
+export function friendView(p) {
+  return {
+    code: p.code,
+    name: p.name || "",
+    badge: p.shareBadges ? p.badge : null,
+    achievements: p.shareAchievements ? p.achievements : null,
+    streak: p.shareStreak ? p.streak : null,
+  };
+}
+
+
 /** Neuer Code „DUNO-XXXX-XXXX“ aus Zufallsbytes. */
 export function makeCode(bytes) {
   let out = "";

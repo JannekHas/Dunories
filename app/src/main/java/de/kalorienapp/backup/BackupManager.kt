@@ -95,6 +95,9 @@ class BackupManager(
                 favoriteBadge = settings.favoriteBadge.value,
                 feedbackSent = settings.feedbackSentCount.value,
                 testerPoints = settings.testerPoints.value,
+                shareBadges = settings.shareBadges.value,
+                shareAchievements = settings.shareAchievements.value,
+                shareStreak = settings.shareStreak.value,
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
                         .joinToString(";")
@@ -218,6 +221,9 @@ class BackupManager(
             m.favoriteBadge?.let(settings::setFavoriteBadge)
             m.feedbackSent?.let { settings.countFeedbackSent(it) }
             m.testerPoints?.let(settings::setTesterPoints)
+            m.shareBadges?.let(settings::setShareBadges)
+            m.shareAchievements?.let(settings::setShareAchievements)
+            m.shareStreak?.let(settings::setShareStreak)
             m.weeklyDoneFor?.let { settings.weeklyDoneFor = LocalDate.ofEpochDay(it) }
             // Sicherung aus ≤ 0.6.0 (Umzug auf de.dunories): einmal „Neu in 0.6.1“ zeigen.
             settings.markChangelogSeen(m.changelogSeen ?: OLD_BACKUP_CHANGELOG)

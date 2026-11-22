@@ -77,6 +77,10 @@ object BackupFormat {
         val favoriteBadge: String? = null,
         val feedbackSent: Int? = null,
         val testerPoints: Int? = null,
+        /** Freunde: was geteilt wird (Freunde selbst liegen beim Server, am Konto). */
+        val shareBadges: Boolean? = null,
+        val shareAchievements: Boolean? = null,
+        val shareStreak: Boolean? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }
