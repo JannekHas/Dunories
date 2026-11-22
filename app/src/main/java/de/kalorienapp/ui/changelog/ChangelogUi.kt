@@ -44,7 +44,7 @@ object ChangelogUi {
     /** Alle Versionen mit Patchnotes in der App – neue Version hier ergänzen. */
     val VERSIONS = listOf(
         ChangelogVersion(6, "0.5.1", R.array.changelog_6),
-        ChangelogVersion(7, "0.5.2", R.array.changelog_7),
+        ChangelogVersion(7, "0.6.0", R.array.changelog_7),
     )
 
     fun byCodes(codes: List<Int>) = codes.mapNotNull { code -> VERSIONS.find { it.code == code } }

@@ -30,6 +30,9 @@ import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.TabbedPages
 import de.kalorienapp.ui.fasting.FastingSettingsSection
 import de.kalorienapp.ui.goal.GoalCard
+import de.kalorienapp.ui.components.ExpandableCard
+import de.kalorienapp.ui.components.labelRes
+import de.kalorienapp.ui.theme.Neon
 
 /** Profil & Ziele – jede gültige Änderung wird sofort gespeichert (kein Speichern-Knopf). */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,8 +51,7 @@ fun ProfileScreen(
         TabbedPages(
             tabs = listOf(
                 stringResource(R.string.profile_tab_goals),
-                stringResource(R.string.profile_tab_plan),
-                stringResource(R.string.profile_tab_fasting),
+                stringResource(R.string.profile_tab_areas),
                 stringResource(R.string.profile_tab_settings),
             ),
             modifier = Modifier.fillMaxSize().padding(padding),
@@ -66,23 +68,36 @@ fun ProfileScreen(
                     if (LocalWeightEnabled.current) {
                         SectionTitle(stringResource(R.string.section_goal))
                         GoalCard(state.goalState, onNewGoal)
-                        HorizontalDivider()
                     }
-                    SectionTitle(stringResource(R.string.section_body))
-                    BodyDataSection(state.form, viewModel::update)
-                    HorizontalDivider()
-                    SectionTitle(stringResource(R.string.section_targets))
-                    TargetAdjustmentsSection(state, viewModel::update)
-                    HorizontalDivider()
-                    SectionTitle(stringResource(R.string.section_tracking))
+                    // Körperdaten und Feinjustieren zugeklappt – die Seite passt so fast ohne Scrollen (Nutzer Nov. 2026).
+                    val form = state.form
+                    ExpandableCard(
+                        title = stringResource(R.string.section_body),
+                        summary = bodySummary(form),
+                        initiallyExpanded = !form.bodyDataValid,
+                    ) { BodyDataSection(form, viewModel::update) }
+                    val custom = listOf(form.proteinPerKg, form.kcalOverride, form.proteinOverride, form.carbsOverride, form.fatOverride)
+                        .any { it.isNotBlank() }
+                    ExpandableCard(
+                        title = stringResource(R.string.section_targets),
+                        summary = stringResource(if (custom) R.string.fine_tune_custom else R.string.fine_tune_auto),
+                        initiallyExpanded = !form.targetsValid,
+                    ) { TargetAdjustmentsSection(state, viewModel::update) }
+                }
+                // Bereiche: alle Schalter an einem Ort, eingeschaltet klappen ihre Einstellungen auf (ersetzt Plan + Fasten).
+                1 -> {
+                    Text(stringResource(R.string.areas_hint), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+                    SectionTitle(stringResource(R.string.areas_food))
                     ProteinOnlySection()
+                    WaterSettingsSection()
+                    MealPlanSettingsSection(onOpenPlan)
+                    FastingSettingsSection()
+                    HorizontalDivider()
+                    SectionTitle(stringResource(R.string.areas_body))
                     WeightTrackingSection()
                     BodyAnalysisSettingSection()
                     MeasuresSettingSection()
-                    WaterSettingsSection()
                 }
-                1 -> MealPlanSettingsSection(onOpenPlan)
-                2 -> FastingSettingsSection()
                 // Einstellungen: Hinweise und darunter Datensicherung (4 statt 5 Reiter – Wunsch des Nutzers)
                 else -> {
                     SectionTitle(stringResource(R.string.profile_tab_notifications))
@@ -102,4 +117,14 @@ fun ProfileScreen(
             }
         }
     }
+}
+
+/** Kurzfassung der Körperdaten für die zugeklappte Karte, z. B. „Mann · 30 Jahre · 180 cm · 80 kg“ + Alltag. */
+@Composable
+private fun bodySummary(form: ProfileFormState): String {
+    val sex = form.sex
+    val lifestyle = form.lifestyle
+    if (!form.bodyDataValid || sex == null || lifestyle == null) return stringResource(R.string.body_summary_incomplete)
+    val body = stringResource(R.string.body_summary, stringResource(sex.labelRes), form.age, form.heightCm, form.weightKg)
+    return body + "\n" + stringResource(lifestyle.labelRes)
 }

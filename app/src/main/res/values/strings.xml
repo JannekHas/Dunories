@@ -47,14 +47,19 @@
     <!-- Profil -->
     <string name="profile_title">Profil &amp; Ziele</string>
     <string name="profile_tab_goals">Ziele</string>
-    <string name="profile_tab_plan">Plan</string>
-    <string name="profile_tab_fasting">Fasten</string>
+    <string name="profile_tab_areas">Bereiche</string>
     <string name="profile_tab_notifications">Hinweise</string>
     <string name="profile_tab_settings">Einstellungen</string>
     <string name="profile_autosave_hint">Änderungen werden automatisch gespeichert.</string>
     <string name="section_body">Körperdaten</string>
     <string name="section_goal">Ziel</string>
-    <string name="section_targets">Ziele anpassen</string>
+    <string name="section_targets">Feinjustieren</string>
+    <string name="fine_tune_auto">Automatisch aus deinen Körperdaten berechnet</string>
+    <string name="fine_tune_custom">Eigene Werte festgelegt</string>
+    <string name="body_summary">%1$s · %2$s Jahre · %3$s cm · %4$s kg</string>
+    <string name="body_summary_incomplete">Bitte vervollständigen</string>
+    <string name="state_expanded">Aufgeklappt</string>
+    <string name="state_collapsed">Zugeklappt</string>
     <string name="profile_sex">Biologisches Geschlecht (für die Stoffwechsel-Berechnung)</string>
     <string name="profile_sex_info">Wir fragen dies ausschließlich ab, um deinen biologischen Grundumsatz (Kalorienbedarf) mathematisch möglichst präzise zu berechnen. Deine persönliche Geschlechtsidentität wird hiervon nicht berührt.</string>
     <string name="profile_age">Alter</string>
@@ -964,7 +969,9 @@
     <string name="changelog_version">Version %1$s</string>
     <string name="changelog_close">Alles klar, los geht\'s</string>
     <string name="changelog_open">Was ist neu?</string>
-    <string name="section_tracking">Was du trackst</string>
+    <string name="areas_hint">Schalte nur ein, was du wirklich nutzt – ausgeschaltet ist ein Bereich nirgends zu sehen.</string>
+    <string name="areas_food">Ernährung</string>
+    <string name="areas_body">Körper</string>
     <string name="protein_only_enable">Nur Protein tracken</string>
     <string name="protein_only_enable_text">Kalorien, Kohlenhydrate und Fett verschwinden überall – nur dein Protein zählt. Eingetragen wird weiter alles, beim Zurückschalten siehst du sofort wieder alle Werte.</string>
     <string name="protein_only_target">%1$d g Protein</string>

@@ -89,7 +89,7 @@ private const val MILLIS_PER_DAY = 86_400_000L
 private fun MealPlanSettings.dateOf(dayIndex: Int): LocalDate =
     MealPlanSchedule.cycleStart(this, LocalDate.now()).plusDays(dayIndex.toLong())
 
-// ---------------------------------------------------------------- Profil → Reiter „Plan“
+// ---------------------------------------------------------------- Profil → Reiter „Bereiche“
 
 /** Schalter und Kurzstatus im Profil; „Plan bearbeiten“ öffnet die Plan-Übersicht. */
 @Composable

@@ -245,7 +245,7 @@ class TodayViewModel(
 
     fun changelogRead() = settings.markChangelogSeen(BuildConfig.VERSION_CODE)
 
-    /** Wasser-Karte an (Profil → Ziele → Wasser). */
+    /** Wasser-Karte an (Profil → Bereiche → Wasser). */
     val waterEnabled: StateFlow<Boolean> = settings.waterEnabled
 
     /** „Erstmal ohne Ziel“ in der Einrichtung → kein Ziel-Banner. */
