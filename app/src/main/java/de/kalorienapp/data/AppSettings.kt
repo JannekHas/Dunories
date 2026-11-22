@@ -209,15 +209,27 @@ class AppSettings(context: Context) {
         _cloudConflict.value = conflict
     }
 
-    /** Einwilligung zur Cloud-Speicherung auf diesem Handy gegeben (Textversion). */
+    private val _cloudBackupOn = MutableStateFlow(prefs.getInt(KEY_CLOUD_CONSENT, 0) > 0)
+
+    /**
+     * Cloud-Sicherung eingeschaltet = Einwilligung auf diesem Handy gegeben. Seit der Trennung von Konto und
+     * Cloud-Sicherung (Nov. 2026) ist das ein eigener Schalter in der Konto-Karte; Konto allein = nur Premium/Codes.
+     */
+    val cloudBackupOn: StateFlow<Boolean> = _cloudBackupOn.asStateFlow()
+
+    /** Einwilligung zur Cloud-Speicherung auf diesem Handy gegeben (Textversion, 0 = aus). */
     var cloudConsentVersion: Int
         get() = prefs.getInt(KEY_CLOUD_CONSENT, 0)
-        set(value) = prefs.edit().putInt(KEY_CLOUD_CONSENT, value).apply()
+        set(value) {
+            prefs.edit().putInt(KEY_CLOUD_CONSENT, value).apply()
+            _cloudBackupOn.value = value > 0
+        }
 
     fun clearCloud() {
         prefs.edit().remove(KEY_CLOUD_UID).remove(KEY_CLOUD_AT).remove(KEY_CLOUD_HASH).remove(KEY_CLOUD_CONFLICT).remove(KEY_CLOUD_CONSENT).apply()
         _cloudBackupAt.value = null
         _cloudConflict.value = false
+        _cloudBackupOn.value = false
     }
 
     /** Freiwilliger Name beim Feedback (wird beim nächsten Mal vorausgefüllt). */

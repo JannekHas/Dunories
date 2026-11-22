@@ -387,7 +387,7 @@ class BootReceiver : BroadcastReceiver() {
 class CloudBackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val c = applicationContext.container
-        if (c.account.user.value == null || c.settings.cloudConflict.value) return Result.success()
+        if (c.account.user.value == null || !c.settings.cloudBackupOn.value || c.settings.cloudConflict.value) return Result.success()
         return runCatching { c.cloudBackup.upload(auto = true) }
             .fold(onSuccess = { Result.success() }, onFailure = { if (runAttemptCount < 3) Result.retry() else Result.success() })
     }

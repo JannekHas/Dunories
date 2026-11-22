@@ -63,7 +63,6 @@ fun PaywallScreen(
 
     val tier = status?.tier
     val trialDays = status?.trialDays?.takeIf { it > 0 } ?: 7
-    val dailyLimit = status?.dailyLimit?.takeIf { it > 0 } ?: 40
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -122,7 +121,6 @@ fun PaywallScreen(
                         stringResource(R.string.paywall_benefit_describe),
                         stringResource(R.string.paywall_benefit_weekly),
                         stringResource(R.string.paywall_benefit_import),
-                        stringResource(R.string.paywall_benefit_limit, dailyLimit),
                     ).forEach { benefit ->
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text("✓", color = Neon.Green, fontWeight = FontWeight.Bold)

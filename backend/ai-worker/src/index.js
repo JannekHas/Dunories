@@ -388,10 +388,10 @@ export class Usage extends DurableObject {
     this.sql.exec("DELETE FROM entitlements WHERE uid = ?", uid);
   }
 
-  /** Code einlösen: höchstens 5 Fehlversuche pro Stunde (gegen Raten). */
+  /** Code einlösen: höchstens 10 Fehlversuche pro Stunde (gegen Raten). */
   redeem(person, code, now) {
     const attempts = this.sql.exec("SELECT COUNT(*) AS n FROM attempts WHERE uid = ? AND ts > ?", person.uid, now - 3600000).toArray()[0].n;
-    if (attempts >= 5) return "too_many";
+    if (attempts >= 10) return "too_many";
     const row = this.sql.exec("SELECT days, max_uses, used, expires, note, disabled FROM codes WHERE code = ?", code).toArray()[0];
     const fail = (reason) => {
       this.sql.exec("INSERT INTO attempts (uid, ts) VALUES (?, ?)", person.uid, now);

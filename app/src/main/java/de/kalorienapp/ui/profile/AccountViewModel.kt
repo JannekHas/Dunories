@@ -41,6 +41,9 @@ sealed interface AccountDialog {
     data class Compare(val local: BackupFormat.Summary, val cloud: BackupFormat.Summary) : AccountDialog
     data class DeleteCode(val code: String) : AccountDialog
     data object Redeem : AccountDialog
+
+    /** Cloud-Sicherung ausschalten = Einwilligung widerrufen → Sicherungen in der Cloud werden gelöscht. */
+    data object CloudOff : AccountDialog
 }
 
 data class AccountUiState(
@@ -48,6 +51,7 @@ data class AccountUiState(
     val user: AccountUser? = null,
     val lastBackupAt: Long? = null,
     val conflict: Boolean = false,
+    val backupOn: Boolean = false,
 )
 
 /** Konto-Karte unter Profil → Einstellungen: anmelden, sichern, vergleichen, abmelden, löschen. */
@@ -99,9 +103,15 @@ class AccountViewModel(
         }
     }
 
-    val state: StateFlow<AccountUiState> = combine(account.user, settings.cloudBackupAt, settings.cloudConflict) { user, at, conflict ->
-        AccountUiState(account.available, user, at, conflict)
+    val state: StateFlow<AccountUiState> = combine(
+        account.user, settings.cloudBackupAt, settings.cloudConflict, settings.cloudBackupOn,
+    ) { user, at, conflict, on ->
+        AccountUiState(account.available, user, at, conflict, on)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccountUiState(account.available, account.user.value))
+
+    /** Angemeldet, Cloud-Sicherung aus, aber in der Cloud liegt eine Sicherung (z. B. neues Handy) → Hinweis. */
+    private val _cloudHasBackup = MutableStateFlow(false)
+    val cloudHasBackup: StateFlow<Boolean> = _cloudHasBackup.asStateFlow()
 
     private val _busy = MutableStateFlow<AccountBusy?>(null)
     val busy: StateFlow<AccountBusy?> = _busy.asStateFlow()
@@ -115,17 +125,8 @@ class AccountViewModel(
 
     fun dismissDialog() = _dialog.update { null }
 
-    /** „Mit Google weiter“: beim ersten Mal erst die Einwilligung. */
-    fun startGoogle(activity: Activity) {
-        if (settings.cloudConsentVersion < CONSENT_VERSION) _dialog.value = AccountDialog.Consent else signIn(activity)
-    }
-
-    fun acceptConsent(activity: Activity) {
-        _dialog.value = null
-        signIn(activity, consentJustGiven = true)
-    }
-
-    private fun signIn(activity: Activity, consentJustGiven: Boolean = false) = run(AccountBusy.SIGNING_IN) {
+    /** „Mit Google weiter“: nur anmelden (Premium, Probezeit, Codes). Die Cloud-Sicherung ist ein eigener Schalter. */
+    fun startGoogle(activity: Activity) = run(AccountBusy.SIGNING_IN) {
         try {
             account.signInWithGoogle(activity)
         } catch (_: GetCredentialCancellationException) {
@@ -134,13 +135,34 @@ class AccountViewModel(
             _message.value = R.string.account_no_google
             return@run
         }
-        if (consentJustGiven) {
-            cloud.saveConsent(CONSENT_VERSION)
-            settings.cloudConsentVersion = CONSENT_VERSION
-        }
         // Startet beim Worker die Probezeit (einmal pro Google-Konto) und zeigt sie gleich an.
         premium.status()?.let { _aiStatus.value = it }
-        check()
+        if (settings.cloudBackupOn.value) check() else _cloudHasBackup.value = runCatching { cloud.newest() != null }.getOrDefault(false)
+    }
+
+    /** Schalter „Cloud-Sicherung“: an → erst Einwilligung, aus → Widerruf (Sicherungen in der Cloud werden gelöscht). */
+    fun setCloudBackup(on: Boolean) {
+        _dialog.value = if (on) AccountDialog.Consent else AccountDialog.CloudOff
+    }
+
+    fun acceptConsent(@Suppress("UNUSED_PARAMETER") activity: Activity) {
+        _dialog.value = null
+        run(AccountBusy.CHECKING) {
+            cloud.saveConsent(CONSENT_VERSION)
+            settings.cloudConsentVersion = CONSENT_VERSION
+            _cloudHasBackup.value = false
+            check()
+        }
+    }
+
+    fun confirmCloudOff() {
+        _dialog.value = null
+        run(AccountBusy.DELETING) {
+            cloud.deleteAll()
+            scheduler.cancelCloudBackup()
+            settings.clearCloud()
+            _message.value = R.string.account_cloud_off_done
+        }
     }
 
     /** Nach dem Anmelden (oder bei Konflikt): hochladen, Wiederherstellen anbieten oder vergleichen. */
@@ -196,6 +218,7 @@ class AccountViewModel(
         account.signOut()
         scheduler.cancelCloudBackup()
         settings.clearCloud()
+        _cloudHasBackup.value = false
         _message.value = R.string.account_signed_out
         _aiStatus.value = premium.status()
     }

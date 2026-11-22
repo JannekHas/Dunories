@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import de.kalorienapp.backup.BackupFormat
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.GlassCard
+import de.kalorienapp.ui.components.SettingSwitchRow
 import de.kalorienapp.ui.theme.Neon
 import java.time.Instant
 import java.time.ZoneId
@@ -103,20 +104,30 @@ fun AccountSection(
                 ) { Text(stringResource(R.string.account_google)) }
             } else {
                 Text(user.email.orEmpty(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Neon.Cyan)
-                Text(
+                SettingSwitchRow(
+                    title = stringResource(R.string.account_cloud_switch),
+                    text = stringResource(R.string.account_cloud_switch_text),
+                    checked = state.backupOn,
+                    onChange = { if (busy == null) viewModel.setCloudBackup(it) },
+                )
+                val cloudHasBackup by viewModel.cloudHasBackup.collectAsStateWithLifecycle()
+                if (!state.backupOn && cloudHasBackup) {
+                    Text(stringResource(R.string.account_cloud_found_hint), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
+                }
+                if (state.backupOn) Text(
                     state.lastBackupAt?.let {
                         stringResource(R.string.account_last_backup, Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(backupTime))
                     } ?: stringResource(R.string.account_no_backup_yet),
                     style = MaterialTheme.typography.bodySmall,
                     color = Neon.TextSecondary,
                 )
-                if (state.conflict) {
+                if (state.backupOn && state.conflict) {
                     Text(stringResource(R.string.account_conflict), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
                     OutlinedButton(onClick = viewModel::compareNow, enabled = busy == null, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.account_compare))
                     }
                 }
-                Button(
+                if (state.backupOn) Button(
                     onClick = viewModel::backupNow,
                     enabled = busy == null,
                     colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
@@ -176,6 +187,15 @@ internal fun AccountDialogs(viewModel: AccountViewModel, onPrivacy: () -> Unit) 
         is AccountDialog.Compare -> CompareDialog(d.local, d.cloud, viewModel::keepPhone, viewModel::takeCloud, viewModel::dismissDialog)
         is AccountDialog.DeleteCode -> DeleteDialog(d.code, onConfirm = { activity?.let(viewModel::confirmDelete) }, onCancel = viewModel::dismissDialog)
         AccountDialog.Redeem -> RedeemDialog(viewModel)
+        AccountDialog.CloudOff -> AlertDialog(
+            onDismissRequest = viewModel::dismissDialog,
+            title = { Text(stringResource(R.string.account_cloud_off_title)) },
+            text = { Text(stringResource(R.string.account_cloud_off_text)) },
+            confirmButton = {
+                TextButton(onClick = viewModel::confirmCloudOff) { Text(stringResource(R.string.account_cloud_off_confirm), color = Neon.Red) }
+            },
+            dismissButton = { TextButton(onClick = viewModel::dismissDialog) { Text(stringResource(R.string.cancel)) } },
+        )
         null -> Unit
     }
 }
@@ -192,7 +212,8 @@ private fun PremiumCard(status: AiStatus, signedIn: Boolean, onPremium: () -> Un
                 fontWeight = FontWeight.Bold,
                 color = if (status.premium) Neon.Yellow else Neon.TextSecondary,
             )
-            if (status.premium) {
+            // Die Grenze erst kurz davor zeigen (Wunsch des Nutzers: sonst wirkt sie abschreckend).
+            if (status.premium && status.dailyLimit > 0 && status.usedToday * 4 >= status.dailyLimit * 3) {
                 Text(stringResource(R.string.premium_used_today, status.usedToday, status.dailyLimit), style = MaterialTheme.typography.bodySmall)
             }
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
