@@ -32,6 +32,17 @@ android {
         )
 
         // Schriftgröße der ganzen App (1.0 = Standard); zum Ausprobieren: -PtextScale=1.1
+        // Firebase (Feedback, später Konten): Projekt und Web-Schlüssel aus google-services.json (gitignored).
+        // Ohne die Datei bleiben beide leer → Feedback ist aus, die App läuft normal.
+        val firebase = rootProject.file("app/google-services.json").takeIf { it.exists() }?.let {
+            @Suppress("UNCHECKED_CAST")
+            groovy.json.JsonSlurper().parse(it) as Map<String, Any?>
+        }
+        val firebaseProject = (firebase?.get("project_info") as? Map<*, *>)?.get("project_id") as? String ?: ""
+        val firebaseKey = ((((firebase?.get("client") as? List<*>)?.firstOrNull() as? Map<*, *>)
+            ?.get("api_key") as? List<*>)?.firstOrNull() as? Map<*, *>)?.get("current_key") as? String ?: ""
+        buildConfigField("String", "FIREBASE_PROJECT_ID", "\"$firebaseProject\"")
+        buildConfigField("String", "FIREBASE_API_KEY", "\"$firebaseKey\"")
         buildConfigField("float", "TEXT_SCALE", "${providers.gradleProperty("textScale").getOrElse("1.0")}f")
 
         // Sichtbare Bereiche der App – ausgeblendete bleiben im Code und in der Datenbank erhalten

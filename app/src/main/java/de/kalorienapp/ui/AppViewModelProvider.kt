@@ -131,6 +131,13 @@ object AppViewModelProvider {
         initializer { MealPlanViewModel(container().mealPlanRepository) }
         initializer { de.kalorienapp.ui.profile.WaterSettingsViewModel(container().settings) }
         initializer { MealPlanImportViewModel(container().mealPlanImporter, container().mealPlanRepository) }
+        initializer {
+            de.kalorienapp.ui.feedback.FeedbackViewModel(
+                this[APPLICATION_KEY] as KalorienApplication,
+                container().feedbackClient,
+                container().settings,
+            )
+        }
         initializer { de.kalorienapp.ui.stats.BodyAnalysisViewModel(container().bodyAnalysisReader, container().bodyMeasurementRepository) }
         initializer {
             CaptureViewModel(

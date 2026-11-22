@@ -130,6 +130,8 @@ private val dateFormatter = DateTimeFormatter.ofPattern("EEE, d. MMMM", Locale.G
 @Composable
 fun TodayScreen(
     onSetGoal: () -> Unit,
+    /** Feedback geben (Symbol unten rechts, nur in der Testphase per Fernschalter). */
+    onFeedback: (() -> Unit)? = null,
     onGoalEnded: (Long) -> Unit = {},
     /** Im Kalender angetippter Tag → hier anzeigen (danach [onDayShown]). */
     requestedDay: LocalDate? = null,
@@ -319,6 +321,7 @@ fun TodayScreen(
         }
     }
 
+    val showFeedback by viewModel.feedbackOnToday.collectAsStateWithLifecycle()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -387,12 +390,19 @@ fun TodayScreen(
             }
             state.summary?.let { summary ->
                 item(key = "summary") {
-                    SummaryCard(
-                        summary = summary,
-                        sex = state.sex,
-                        onActivityClick = { showActivityList = true },
-                        onNutrientClick = { onNutrientClick(state.date, it) },
-                    )
+                    Box {
+                        SummaryCard(
+                            summary = summary,
+                            sex = state.sex,
+                            onActivityClick = { showActivityList = true },
+                            onNutrientClick = { onNutrientClick(state.date, it) },
+                        )
+                        // Testphase: Feedback-Symbol in der Ecke neben den Ringen, unter dem Pfeil „nächster Tag“
+                        // (Wunsch des Nutzers – schwebend lag es über „+ Eintragen“).
+                        if (onBack == null && onFeedback != null && showFeedback) {
+                            FeedbackBubble(onFeedback, Modifier.align(Alignment.TopEnd))
+                        }
+                    }
                 }
             }
             fasting?.takeIf { state.isToday }?.let { config ->
@@ -1047,4 +1057,18 @@ private fun ComboNameDialog(initial: String, onSave: (String) -> Unit, onDismiss
         confirmButton = { TextButton(onClick = { onSave(name.trim()) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.save)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+}
+
+/** Kleiner runder Glas-Knopf „Feedback geben“ (nur Testphase, Fernschalter). */
+@Composable
+private fun FeedbackBubble(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(Neon.SurfaceHighest.copy(alpha = 0.7f)),
+    ) {
+        Icon(painterResource(R.drawable.ic_feedback), stringResource(R.string.feedback_title), tint = Neon.Cyan, modifier = Modifier.size(22.dp))
+    }
 }

@@ -3,6 +3,7 @@
      Neue Version: Array anlegen und in ChangelogUi.VERSIONS eintragen. -->
 <resources>
     <string-array name="changelog_8">
+        <item>Feedback direkt aus der App|Fehler gefunden, Idee oder Lob? Tipp auf das Sprechblasen-Symbol neben den Ringen oder unter Profil → Einstellungen auf „Feedback geben“ – schreiben oder einsprechen, auf Wunsch mit Screenshot. Es geht ohne Konto direkt an den Entwickler.</item>
         <item>Willkommen in der neuen App|Dunories hat eine neue App-Kennung bekommen – deshalb war einmal ein Umzug mit der Sicherung nötig. Danke fürs Mitmachen! Läuft hier alles, kannst du die alte App löschen.</item>
         <item>Sicherung jetzt noch vollständiger|Sie nimmt auch mit, welche Tipps du schon gesehen hast, ob du ohne Gewichtsziel startest und welche Wochenauswertung zuletzt kam. Und eingespielte Einstellungen (Benachrichtigungen, Fasten, Plan …) kommen jetzt zuverlässig an.</item>
     </string-array>

@@ -183,6 +183,21 @@ class AppSettings(context: Context) {
         prefs.edit().commit()
     }
 
+    /** Freiwilliger Name beim Feedback (wird beim nächsten Mal vorausgefüllt). */
+    val feedbackName: String get() = prefs.getString(KEY_FEEDBACK_NAME, null).orEmpty()
+
+    fun setFeedbackName(name: String) = prefs.edit().putString(KEY_FEEDBACK_NAME, name).apply()
+
+    private val _feedbackOnToday = MutableStateFlow(prefs.getBoolean(KEY_FEEDBACK_TODAY, true))
+
+    /** Feedback-Symbol auf „Heute“ (Testphase) – Fernschalter `config/app.feedbackOnToday` in Firestore. */
+    val feedbackOnToday: StateFlow<Boolean> = _feedbackOnToday.asStateFlow()
+
+    fun setFeedbackOnToday(show: Boolean) {
+        prefs.edit().putBoolean(KEY_FEEDBACK_TODAY, show).apply()
+        _feedbackOnToday.value = show
+    }
+
     /** Sicherung einspielen: gesehene/ausstehende Tipps und Abtipp-Zähler übernehmen. */
     fun restoreTips(seen: Set<String>, pending: Set<String>, manualTyped: Int) {
         prefs.edit().putStringSet(KEY_SEEN_TIPS, seen).putStringSet(KEY_PENDING_TIPS, pending).putInt(KEY_MANUAL_TYPED, manualTyped).apply()
@@ -358,6 +373,8 @@ class AppSettings(context: Context) {
         private const val KEY_DISLIKES = "disliked_foods"
         private const val DISLIKE_SEPARATOR = "\n"
         private const val KEY_SEEN_TIPS = "seen_tips"
+        private const val KEY_FEEDBACK_NAME = "feedback_name"
+        private const val KEY_FEEDBACK_TODAY = "feedback_on_today"
         private const val KEY_PENDING_TIPS = "pending_tips"
         private const val KEY_TIP_OF_DAY = "tip_of_day"
         private const val KEY_MANUAL_TYPED = "manual_typed"

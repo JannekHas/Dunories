@@ -70,6 +70,10 @@ data class MealPlanDayRoute(val dayIndex: Int)
 @Serializable
 data object MealPlanImportRoute
 
+/** Feedback geben (Einstellungen, in der Testphase auch das Symbol auf „Heute“). */
+@Serializable
+data object FeedbackRoute
+
 /** Körperanalyse eintragen (eintippen, Foto, einsprechen). */
 @Serializable
 data object BodyAnalysisRoute

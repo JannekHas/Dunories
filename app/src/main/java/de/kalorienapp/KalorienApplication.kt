@@ -16,5 +16,6 @@ class KalorienApplication : Application() {
         container.calorieNotifier.observe(container.appScope)
         container.appScope.launch { container.workScheduler.scheduleAll() }
         container.appScope.launch { container.recipeRepository.cleanupImages() }
+        container.appScope.launch { container.feedbackClient.feedbackOnToday()?.let(container.settings::setFeedbackOnToday) }
     }
 }

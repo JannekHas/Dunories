@@ -66,6 +66,8 @@ object BackupFormat {
         val manualTyped: Int? = null,
         val weeklyDoneFor: Long? = null,
         val changelogSeen: Int? = null,
+        /** Freiwilliger Name beim Feedback. */
+        val feedbackName: String? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

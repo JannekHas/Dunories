@@ -238,6 +238,11 @@ class TodayViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WaterState())
 
+    /** Feedback-Symbol (Testphase, Fernschalter) – nur wenn Firebase eingerichtet ist. */
+    val feedbackOnToday: StateFlow<Boolean> = settings.feedbackOnToday
+        .map { it && de.kalorienapp.BuildConfig.FIREBASE_PROJECT_ID.isNotBlank() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     /** Ungelesene Patchnotes (versionCodes, neueste zuerst) – „Neu in Dunories“ auf „Heute“. */
     val unseenChangelog: StateFlow<List<Int>> = settings.changelogSeen
         .map { seen -> Changelog.unseen(seen, BuildConfig.VERSION_CODE, ChangelogUi.VERSIONS.map { it.code }) }

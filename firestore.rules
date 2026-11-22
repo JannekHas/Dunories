@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// Dunories – Firestore-Regeln (Phase 1: Feedback ohne Konto).
+// In der Firebase-Konsole unter Firestore → Regeln einfügen und „Veröffentlichen“.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Feedback: jeder darf eines anlegen, niemand darf lesen, ändern oder löschen
+    // (gelesen wird nur in der Konsole bzw. später im Admin-Dashboard).
+    match /feedback/{id} {
+      allow create: if request.resource.data.keys().hasOnly(
+                         ['type', 'text', 'name', 'screenshot', 'appVersion', 'versionCode', 'device', 'android', 'createdAt'])
+                    && request.resource.data.type in ['bug', 'idea', 'praise']
+                    && request.resource.data.text is string && request.resource.data.text.size() <= 5000
+                    && request.resource.data.name is string && request.resource.data.name.size() <= 60
+                    && (!('screenshot' in request.resource.data)
+                        || (request.resource.data.screenshot is string && request.resource.data.screenshot.size() <= 800000))
+                    && request.resource.data.appVersion is string && request.resource.data.appVersion.size() <= 20
+                    && request.resource.data.versionCode is int
+                    && request.resource.data.device is string && request.resource.data.device.size() <= 100
+                    && request.resource.data.android is int
+                    && request.resource.data.createdAt is timestamp
+                    && (request.resource.data.text.size() > 0 || 'screenshot' in request.resource.data);
+      allow read, update, delete: if false;
+    }
+
+    // Fernschalter (z. B. Feedback-Symbol auf „Heute“): lesen ja, schreiben nur in der Konsole.
+    match /config/app {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Alles andere: gesperrt.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

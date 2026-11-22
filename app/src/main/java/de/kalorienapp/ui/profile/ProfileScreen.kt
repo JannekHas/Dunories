@@ -20,6 +20,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,6 +42,7 @@ import de.kalorienapp.ui.theme.Neon
 fun ProfileScreen(
     onNewGoal: () -> Unit,
     onOpenPlan: () -> Unit = {},
+    onFeedback: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -100,6 +103,8 @@ fun ProfileScreen(
                 }
                 // Einstellungen: Hinweise und darunter Datensicherung (4 statt 5 Reiter – Wunsch des Nutzers)
                 else -> {
+                    // Feedback ganz oben – bleibt für immer (das Symbol auf „Heute“ nur in der Testphase).
+                    FeedbackEntry(onFeedback)
                     SectionTitle(stringResource(R.string.profile_tab_notifications))
                     NotificationSettingsSection()
                     HorizontalDivider()
@@ -127,4 +132,24 @@ private fun bodySummary(form: ProfileFormState): String {
     if (!form.bodyDataValid || sex == null || lifestyle == null) return stringResource(R.string.body_summary_incomplete)
     val body = stringResource(R.string.body_summary, stringResource(sex.labelRes), form.age, form.heightCm, form.weightKg)
     return body + "\n" + stringResource(lifestyle.labelRes)
+}
+
+@Composable
+private fun FeedbackEntry(onClick: () -> Unit) {
+    de.kalorienapp.ui.components.GlassCard(Modifier.fillMaxWidth(), onClick = onClick) {
+        androidx.compose.foundation.layout.Row(
+            Modifier.padding(16.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            androidx.compose.material3.Icon(
+                androidx.compose.ui.res.painterResource(R.drawable.ic_feedback),
+                contentDescription = null,
+                tint = Neon.Cyan,
+            )
+            Column(Modifier.weight(1f).padding(start = 16.dp)) {
+                Text(stringResource(R.string.feedback_title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.feedback_entry_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+            }
+        }
+    }
 }

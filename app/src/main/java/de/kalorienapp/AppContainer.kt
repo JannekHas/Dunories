@@ -74,6 +74,13 @@ class AppContainer(context: Context) {
     val mealPlanImporter = MealPlanImporter(context, GeminiMealPlanAnalyzer(gemini))
     val bodyAnalysisReader = de.kalorienapp.capture.BodyAnalysisReader(context, de.kalorienapp.data.remote.gemini.GeminiBodyAnalyzer(gemini))
 
+    /** Feedback an Firestore (ohne Konto) + Fernschalter. */
+    val feedbackClient = de.kalorienapp.data.remote.firebase.FeedbackClient(
+        BuildConfig.FIREBASE_PROJECT_ID,
+        BuildConfig.FIREBASE_API_KEY,
+        AppIdentity.headers(context),
+    )
+
     /** Per Teilen-Menü empfangene Inhalte für den Rezept-Import. */
     val shareInbox = ShareInbox(ShareGuard(BuildConfig.APPLICATION_ID))
     val recipeDrafts = RecipeDraftStore()
