@@ -19,11 +19,11 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "de.kalorienapp"
+        applicationId = "de.dunories"
         minSdk = 28
         targetSdk = 37
-        versionCode = 7
-        versionName = "0.6.0"
+        versionCode = 8
+        versionName = "0.6.1"
 
         buildConfigField(
             "String",

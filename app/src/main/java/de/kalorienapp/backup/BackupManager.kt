@@ -76,6 +76,12 @@ class BackupManager(
                 weightEnabled = settings.weightEnabled.value,
                 bodyAnalysisEnabled = settings.bodyAnalysisEnabled.value,
                 measuresEnabled = settings.measuresEnabled.value,
+                goalSkipped = settings.goalSkipped.value,
+                seenTips = settings.seenTips.value.toList(),
+                pendingTips = settings.pendingTips.value.toList(),
+                manualTyped = settings.manualTyped,
+                weeklyDoneFor = settings.weeklyDoneFor?.toEpochDay(),
+                changelogSeen = settings.changelogSeen.value,
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
                         .joinToString(";")
@@ -162,6 +168,20 @@ class BackupManager(
         manifest.settings.weightEnabled?.let(settings::setWeightEnabled)
         manifest.settings.bodyAnalysisEnabled?.let(settings::setBodyAnalysisEnabled)
         manifest.settings.measuresEnabled?.let(settings::setMeasuresEnabled)
+        manifest.settings.goalSkipped?.let(settings::setGoalSkipped)
+        manifest.settings.let { m ->
+            if (m.seenTips != null) {
+                settings.restoreTips(m.seenTips.toSet(), m.pendingTips.orEmpty().toSet(), m.manualTyped ?: 0)
+            } else if (prepared.summary.foodEntries > 0) {
+                // Ältere Sicherung (z. B. Umzug aus 0.6.0) kennt die weggeklickten Tipps nicht: wer schon Einträge hat,
+                // bekommt keinen Tipp ein zweites Mal (Wunsch des Nutzers: alles Angeklickte bleibt).
+                val all = de.kalorienapp.ui.components.Tip.entries.map { it.name } + de.kalorienapp.domain.BehaviorTip.entries.map { it.name }
+                settings.restoreTips(all.toSet(), emptySet(), 0)
+            }
+            m.weeklyDoneFor?.let { settings.weeklyDoneFor = LocalDate.ofEpochDay(it) }
+            // Sicherung aus ≤ 0.6.0 (Umzug auf de.dunories): einmal „Neu in 0.6.1“ zeigen.
+            settings.markChangelogSeen(m.changelogSeen ?: OLD_BACKUP_CHANGELOG)
+        }
         settings.setFastingEnabled(manifest.settings.fastingEnabled)
         settings.setMealReminders(manifest.settings.mealReminders)
         manifest.settings.let { m ->
@@ -209,7 +229,15 @@ class BackupManager(
                 ),
             )
         }
+        settings.flushToDisk()
+        // Alte Termine (mit Werten von vor dem Einspielen) verwerfen – nach dem Neustart plant scheduleAll() neu.
+        runCatching { androidx.work.WorkManager.getInstance(context).cancelAllWork().result.get() }
         staging.deleteRecursively()
+    }
+
+    private companion object {
+        /** versionCode 7 = 0.6.0, die letzte Version ohne gemerkte Neuigkeiten in der Sicherung. */
+        const val OLD_BACKUP_CHANGELOG = 7
     }
 
     /** Abgebrochen → Zwischenordner aufräumen. */

@@ -45,6 +45,7 @@ object ChangelogUi {
     val VERSIONS = listOf(
         ChangelogVersion(6, "0.5.1", R.array.changelog_6),
         ChangelogVersion(7, "0.6.0", R.array.changelog_7),
+        ChangelogVersion(8, "0.6.1", R.array.changelog_8),
     )
 
     fun byCodes(codes: List<Int>) = codes.mapNotNull { code -> VERSIONS.find { it.code == code } }

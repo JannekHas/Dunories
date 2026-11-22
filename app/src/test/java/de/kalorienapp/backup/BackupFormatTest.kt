@@ -32,6 +32,22 @@ class BackupFormatTest {
     }
 
     @Test
+    fun `neue einstellungen seit 0_6_1 und aeltere sicherung ohne sie`() {
+        val settings = BackupFormat.Settings(
+            goalSkipped = true, seenTips = listOf("A", "B"), pendingTips = listOf("C"),
+            manualTyped = 4, weeklyDoneFor = 20_000L, changelogSeen = 7,
+        )
+        val json = BackupFormat.encode(BackupFormat.Manifest(databaseVersion = 13, createdAt = 5L, settings = settings))
+        assertEquals(settings, (BackupFormat.check(json, 13) as BackupFormat.Result.Valid).manifest.settings)
+        // Sicherung aus 0.6.0 kennt die Felder nicht → null (BackupManager setzt dann sinnvolle Werte).
+        val old = """{"app":"de.kalorienapp","format":1,"databaseVersion":13,"createdAt":5,"settings":{"weeklyReport":true}}"""
+        val restored = (BackupFormat.check(old, 13) as BackupFormat.Result.Valid).manifest.settings
+        assertEquals(null, restored.seenTips)
+        assertEquals(null, restored.goalSkipped)
+        assertEquals(null, restored.changelogSeen)
+    }
+
+    @Test
     fun `neuere app version wird abgelehnt`() {
         assertEquals(
             BackupFormat.Result.Invalid(BackupFormat.Problem.NEWER_APP),

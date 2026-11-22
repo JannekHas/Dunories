@@ -2,6 +2,10 @@
 <!-- Patchnotes für das Fenster „Neu in Dunories“ (ui/changelog). Je Version ein Array, Einträge: Titel|Text (keine Emojis).
      Neue Version: Array anlegen und in ChangelogUi.VERSIONS eintragen. -->
 <resources>
+    <string-array name="changelog_8">
+        <item>Willkommen in der neuen App|Dunories hat eine neue App-Kennung bekommen – deshalb war einmal ein Umzug mit der Sicherung nötig. Danke fürs Mitmachen! Läuft hier alles, kannst du die alte App löschen.</item>
+        <item>Sicherung jetzt noch vollständiger|Sie nimmt auch mit, welche Tipps du schon gesehen hast, ob du ohne Gewichtsziel startest und welche Wochenauswertung zuletzt kam. Und eingespielte Einstellungen (Benachrichtigungen, Fasten, Plan …) kommen jetzt zuverlässig an.</item>
+    </string-array>
     <string-array name="changelog_7">
         <item>Taschenlampe beim Foto|In der Kamera gibt es jetzt rechts einen Blitz-Knopf: Taschenlampe an für dunkle Teller oder Restaurants, nochmal tippen – aus.</item>
         <item>Foto mit der Lautstärketaste|Handy in einer Hand, Essen in der anderen? Drück einfach Lauter oder Leiser – wie in der Kamera-App wird das Foto gemacht.</item>

@@ -24,3 +24,6 @@ local.properties
 TESTLISTE*.md
 Patchnotes*.txt
 design/werbung/
+
+# Firebase-Konfiguration (nicht geheim, aber öffentliches Repo)
+app/google-services.json

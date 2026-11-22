@@ -174,6 +174,24 @@ class AppSettings(context: Context) {
         _seenTips.value = updated
     }
 
+    /**
+     * Alle bisher mit apply() gemerkten Änderungen sicher auf die Festplatte schreiben – vor dem harten Neustart
+     * nach „Sicherung einspielen“ (sonst gehen die eingespielten Einstellungen verloren). commit() wartet auf
+     * die ausstehenden Schreibvorgänge.
+     */
+    fun flushToDisk() {
+        prefs.edit().commit()
+    }
+
+    /** Sicherung einspielen: gesehene/ausstehende Tipps und Abtipp-Zähler übernehmen. */
+    fun restoreTips(seen: Set<String>, pending: Set<String>, manualTyped: Int) {
+        prefs.edit().putStringSet(KEY_SEEN_TIPS, seen).putStringSet(KEY_PENDING_TIPS, pending).putInt(KEY_MANUAL_TYPED, manualTyped).apply()
+        _seenTips.value = seen
+        _pendingTips.value = pending
+    }
+
+    val manualTyped: Int get() = prefs.getInt(KEY_MANUAL_TYPED, 0)
+
     /** Profil → „Tipps wieder anzeigen“ (auch die Tipps nach Verhalten). */
     fun resetTips() {
         prefs.edit().remove(KEY_SEEN_TIPS).remove(KEY_PENDING_TIPS).remove(KEY_TIP_OF_DAY).remove(KEY_MANUAL_TYPED).apply()

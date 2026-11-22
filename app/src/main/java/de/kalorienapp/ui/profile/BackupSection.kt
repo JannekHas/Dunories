@@ -165,9 +165,7 @@ fun BackupSection(viewModel: BackupViewModel = viewModel(factory = AppViewModelP
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         (state as? BackupState.Ready)?.let { viewModel.saveTo(it.created, uri) }
     }
-    val openLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) viewModel.prepareRestore(uri)
-    }
+    val openRestore = rememberRestorePicker(viewModel)
 
     // Sicherung fertig → Teilen-Menü bzw. „Speichern unter“ öffnen.
     LaunchedEffect(state) {
@@ -188,6 +186,63 @@ fun BackupSection(viewModel: BackupViewModel = viewModel(factory = AppViewModelP
         }
     }
 
+    RestoreConfirmDialog(viewModel)
+
+    val busy = state == BackupState.Working
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(stringResource(R.string.backup_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { viewModel.create(share = true) },
+                enabled = !busy,
+                colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
+                modifier = Modifier.weight(1f),
+            ) { Text(stringResource(R.string.backup_share)) }
+            OutlinedButton(
+                onClick = { viewModel.create(share = false) },
+                enabled = !busy,
+                modifier = Modifier.weight(1f),
+            ) { Text(stringResource(R.string.backup_save)) }
+        }
+        OutlinedButton(
+            onClick = openRestore,
+            enabled = !busy,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(stringResource(R.string.backup_restore)) }
+        when (val s = state) {
+            BackupState.Working -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Neon.Cyan)
+                Text(stringResource(R.string.backup_working), style = MaterialTheme.typography.bodySmall)
+            }
+            is BackupState.Done -> GlassCard(strong = true, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    Text(
+                        stringResource(if (s.saved) R.string.backup_saved else R.string.backup_created),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Neon.Green,
+                    )
+                    BackupSummaryText(s.summary)
+                }
+            }
+            is BackupState.Failed -> Text(stringResource(s.message), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
+            else -> Unit
+        }
+    }
+}
+
+/** Dateiauswahl für „Sicherung einspielen“ (auch in der Einrichtung, z. B. beim Umzug auf ein neues Handy). */
+@Composable
+fun rememberRestorePicker(viewModel: BackupViewModel): () -> Unit {
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) viewModel.prepareRestore(uri)
+    }
+    return { launcher.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed", "*/*")) }
+}
+
+/** Rückfrage mit Inhalt der Sicherung, bevor alle Daten ersetzt werden. */
+@Composable
+fun RestoreConfirmDialog(viewModel: BackupViewModel) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
     (state as? BackupState.Confirm)?.let { confirm ->
         AlertDialog(
             onDismissRequest = viewModel::cancelRestore,
@@ -212,44 +267,4 @@ fun BackupSection(viewModel: BackupViewModel = viewModel(factory = AppViewModelP
         )
     }
 
-    val busy = state == BackupState.Working
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(stringResource(R.string.backup_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(
-                onClick = { viewModel.create(share = true) },
-                enabled = !busy,
-                colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
-                modifier = Modifier.weight(1f),
-            ) { Text(stringResource(R.string.backup_share)) }
-            OutlinedButton(
-                onClick = { viewModel.create(share = false) },
-                enabled = !busy,
-                modifier = Modifier.weight(1f),
-            ) { Text(stringResource(R.string.backup_save)) }
-        }
-        OutlinedButton(
-            onClick = { openLauncher.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed", "*/*")) },
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.backup_restore)) }
-        when (val s = state) {
-            BackupState.Working -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Neon.Cyan)
-                Text(stringResource(R.string.backup_working), style = MaterialTheme.typography.bodySmall)
-            }
-            is BackupState.Done -> GlassCard(strong = true, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp)) {
-                    Text(
-                        stringResource(if (s.saved) R.string.backup_saved else R.string.backup_created),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Neon.Green,
-                    )
-                    BackupSummaryText(s.summary)
-                }
-            }
-            is BackupState.Failed -> Text(stringResource(s.message), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow)
-            else -> Unit
-        }
-    }
 }

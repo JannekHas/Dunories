@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
  * Reine Logik ohne Android-Abhängigkeiten (unit-getestet).
  */
 object BackupFormat {
+    /** Kennung des Sicherungsformats – bewusst der alte Paketname, auch nach dem Wechsel auf de.dunories (0.6.1). */
     const val APP_ID = "de.kalorienapp"
     const val FORMAT_VERSION = 1
     const val MANIFEST = "backup.json"
@@ -58,6 +59,13 @@ object BackupFormat {
         val weightEnabled: Boolean? = null,
         val bodyAnalysisEnabled: Boolean? = null,
         val measuresEnabled: Boolean? = null,
+        /** Seit 0.6.1 (Umzug auf de.dunories): „Erstmal ohne Ziel“, Tipps, Wochenauswertung, gelesene Neuigkeiten. */
+        val goalSkipped: Boolean? = null,
+        val seenTips: List<String>? = null,
+        val pendingTips: List<String>? = null,
+        val manualTyped: Int? = null,
+        val weeklyDoneFor: Long? = null,
+        val changelogSeen: Int? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }
