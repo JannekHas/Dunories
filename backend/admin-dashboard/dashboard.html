@@ -149,7 +149,7 @@
         </div>
         <button class="ghost" style="flex:0 0 auto" onclick="loadFeedback()">Aktualisieren</button>
       </div>
-      <div class="hint">Punkte: −1 Spam · 0 nichts Neues · +1 okay · +3 hilfreich · +5 richtig stark. Wer Punkte bekommt, sieht beim nächsten Öffnen ein „Danke“. Feedback wird nach 2 Jahren automatisch gelöscht.</div>
+      <div class="hint">Punkte: −1 Spam · 0 nichts Neues · +1 okay · +3 hilfreich · +5 richtig stark. Wer Punkte bekommt, sieht beim nächsten Öffnen ein „Danke“. Feedback wird nach 2 Jahren automatisch gelöscht. Spammer: „Person sperren“ – ihr Feedback kommt dann still nicht mehr an.</div>
       <div id="feedback"></div>
     </section>
 
@@ -329,12 +329,14 @@ async function loadFeedback() {
           ${f.name ? `<span>· ${esc(f.name)}${f.credits ? ' <span class="pill on">Danke-Liste ok</span>' : ""}</span>` : ""}
           <span>· ${esc(f.app)} · ${esc(f.device)} · Android-SDK ${esc(f.android)}</span>
           ${f.rated ? `<span class="pill on">bewertet: ${f.points > 0 ? "+" : ""}${f.points}</span>` : ""}
+          ${f.blocked ? '<span class="pill off">gesperrt</span>' : ""}
         </div>
         <div class="text">${esc(f.text) || '<span class="hint">(nur Screenshot)</span>'}</div>
         ${f.hasShot ? `<div id="shot${f.id}"><button class="ghost" onclick="showShot(${f.id})">Screenshot anzeigen</button></div>` : ""}
         <div class="actions" style="margin-top:8px">
           ${[-1, 0, 1, 3, 5].map((p) => `<button class="ghost ${f.rated && f.points === p ? "sel" : ""}" onclick="rate(${f.id},${p})">${p > 0 ? "+" + p : p === 0 ? "0" : "−1"}</button>`).join("")}
           <span style="flex:1"></span>
+          ${f.blocked ? "" : `<button class="danger" onclick="blockByFeedback(${f.id})">Person sperren</button>`}
           <button class="danger" onclick="delFeedback(${f.id})">Löschen</button>
         </div>
       </div>`).join("") : `<div class="hint" style="margin-top:10px">${fbFilter === "unrated" ? "Alles bewertet – nichts Neues." : "Noch kein Feedback."}</div>`;
@@ -357,13 +359,31 @@ async function delFeedback(id) {
   try { await api("/admin/feedback/delete", "POST", { id }); loadFeedback(); loadTesters(); } catch (e) { alert(e.message); }
 }
 
+async function blockByFeedback(id) {
+  if (!confirm("Diese Person sperren? Ihr Feedback kommt dann nicht mehr an (sie merkt davon nichts). Entsperren geht in der Rangliste.")) return;
+  const purge = confirm("Auch alle noch unbewerteten Feedbacks dieser Person löschen?");
+  try { await api("/admin/block", "POST", { id, blocked: true, purge }); loadFeedback(); loadTesters(); } catch (e) { alert(e.message); }
+}
+
+async function blockByKey(key) {
+  if (!confirm("Diese Person sperren? Ihr Feedback kommt dann nicht mehr an.")) return;
+  const purge = confirm("Auch alle noch unbewerteten Feedbacks dieser Person löschen?");
+  try { await api("/admin/block", "POST", { key, blocked: true, purge }); loadFeedback(); loadTesters(); } catch (e) { alert(e.message); }
+}
+
+async function unblock(key) {
+  try { await api("/admin/block", "POST", { key, blocked: false }); loadFeedback(); loadTesters(); } catch (e) { alert(e.message); }
+}
+
 async function loadTesters() {
   try {
     const t = await api("/admin/testers");
-    $("testers").innerHTML = t.length ? "<tr><th>#</th><th>Kennung</th><th>Name</th><th>Punkte</th><th>Feedbacks</th><th>Unbewertet</th><th>Danke-Liste</th><th>Zuletzt</th></tr>" +
-      t.map((r, i) => `<tr><td class="num">${i + 1}</td><td><code>${esc(r.uid)}</code></td><td>${esc(r.name ?? "")}</td><td class="num"><b>${r.points}</b></td>
+    $("testers").innerHTML = t.length ? "<tr><th>#</th><th>Kennung</th><th>Name</th><th>Punkte</th><th>Feedbacks</th><th>Unbewertet</th><th>Danke-Liste</th><th>Zuletzt</th><th></th></tr>" +
+      t.map((r, i) => `<tr><td class="num">${r.blocked ? "" : i + 1}</td><td><code>${esc(r.uid)}</code></td><td>${esc(r.name ?? "")}</td><td class="num"><b>${r.points}</b></td>
         <td class="num">${r.feedbacks}</td><td class="num">${r.unrated}</td><td>${r.credits ? '<span class="pill on">ja</span>' : '<span class="pill">nein</span>'}</td>
-        <td>${when(r.last)}</td></tr>`).join("") : '<tr><td class="hint">Noch keine Tester mit Feedback.</td></tr>';
+        <td>${r.last ? when(r.last) : ""}</td>
+        <td>${r.blocked ? `<span class="pill off">gesperrt</span> <button class="ghost" onclick="unblock('${esc(r.key)}')">Entsperren</button>`
+          : `<button class="danger" onclick="blockByKey('${esc(r.key)}')">Sperren</button>`}</td></tr>`).join("") : '<tr><td class="hint">Noch keine Tester mit Feedback.</td></tr>';
   } catch (e) { $("testers").innerHTML = `<tr><td class="hint">Laden fehlgeschlagen: ${esc(e.message)}</td></tr>`; }
 }
 

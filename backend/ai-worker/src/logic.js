@@ -79,8 +79,11 @@ export const FEEDBACK_POINTS = new Set([-1, 0, 1, 3, 5]);
 export const MAX_FEEDBACK_TEXT = 5000;
 export const MAX_FEEDBACK_NAME = 60;
 export const MAX_SCREENSHOT = 800000;
-/** Höchstens so viele Feedbacks pro Person und Tag (gegen Spam). */
-export const MAX_FEEDBACK_PER_DAY = 10;
+/**
+ * Nur gegen Programme, die automatisch fluten: höchstens so viele Feedbacks pro Person und Minute.
+ * Kein Tageslimit (Wunsch des Nutzers) – Spammer sperrt er im Dashboard.
+ */
+export const MAX_FEEDBACK_PER_MINUTE = 5;
 
 /** Feedback aus der App prüfen und auf erlaubte Felder kürzen. @return Objekt oder null */
 export function cleanFeedback(body) {

@@ -3,7 +3,7 @@
 // und leitet an Gemini weiter. Inhalte (Fotos, Texte, Antworten) werden weder gespeichert noch geloggt – nur Zähler.
 import { DurableObject } from "cloudflare:workers";
 import {
-  FEEDBACK_POINTS, KINDS, MAX_BODY, MAX_FEEDBACK_PER_DAY, base64UrlDecode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays,
+  FEEDBACK_POINTS, KINDS, MAX_BODY, MAX_FEEDBACK_PER_MINUTE, base64UrlDecode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays,
   modelFromPath, normalizeCode, safeEqual, tierOf,
 } from "./logic.js";
 
@@ -136,6 +136,7 @@ function usageObject(env) {
 }
 
 function num(value, fallback) {
+  if (value === null || value === undefined || value === "") return fallback;
   const n = Number(value);
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
@@ -275,6 +276,13 @@ async function admin(request, env, url) {
     return ok({ ok: true });
   }
   if (url.pathname === "/admin/testers" && request.method === "GET") return ok(await usage.testers());
+  // Sperren über ein Feedback (id) oder direkt über die Kennung aus der Rangliste (key).
+  if (url.pathname === "/admin/block" && request.method === "POST") {
+    const uid = Number.isInteger(body?.id) ? await usage.feedbackAuthor(body.id) : typeof body?.key === "string" ? body.key : null;
+    if (!uid || uid.length > 128) return bad();
+    await usage.setBlocked(uid, body.blocked !== false, body.purge === true, now);
+    return ok({ ok: true });
+  }
   if (url.pathname === "/admin/users" && request.method === "GET") {
     const prefix = (url.searchParams.get("prefix") ?? "").trim();
     if (prefix.length < 4 || prefix.length > 128) return bad();
@@ -321,6 +329,7 @@ export class Usage extends DurableObject {
         text TEXT NOT NULL, name TEXT, credits INTEGER NOT NULL, screenshot TEXT, app TEXT, version_code INTEGER, device TEXT,
         android INTEGER, points INTEGER, rated INTEGER, notified INTEGER NOT NULL DEFAULT 0);
       CREATE TABLE IF NOT EXISTS testers (uid TEXT PRIMARY KEY, name TEXT, credits INTEGER NOT NULL, updated INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS blocked (uid TEXT PRIMARY KEY, ts INTEGER NOT NULL);
     `);
   }
 
@@ -429,8 +438,10 @@ export class Usage extends DurableObject {
   }
 
   addFeedback(uid, f, day, now) {
-    const today = this.sql.exec("SELECT COUNT(*) AS n FROM feedback WHERE uid = ? AND day = ?", uid, day).toArray()[0].n;
-    if (today >= MAX_FEEDBACK_PER_DAY) return "too_many";
+    // Gesperrt: still annehmen und verwerfen (die Person merkt nichts, das Postfach bleibt sauber).
+    if (this.sql.exec("SELECT 1 FROM blocked WHERE uid = ?", uid).toArray().length) return "ok";
+    const lastMinute = this.sql.exec("SELECT COUNT(*) AS n FROM feedback WHERE uid = ? AND ts > ?", uid, now - 60000).toArray()[0].n;
+    if (lastMinute >= MAX_FEEDBACK_PER_MINUTE) return "too_many";
     if (f.name) this.setTester(uid, f.name, f.credits, now);
     this.sql.exec(
       `INSERT INTO feedback (uid, ts, day, type, text, name, credits, screenshot, app, version_code, device, android)
@@ -448,6 +459,20 @@ export class Usage extends DurableObject {
     );
   }
 
+  /** Sperren/entsperren; beim Sperren auf Wunsch alle unbewerteten Feedbacks dieser Person löschen. */
+  setBlocked(uid, blocked, purge, now) {
+    if (blocked) {
+      this.sql.exec("INSERT OR IGNORE INTO blocked (uid, ts) VALUES (?, ?)", uid, now);
+      if (purge) this.sql.exec("DELETE FROM feedback WHERE uid = ? AND rated IS NULL", uid);
+    } else {
+      this.sql.exec("DELETE FROM blocked WHERE uid = ?", uid);
+    }
+  }
+
+  feedbackAuthor(id) {
+    return this.sql.exec("SELECT uid FROM feedback WHERE id = ?", id).toArray()[0]?.uid ?? null;
+  }
+
   rewardsSeen(uid) {
     this.sql.exec("UPDATE feedback SET notified = 1 WHERE uid = ? AND rated IS NOT NULL AND notified = 0", uid);
   }
@@ -456,8 +481,9 @@ export class Usage extends DurableObject {
     const where = filter === "all" ? "" : "WHERE rated IS NULL";
     return this.sql.exec(
       `SELECT id, uid, ts, type, text, name, credits, screenshot IS NOT NULL AS hasShot, app, version_code AS versionCode, device,
-              android, points, rated FROM feedback ${where} ORDER BY ts DESC LIMIT ${Math.max(1, Math.floor(limit))}`,
-    ).toArray().map((f) => ({ ...f, uid: f.uid.slice(0, 8), credits: !!f.credits, hasShot: !!f.hasShot }));
+              android, points, rated, EXISTS (SELECT 1 FROM blocked b WHERE b.uid = feedback.uid) AS blocked
+       FROM feedback ${where} ORDER BY ts DESC LIMIT ${Math.max(1, Math.floor(limit))}`,
+    ).toArray().map((f) => ({ ...f, uid: f.uid.slice(0, 8), credits: !!f.credits, hasShot: !!f.hasShot, blocked: !!f.blocked }));
   }
 
   feedbackShot(id) {
@@ -476,12 +502,14 @@ export class Usage extends DurableObject {
   /** Rangliste fürs Release: Punkte, Anzahl Feedbacks, letzter Name und ob er in die Danke-Liste darf. */
   testers() {
     return this.sql.exec(
-      `SELECT f.uid AS uid, SUM(COALESCE(f.points, 0)) AS points, COUNT(*) AS feedbacks,
-              SUM(CASE WHEN f.rated IS NULL THEN 1 ELSE 0 END) AS unrated,
-              t.name AS name, COALESCE(t.credits, 0) AS credits, MAX(f.ts) AS last
-       FROM feedback f LEFT JOIN testers t ON t.uid = f.uid
-       GROUP BY f.uid ORDER BY points DESC, feedbacks DESC LIMIT 200`,
-    ).toArray().map((t) => ({ ...t, uid: t.uid.slice(0, 8), credits: !!t.credits }));
+      `SELECT u.uid AS uid, COALESCE(SUM(f.points), 0) AS points, COUNT(f.id) AS feedbacks,
+              COALESCE(SUM(CASE WHEN f.id IS NOT NULL AND f.rated IS NULL THEN 1 ELSE 0 END), 0) AS unrated,
+              t.name AS name, COALESCE(t.credits, 0) AS credits, MAX(f.ts) AS last,
+              EXISTS (SELECT 1 FROM blocked b WHERE b.uid = u.uid) AS blocked
+       FROM (SELECT uid FROM feedback UNION SELECT uid FROM blocked) u
+       LEFT JOIN feedback f ON f.uid = u.uid LEFT JOIN testers t ON t.uid = u.uid
+       GROUP BY u.uid ORDER BY blocked ASC, points DESC, feedbacks DESC LIMIT 300`,
+    ).toArray().map((t) => ({ ...t, key: t.uid, uid: t.uid.slice(0, 8), credits: !!t.credits, blocked: !!t.blocked }));
   }
 
   error(day, code) {
