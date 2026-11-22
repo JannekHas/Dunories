@@ -25,11 +25,8 @@ android {
         versionCode = 8
         versionName = "0.6.1"
 
-        buildConfigField(
-            "String",
-            "GEMINI_API_KEY",
-            "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"",
-        )
+        // KI läuft über den eigenen Cloudflare-Worker (backend/ai-worker) – der Gemini-Schlüssel ist NICHT in der App.
+        buildConfigField("String", "AI_BASE_URL", "\"https://dunories-ai.dunories-ai-worker.workers.dev\"")
 
         // Schriftgröße der ganzen App (1.0 = Standard); zum Ausprobieren: -PtextScale=1.1
         // Firebase (Feedback, später Konten): Projekt und Web-Schlüssel aus google-services.json (gitignored).

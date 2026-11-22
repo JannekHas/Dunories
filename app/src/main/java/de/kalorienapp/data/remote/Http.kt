@@ -10,7 +10,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /** HTTP-Fehler mit Statuscode (z. B. 429 = Kontingent erschöpft). */
-class HttpStatusException(val code: Int, message: String) : IOException(message)
+/** [body] = Fehlertext des Servers (gekürzt), z. B. `{"error":"daily_limit"}` vom KI-Worker. */
+class HttpStatusException(val code: Int, message: String, val body: String = "") : IOException(message)
 
 /** Minimaler HTTP-Client auf Basis von HttpURLConnection – reicht für die wenigen Aufrufe der App. */
 internal object Http {
@@ -108,7 +109,7 @@ internal object Http {
             val code = connection.responseCode
             val stream = if (code in 200..299) connection.inputStream else connection.errorStream
             val text = stream?.use { it.readLimited(MAX_API_BYTES) }?.decodeToString().orEmpty()
-            if (code !in 200..299) throw HttpStatusException(code, "HTTP $code")
+            if (code !in 200..299) throw HttpStatusException(code, "HTTP $code", text.take(500))
             return text
         } finally {
             connection.disconnect()

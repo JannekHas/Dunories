@@ -24,7 +24,7 @@ class GeminiMealPlanAnalyzer(private val client: GeminiClient) {
 
     /** [pdfs] gehen als PDF direkt an Gemini (liest Text und Tabellen selbst). */
     suspend fun analyze(images: List<ByteArray>, text: String?, pdfs: List<ByteArray> = emptyList()): List<MealPlanItem> {
-        val answer = client.generateJson(RESPONSE_SCHEMA, timeoutMs = 180_000) {
+        val answer = client.generateJson(RESPONSE_SCHEMA, timeoutMs = 180_000, kind = AiKind.PLAN) {
             addJsonObject { put("text", PROMPT) }
             text?.takeIf { it.isNotBlank() }?.let { addJsonObject { put("text", "Plan als Text:\n" + it.trim()) } }
             pdfs.forEach { bytes ->

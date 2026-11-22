@@ -527,7 +527,7 @@ private val CaptureStep.titleRes: Int
     }
 
 private val CaptureError.retryable: Boolean
-    get() = this != CaptureError.NO_API_KEY && this != CaptureError.REJECTED
+    get() = this != CaptureError.NO_API_KEY && this != CaptureError.REJECTED && this != CaptureError.DAILY_LIMIT
 
 internal val CaptureError.messageRes: Int
     get() = when (this) {
@@ -535,6 +535,7 @@ internal val CaptureError.messageRes: Int
         CaptureError.REJECTED -> R.string.error_ai_rejected
         CaptureError.NETWORK -> R.string.error_network
         CaptureError.QUOTA -> R.string.error_ai_quota
+        CaptureError.DAILY_LIMIT -> R.string.error_ai_daily_limit
         CaptureError.OVERLOADED -> R.string.error_ai_overloaded
         CaptureError.INVALID_RESPONSE -> R.string.error_ai_invalid
         CaptureError.NO_FOOD -> R.string.error_ai_no_food

@@ -63,7 +63,8 @@ class AppContainer(context: Context) {
     val shoppingRepository = ShoppingRepository(database.shoppingDao())
     val weightRepository = WeightRepository(database.weightEntryDao(), profileRepository)
 
-    private val gemini = GeminiClient(BuildConfig.GEMINI_API_KEY, AppIdentity.headers(context))
+    // KI über den eigenen Worker; Anmeldung per Konto oder still angelegtem Gast-Konto.
+    private val gemini = GeminiClient(BuildConfig.AI_BASE_URL) { account.aiToken() }
 
     val foodAnalyzer = FoodAnalyzer(
         context = context,

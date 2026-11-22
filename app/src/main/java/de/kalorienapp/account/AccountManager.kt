@@ -13,12 +13,16 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import de.kalorienapp.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -29,6 +33,10 @@ data class AccountUser(val uid: String, val email: String?)
  * Freiwilliges Konto (Phase 2): „Mit Google weiter“ über den Credential Manager → Firebase-Anmeldung.
  * Es gibt kein getrenntes Registrieren – Firebase legt das Konto beim ersten Mal selbst an.
  * Firebase wird von Hand gestartet (Werte aus google-services.json über BuildConfig), ohne Google-Services-Plugin.
+ *
+ * Für die KI gibt es zusätzlich ein unsichtbares Gast-Konto (Firebase „Anonym“): Der KI-Worker zählt damit pro Person.
+ * Es gilt NICHT als Konto – [user] bleibt null, keine Cloud-Sicherung. Meldet man sich mit Google an, wird das
+ * Gast-Konto übernommen (gleiche Kennung, die gezählten KI-Aufrufe bleiben).
  */
 class AccountManager(private val context: Context) {
 
@@ -48,11 +56,27 @@ class AccountManager(private val context: Context) {
         FirebaseAuth.getInstance(app)
     }.getOrNull()
 
-    private val _user = MutableStateFlow(auth?.currentUser?.let { AccountUser(it.uid, it.email) })
+    private fun FirebaseUser.toAccount() = takeUnless { it.isAnonymous }?.let { AccountUser(it.uid, it.email) }
+
+    /** Echtes Konto (Google); null ohne Konto oder mit Gast-Konto. */
+    private val _user = MutableStateFlow(auth?.currentUser?.toAccount())
     val user: StateFlow<AccountUser?> = _user.asStateFlow()
 
+    private val guestLock = Mutex()
+
     init {
-        auth?.addAuthStateListener { a -> _user.value = a.currentUser?.let { AccountUser(it.uid, it.email) } }
+        auth?.addAuthStateListener { a -> _user.value = a.currentUser?.toAccount() }
+    }
+
+    /**
+     * Token für den KI-Worker: vom Konto oder – ohne Konto – vom Gast-Konto, das hier beim ersten Mal still angelegt wird.
+     * null = Firebase nicht eingerichtet.
+     */
+    suspend fun aiToken(): String? {
+        val a = auth ?: return null
+        val current = a.currentUser ?: guestLock.withLock { a.currentUser ?: a.signInAnonymously().await().user }
+            ?: error("Kein Gast-Konto")
+        return current.getIdToken(false).await().token
     }
 
     /** Google-Kontoauswahl zeigen und anmelden. Abbruch durch den Nutzer → Exception (wird in der UI still behandelt). */
@@ -66,14 +90,25 @@ class AccountManager(private val context: Context) {
             "Unerwartete Anmeldung"
         }
         val idToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
-        val result = a.signInWithCredential(GoogleAuthProvider.getCredential(idToken, null)).await()
+        val google = GoogleAuthProvider.getCredential(idToken, null)
+        val guest = a.currentUser?.takeIf { it.isAnonymous }
+        // Gast-Konto übernehmen (KI-Zähler bleibt); gibt es das Google-Konto schon, normal anmelden.
+        val result = if (guest != null) {
+            try {
+                guest.linkWithCredential(google).await()
+            } catch (_: FirebaseAuthUserCollisionException) {
+                a.signInWithCredential(google).await()
+            }
+        } else {
+            a.signInWithCredential(google).await()
+        }
         val user = result.user ?: error("Anmeldung fehlgeschlagen")
         return AccountUser(user.uid, user.email).also { _user.value = it }
     }
 
     /** Frisches Firebase-Token für Firestore (wird bei Bedarf erneuert). */
     suspend fun idToken(): String {
-        val u = auth?.currentUser ?: error("Nicht angemeldet")
+        val u = auth?.currentUser?.takeUnless { it.isAnonymous } ?: error("Nicht angemeldet")
         return u.getIdToken(false).await().token ?: error("Kein Token")
     }
 
@@ -88,7 +123,7 @@ class AccountManager(private val context: Context) {
      * und erneut versucht (die eigentliche Bestätigung ist der 6-stellige Code davor).
      */
     suspend fun deleteAccount(activity: Activity) {
-        val u = auth?.currentUser ?: return
+        val u = auth?.currentUser?.takeUnless { it.isAnonymous } ?: return
         try {
             u.delete().await()
         } catch (_: FirebaseAuthRecentLoginRequiredException) {

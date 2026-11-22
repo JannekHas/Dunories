@@ -167,9 +167,10 @@
     <string name="capture_retry">Erneut versuchen</string>
     <string name="capture_enter_manually">Manuell eingeben</string>
     <string name="capture_back_to_camera">Neues Foto / zurück</string>
-    <string name="error_ai_no_key">Es ist kein Gemini-API-Key hinterlegt. Trage ihn in local.properties ein und baue die App neu.</string>
-    <string name="error_ai_rejected">Gemini hat die Anfrage abgelehnt. Bitte prüfe den API-Key.</string>
+    <string name="error_ai_no_key">Die KI ist in dieser Version nicht eingerichtet. Trag dein Essen per Barcode oder von Hand ein.</string>
+    <string name="error_ai_rejected">Die KI hat die Anfrage abgelehnt. Versuch es später noch einmal oder trag es von Hand ein.</string>
     <string name="error_ai_overloaded">Gemini ist gerade überlastet. Versuch es in ein paar Sekunden noch einmal.</string>
+    <string name="error_ai_daily_limit">Du hast heute alle KI-Aufrufe genutzt. Ab Mitternacht geht es weiter – bis dahin per Barcode oder von Hand.</string>
     <string name="error_ai_quota">Das kostenlose Gemini-Kontingent ist gerade aufgebraucht. Versuch es später noch einmal.</string>
     <string name="error_ai_invalid">Die KI-Antwort war unbrauchbar.</string>
     <string name="error_ai_no_food">Auf dem Foto wurde kein Essen erkannt.</string>

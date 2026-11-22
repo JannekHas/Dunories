@@ -18,29 +18,32 @@ data class GeminiFile(val name: String, val uri: String, val mimeType: String)
 /**
  * Datei-Schnittstelle von Gemini für Videos (zu groß für Inline-Daten):
  * Upload (resumable) → warten bis ACTIVE → nach der Analyse löschen.
+ * Den Upload startet der KI-Worker (mit dem Schlüssel); die Upload-Adresse von Google gilt danach ohne Schlüssel,
+ * das Video geht also direkt vom Handy zu Google. Status und Löschen laufen wieder über den Worker.
  */
 class GeminiFiles(private val client: GeminiClient) {
 
     suspend fun upload(input: InputStream, length: Long, mimeType: String): GeminiFile {
-        if (client.key.isBlank()) throw GeminiException(GeminiError.NO_API_KEY)
+        val auth = client.aiHeaders()
         val uploadUrl = withContext(Dispatchers.IO) {
-            val connection = open("$BASE/upload/v1beta/files", "POST")
+            val connection = open("${client.workerUrl}/v1/files:start", "POST", auth)
             try {
-                connection.setRequestProperty("X-Goog-Upload-Protocol", "resumable")
-                connection.setRequestProperty("X-Goog-Upload-Command", "start")
-                connection.setRequestProperty("X-Goog-Upload-Header-Content-Length", length.toString())
-                connection.setRequestProperty("X-Goog-Upload-Header-Content-Type", mimeType)
-                connection.setRequestProperty("Content-Type", "application/json")
+                connection.setRequestProperty("X-Upload-Length", length.toString())
+                connection.setRequestProperty("X-Upload-Type", mimeType)
+                connection.setFixedLengthStreamingMode(0)
                 connection.doOutput = true
-                connection.outputStream.use { it.write("""{"file":{"display_name":"rezept-video"}}""".toByteArray()) }
+                connection.outputStream.close()
                 check(connection)
-                connection.getHeaderField("X-Goog-Upload-URL") ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
+                val json = connection.inputStream.bufferedReader().use { it.readText() }
+                runCatching { lenientJson.parseToJsonElement(json).asObject()?.string("uploadUrl") }.getOrNull()
+                    ?.takeIf { it.startsWith("https://generativelanguage.googleapis.com/") }
+                    ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
             } finally {
                 connection.disconnect()
             }
         }
         val fileJson = withContext(Dispatchers.IO) {
-            val connection = open(uploadUrl, "POST")
+            val connection = open(uploadUrl, "POST", emptyMap())
             try {
                 connection.setRequestProperty("X-Goog-Upload-Command", "upload, finalize")
                 connection.setRequestProperty("X-Goog-Upload-Offset", "0")
@@ -62,7 +65,7 @@ class GeminiFiles(private val client: GeminiClient) {
                 "FAILED" -> throw GeminiException(GeminiError.INVALID_RESPONSE)
             }
             delay(2_000)
-            file = parseFile(get("$BASE/v1beta/${file.first.name}")) ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
+            file = parseFile(get("${client.workerUrl}/v1/${file.first.name}", auth)) ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
         }
         throw GeminiException(GeminiError.NETWORK)
     }
@@ -71,7 +74,7 @@ class GeminiFiles(private val client: GeminiClient) {
     suspend fun delete(file: GeminiFile) {
         runCatching {
             withContext(Dispatchers.IO) {
-                val connection = open("$BASE/v1beta/${file.name}", "DELETE")
+                val connection = open("${client.workerUrl}/v1/${file.name}", "DELETE", client.aiHeaders())
                 try {
                     connection.responseCode
                 } finally {
@@ -81,8 +84,8 @@ class GeminiFiles(private val client: GeminiClient) {
         }
     }
 
-    private suspend fun get(url: String): String = withContext(Dispatchers.IO) {
-        val connection = open(url, "GET")
+    private suspend fun get(url: String, auth: Map<String, String>): String = withContext(Dispatchers.IO) {
+        val connection = open(url, "GET", auth)
         try {
             check(connection)
             connection.inputStream.bufferedReader().use { it.readText() }
@@ -91,12 +94,12 @@ class GeminiFiles(private val client: GeminiClient) {
         }
     }
 
-    private fun open(url: String, method: String): HttpURLConnection =
+    private fun open(url: String, method: String, headers: Map<String, String>): HttpURLConnection =
         (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 15_000
             readTimeout = 60_000
-            client.authHeaders.forEach { (k, v) -> setRequestProperty(k, v) }
+            headers.forEach { (k, v) -> setRequestProperty(k, v) }
         }
 
     private fun check(connection: HttpURLConnection) {
@@ -115,9 +118,5 @@ class GeminiFiles(private val client: GeminiClient) {
         val name = file.string("name") ?: return null
         val uri = file.string("uri") ?: return null
         return GeminiFile(name, uri, file.string("mimeType") ?: "video/mp4") to (file.string("state") ?: "ACTIVE")
-    }
-
-    private companion object {
-        const val BASE = "https://generativelanguage.googleapis.com"
     }
 }

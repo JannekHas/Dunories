@@ -27,3 +27,9 @@ design/werbung/
 
 # Firebase-Konfiguration (nicht geheim, aber öffentliches Repo)
 app/google-services.json
+
+# Cloudflare-Worker (lokale Zustände, Geheimnisse) und Admin-Dashboard (enthält Admin-Schlüssel)
+backend/ai-worker/.wrangler/
+backend/ai-worker/node_modules/
+backend/ai-worker/.dev.vars
+admin/

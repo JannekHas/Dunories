@@ -48,7 +48,7 @@ class GeminiRecipeAnalyzer(private val client: GeminiClient) {
 
     /** @throws GeminiException (NO_FOOD = kein Rezept erkannt) */
     suspend fun analyze(input: RecipeAnalysisInput, categories: List<String>): RecipeDraft {
-        val text = client.generateJson(RESPONSE_SCHEMA, timeoutMs = 240_000) {
+        val text = client.generateJson(RESPONSE_SCHEMA, timeoutMs = 240_000, kind = AiKind.RECIPE) {
             addJsonObject { put("text", prompt(categories)) }
             input.caption?.takeIf { it.isNotBlank() }?.let { caption ->
                 addJsonObject { put("text", "Beschreibung des Beitrags:\n${caption.take(MAX_TEXT)}") }

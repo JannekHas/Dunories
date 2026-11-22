@@ -20,8 +20,10 @@ import java.time.LocalDate
 /** KI-Wochenauswertung: analysiert Ernährung, Bewegung und Gewicht und gibt konkrete Tipps zum Ziel. */
 class GeminiWeeklyAnalyzer(private val client: GeminiClient) {
 
-    suspend fun analyze(data: String, from: LocalDate, to: LocalDate): WeeklyReport {
-        val text = client.generateJson(RESPONSE_SCHEMA, timeoutMs = 180_000) {
+    /** [automatic] = montags im Hintergrund (zählt beim Worker nicht zum Tageslimit, einmal pro Woche). */
+    suspend fun analyze(data: String, from: LocalDate, to: LocalDate, automatic: Boolean = false): WeeklyReport {
+        val kind = if (automatic) AiKind.WEEKLY_AUTO else AiKind.WEEKLY
+        val text = client.generateJson(RESPONSE_SCHEMA, timeoutMs = 180_000, kind = kind) {
             addJsonObject { put("text", PROMPT) }
             addJsonObject { put("text", data) }
         }

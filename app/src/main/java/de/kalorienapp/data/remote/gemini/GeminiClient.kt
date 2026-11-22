@@ -38,18 +38,23 @@ import java.io.IOException
 import java.net.SocketTimeoutException
 
 /** Warum eine KI-Analyse fehlgeschlagen ist – die UI bietet dann immer die manuelle Eingabe an. */
-enum class GeminiError { NO_API_KEY, REJECTED, NETWORK, QUOTA, OVERLOADED, INVALID_RESPONSE, NO_FOOD }
+enum class GeminiError { NO_API_KEY, REJECTED, NETWORK, QUOTA, OVERLOADED, INVALID_RESPONSE, NO_FOOD, DAILY_LIMIT }
+
+/** Art des KI-Aufrufs – der Worker zählt danach (automatische Wochenauswertung zählt nicht mit). */
+enum class AiKind(val header: String) { FOOD("food"), BODY("body"), PLAN("plan"), RECIPE("recipe"), WEEKLY("weekly"), WEEKLY_AUTO("weekly-auto") }
 
 class GeminiException(val error: GeminiError, cause: Throwable? = null) : Exception(error.name, cause)
 
 /**
- * Gemini-REST-Client. Antworten werden immer als JSON mit festem Schema angefordert
+ * Gemini-Client. Antworten werden immer als JSON mit festem Schema angefordert
  * (Nährwerte pro 100 g/ml in Etikett-Reihenfolge) und tolerant geparst.
+ * Alle Aufrufe laufen über den eigenen KI-Worker ([baseUrl], backend/ai-worker): Er hält den Gemini-Schlüssel,
+ * prüft das Firebase-Token (Gast-Konto oder Google) und zählt die Aufrufe pro Person und Tag.
  */
 class GeminiClient(
-    private val apiKey: String,
-    /** Paketname + Signatur ([AppIdentity]) für den auf Dunories beschränkten Schlüssel. */
-    private val appIdentity: Map<String, String> = emptyMap(),
+    private val baseUrl: String,
+    /** Firebase-Token (legt bei Bedarf still ein Gast-Konto an); null = Konto-Dienst nicht verfügbar. */
+    private val token: suspend () -> String?,
 ) {
 
     /** [hint] = Korrektur des Nutzers („Das ist Linsen-Dal, ca. 300 g“) – hat Vorrang vor dem Bild. */
@@ -90,7 +95,7 @@ class GeminiClient(
         source: EntrySource,
         parts: JsonArrayBuilder.() -> Unit,
     ): List<FoodDraft> {
-        val text = generateJson(RESPONSE_SCHEMA, parts = parts)
+        val text = generateJson(RESPONSE_SCHEMA, kind = AiKind.FOOD, parts = parts)
         val drafts = GeminiResponseParser.parseItems(text, source)
             ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
         if (drafts.isEmpty()) throw GeminiException(GeminiError.NO_FOOD)
@@ -111,9 +116,11 @@ class GeminiClient(
     internal suspend fun generateJson(
         schema: JsonObject,
         timeoutMs: Int = 120_000,
+        kind: AiKind,
         parts: JsonArrayBuilder.() -> Unit,
     ): String {
-        if (apiKey.isBlank()) throw GeminiException(GeminiError.NO_API_KEY)
+        // Eine Kennung für alle Versuche/Spuren dieses Aufrufs → der Worker zählt ihn nur einmal.
+        val headers = aiHeaders() + mapOf("X-Ai-Kind" to kind.header, "X-Ai-Request" to java.util.UUID.randomUUID().toString())
         val request = buildJsonObject {
             putJsonArray("contents") { addJsonObject { putJsonArray("parts", parts) } }
             putJsonObject("generationConfig") {
@@ -125,7 +132,7 @@ class GeminiClient(
             }
         }.toString()
         return coroutineScope {
-            val first = async { runCatching { callModels(FAST_MODELS + FAST_MODELS, request, timeoutMs) } }
+            val first = async { runCatching { callModels(FAST_MODELS + FAST_MODELS, request, headers, timeoutMs) } }
             withTimeoutOrNull(HEDGE_DELAY_MS) { first.join() }
             if (first.isCompleted) {
                 val result = first.await()
@@ -133,7 +140,7 @@ class GeminiClient(
                 // Ungültiger Key gilt für alle Modelle.
                 (result.exceptionOrNull() as? GeminiException)?.takeIf { !it.retryable }?.let { throw it }
             }
-            val second = async { runCatching { callModels(FAST_MODELS.reversed() + FALLBACK_MODEL, request, timeoutMs) } }
+            val second = async { runCatching { callModels(FAST_MODELS.reversed() + FALLBACK_MODEL, request, headers, timeoutMs) } }
             val pending = listOf(first, second).filter { !it.isCompleted }.toMutableList()
             var lastError = first.takeIf { it.isCompleted }?.await()?.exceptionOrNull()
             while (pending.isNotEmpty()) {
@@ -159,7 +166,7 @@ class GeminiClient(
      * Modelle der Reihe nach versuchen; weiter nur bei Überlastung (5xx), unbekanntem Modell (404)
      * oder Netzwerkfehler. Kurze Pause dazwischen, damit ein kurzer Engpass vorbeigeht.
      */
-    private suspend fun callModels(models: List<String>, request: String, timeoutMs: Int): String {
+    private suspend fun callModels(models: List<String>, request: String, headers: Map<String, String>, timeoutMs: Int): String {
         var lastError: GeminiException? = null
         for ((index, model) in models.withIndex()) {
             if (index > 0) delay(RETRY_DELAY_MS)
@@ -169,16 +176,16 @@ class GeminiClient(
             }
             val error = try {
                 val body = Http.postJson(
-                    url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent",
+                    url = "$baseUrl/v1/models/$model:generateContent",
                     body = request,
-                    headers = authHeaders,
+                    headers = headers,
                     timeoutMs = timeoutMs,
                 )
                 log("ok")
                 return GeminiResponseParser.answerText(body) ?: throw GeminiException(GeminiError.INVALID_RESPONSE)
             } catch (e: HttpStatusException) {
                 log("HTTP ${e.code}")
-                GeminiException(if (e.code == 404) GeminiError.OVERLOADED else errorFor(e.code), e)
+                GeminiException(if (e.code == 404) GeminiError.OVERLOADED else errorFor(e.code, e.body), e)
             } catch (e: SocketTimeoutException) {
                 // Nach langem Warten nicht noch einmal minutenlang warten lassen.
                 throw GeminiException(GeminiError.NETWORK, e)
@@ -192,16 +199,28 @@ class GeminiClient(
         throw lastError ?: GeminiException(GeminiError.NETWORK)
     }
 
-    internal val key: String get() = apiKey
+    internal val workerUrl: String get() = baseUrl
 
-    internal val authHeaders: Map<String, String> get() = mapOf("x-goog-api-key" to apiKey) + appIdentity
+    /** Anmelde-Header für den Worker. Kein Worker/Konto-Dienst → [GeminiError.NO_API_KEY], kein Netz → NETWORK. */
+    internal suspend fun aiHeaders(): Map<String, String> {
+        if (baseUrl.isBlank()) throw GeminiException(GeminiError.NO_API_KEY)
+        val t = try {
+            token()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            throw GeminiException(GeminiError.NETWORK, e)
+        } ?: throw GeminiException(GeminiError.NO_API_KEY)
+        return mapOf("Authorization" to "Bearer $t")
+    }
 
     companion object {
         /** Bilder gehen als WebP an die KI (kleiner als JPEG → schnellerer Upload). */
         const val IMAGE_MIME = "image/webp"
 
-        internal fun errorFor(code: Int): GeminiError = when (code) {
-            429 -> GeminiError.QUOTA
+        internal fun errorFor(code: Int, body: String = ""): GeminiError = when (code) {
+            // Eigenes Tageslimit des Workers (oder automatische Wochenauswertung schon gelaufen) – kein anderes Modell hilft.
+            429 -> if ("daily_limit" in body || "weekly_done" in body) GeminiError.DAILY_LIMIT else GeminiError.QUOTA
             // Ungültiger Key liefert je nach Fall 400, 401 oder 403.
             400, 401, 403 -> GeminiError.REJECTED
             in 500..599 -> GeminiError.OVERLOADED

@@ -46,11 +46,12 @@ class WeeklyReportRepository(
      * @throws NotEnoughDataException bei weniger als [WeeklyInputBuilder.MIN_LOGGED_DAYS] erfassten Tagen
      * @throws de.kalorienapp.data.remote.gemini.GeminiException bei KI-Fehlern
      */
-    suspend fun generate(from: LocalDate, to: LocalDate, replaceId: Long = 0): WeeklyReport {
+    /** [automatic] = Hintergrund-Auswertung am Montag (zählt nicht zum KI-Tageslimit). */
+    suspend fun generate(from: LocalDate, to: LocalDate, replaceId: Long = 0, automatic: Boolean = false): WeeklyReport {
         val input = collectInput(from, to)
         val logged = WeeklyInputBuilder.loggedDays(input)
         if (logged < WeeklyInputBuilder.MIN_LOGGED_DAYS) throw NotEnoughDataException(logged)
-        val report = analyzer.analyze(WeeklyInputBuilder.build(input), from, to).copy(id = replaceId)
+        val report = analyzer.analyze(WeeklyInputBuilder.build(input), from, to, automatic).copy(id = replaceId)
         val id = dao.upsert(WeeklyReportEntity.fromDomain(report))
         return report.copy(id = if (replaceId != 0L) replaceId else id)
     }

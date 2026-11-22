@@ -1,0 +1,21 @@
+# KI-Worker für Dunories (Cloudflare Workers, kostenloser Tarif).
+# Geheimnisse NIE hier eintragen, sondern per `npx wrangler secret put GEMINI_API_KEY` / `ADMIN_KEY`.
+name = "dunories-ai"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+# Keine Logs mit Inhalten: der Worker loggt selbst nichts, Cloudflare-Observability bleibt aus.
+
+[vars]
+FIREBASE_PROJECT_ID = "dunories"
+# Startwert; im Admin-Dashboard änderbar (gespeichert im Durable Object).
+DEFAULT_DAILY_LIMIT = "40"
+
+[[durable_objects.bindings]]
+name = "USAGE"
+class_name = "Usage"
+
+# Durable Objects mit SQLite sind im kostenlosen Tarif enthalten.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Usage"]

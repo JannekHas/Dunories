@@ -20,7 +20,7 @@ import java.util.Base64
 class GeminiBodyAnalyzer(private val client: GeminiClient) {
 
     suspend fun analyze(images: List<ByteArray>, text: String?): Map<MeasureType, Double> {
-        val answer = client.generateJson(RESPONSE_SCHEMA, timeoutMs = 60_000) {
+        val answer = client.generateJson(RESPONSE_SCHEMA, timeoutMs = 60_000, kind = AiKind.BODY) {
             addJsonObject { put("text", PROMPT) }
             text?.takeIf { it.isNotBlank() }?.let { addJsonObject { put("text", "Gesprochen/getippt:\n" + it.trim()) } }
             images.forEach { bytes ->

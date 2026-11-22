@@ -328,7 +328,7 @@ class WeeklyReportWorker(context: Context, params: WorkerParameters) : Coroutine
         }
         try {
             if (!c.weeklyReportRepository.exists(from, to)) {
-                val report = c.weeklyReportRepository.generate(from, to)
+                val report = c.weeklyReportRepository.generate(from, to, automatic = true)
                 if (Notifications.canPost(applicationContext)) {
                     val notification = NotificationCompat.Builder(applicationContext, Notifications.CHANNEL_REPORTS)
                 .setGroup(Notifications.GROUP_OTHER)
