@@ -71,6 +71,11 @@
   .type-bug { color: var(--red); } .type-idea { color: var(--cyan); } .type-praise { color: var(--green); }
   .tabs { display: flex; gap: 6px; }
   .tabs button { padding: 6px 12px; }
+  dialog { background: #1d1b26; color: var(--text); border: 1px solid var(--line); border-radius: 18px; padding: 20px; width: min(480px, 92vw); overflow: hidden; }
+  dialog .row > * { min-width: 0; }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  td .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  td .actions button { padding: 5px 10px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -176,6 +181,29 @@
   </div>
 </main>
 
+<dialog id="codeDlg">
+  <h2 id="eTitle" style="margin-top:0">Code bearbeiten</h2>
+  <div class="row">
+    <div><label for="eDays">Laufzeit</label>
+      <select id="eDays">
+        <option value="7">7 Tage</option><option value="30">30 Tage</option><option value="90">3 Monate</option>
+        <option value="365">1 Jahr</option><option value="0">Für immer (Lifetime)</option><option value="custom">Eigene Tage …</option>
+      </select></div>
+    <div id="eCustomWrap" style="display:none"><label for="eCustom">Tage</label><input id="eCustom" type="number" min="1" max="3650"></div>
+  </div>
+  <div class="row">
+    <div><label for="eUses">Wie oft einlösbar</label><input id="eUses" type="number" min="1" max="100000"></div>
+    <div><label for="eValid">Einlösbar ab jetzt für … Tage</label><input id="eValid" type="number" min="0" max="3650" placeholder="leer = so lassen"></div>
+  </div>
+  <div class="hint">Gültigkeit: leer = unverändert, 0 = unbegrenzt. Die Laufzeit gilt nur für künftige Einlösungen.</div>
+  <label for="eNote">Notiz</label><input id="eNote" maxlength="80">
+  <div class="row" style="margin-top:16px; justify-content:flex-end">
+    <button class="ghost" style="flex:0 0 auto" onclick="$('codeDlg').close()">Abbrechen</button>
+    <button style="flex:0 0 auto" onclick="saveCode()">Speichern</button>
+  </div>
+  <div class="msg" id="eMsg"></div>
+</dialog>
+
 <script>
 const WORKER = "__WORKER_URL__";
 const KEY = "__ADMIN_KEY__";
@@ -261,14 +289,53 @@ async function loadCodes() {
           : c.used >= c.maxUses ? '<span class="pill">aufgebraucht</span>' : '<span class="pill on">aktiv</span>';
         return `<tr><td><code>${esc(c.code)}</code></td><td>${duration(c.days)}</td><td class="num">${c.used} / ${c.maxUses}</td>
           <td>${c.expires ? day(c.expires) : "unbegrenzt"}</td><td>${esc(c.note)}</td><td>${state}</td>
-          <td>${c.disabled ? "" : `<button class="danger" onclick="disableCode('${esc(c.code)}')">Deaktivieren</button>`}</td></tr>`;
+          <td><div class="actions">
+            <button class="ghost" onclick='editCode(${JSON.stringify(c).replace(/'/g, "&#39;")})'>Bearbeiten</button>
+            ${c.disabled ? `<button class="ghost" onclick="toggleCode('${esc(c.code)}', false)">Aktivieren</button>`
+              : `<button class="danger" onclick="toggleCode('${esc(c.code)}', true)">Deaktivieren</button>`}
+            <button class="ghost" onclick="resetCode('${esc(c.code)}', ${c.used})">Zurücksetzen</button>
+            <button class="danger" onclick="deleteCode('${esc(c.code)}')">Löschen</button>
+          </div></td></tr>`;
       }).join("") : '<tr><td colspan="7" class="hint">Noch keine Codes.</td></tr>');
   } catch (e) { $("codes").innerHTML = `<tr><td class="hint">Laden fehlgeschlagen: ${esc(e.message)}</td></tr>`; }
 }
 
-async function disableCode(code) {
-  if (!confirm(`Code ${code} deaktivieren? Bereits eingelöste Premium-Zeit bleibt.`)) return;
-  try { await api("/admin/codes/disable", "POST", { code }); loadCodes(); } catch (e) { alert(e.message); }
+async function toggleCode(code, disabled) {
+  if (disabled && !confirm(`Code ${code} deaktivieren? Bereits eingelöste Premium-Zeit bleibt.`)) return;
+  try { await api("/admin/codes/disable", "POST", { code, disabled }); loadCodes(); } catch (e) { alert(e.message); }
+}
+
+let editing = null;
+function editCode(c) {
+  editing = c;
+  $("eTitle").textContent = `Code ${c.code} bearbeiten`;
+  const preset = ["7", "30", "90", "365", "0"].includes(String(c.days));
+  $("eDays").value = preset ? String(c.days) : "custom";
+  $("eCustomWrap").style.display = preset ? "none" : "";
+  $("eCustom").value = preset ? "" : c.days;
+  $("eUses").value = c.maxUses;
+  $("eValid").value = "";
+  $("eNote").value = c.note ?? "";
+  $("eMsg").textContent = "";
+  $("codeDlg").showModal();
+}
+$("eDays").addEventListener("change", () => { $("eCustomWrap").style.display = $("eDays").value === "custom" ? "" : "none"; });
+
+async function saveCode() {
+  const days = $("eDays").value === "custom" ? Number($("eCustom").value) : Number($("eDays").value);
+  const body = { code: editing.code, days, maxUses: Number($("eUses").value), note: $("eNote").value };
+  if ($("eValid").value !== "") body.validDays = Number($("eValid").value);
+  try { await api("/admin/codes/update", "POST", body); $("codeDlg").close(); loadCodes(); } catch (e) { show("eMsg", "Fehler: " + e.message, false); }
+}
+
+async function resetCode(code, used) {
+  if (!confirm(`Code ${code} zurücksetzen? Der Zähler (${used}× eingelöst) geht auf 0 und alle dürfen ihn wieder einlösen – auch wer ihn schon hatte. Vergebene Premium-Zeit bleibt.`)) return;
+  try { await api("/admin/codes/reset", "POST", { code }); loadCodes(); } catch (e) { alert(e.message); }
+}
+
+async function deleteCode(code) {
+  if (!confirm(`Code ${code} endgültig löschen? Er lässt sich danach nicht mehr einlösen. Bereits vergebene Premium-Zeit bleibt.`)) return;
+  try { await api("/admin/codes/delete", "POST", { code }); loadCodes(); } catch (e) { alert(e.message); }
 }
 
 function entText(u) {

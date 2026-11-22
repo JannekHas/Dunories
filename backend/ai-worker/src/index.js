@@ -250,7 +250,41 @@ async function admin(request, env, url) {
   if (url.pathname === "/admin/codes/disable" && request.method === "POST") {
     const code = normalizeCode(body?.code);
     if (!code) return bad();
-    await usage.disableCode(code);
+    await usage.disableCode(code, body?.disabled !== false);
+    return ok({ ok: true });
+  }
+  // Bearbeiten: nur mitgeschickte Felder ändern. validDays = ab jetzt einlösbar für … Tage (0 = unbegrenzt).
+  if (url.pathname === "/admin/codes/update" && request.method === "POST") {
+    const code = normalizeCode(body?.code);
+    if (!code) return bad();
+    const changes = {};
+    if (body.days !== undefined) {
+      if (!Number.isInteger(body.days) || body.days < 0 || body.days > 3650) return bad();
+      changes.days = body.days;
+    }
+    if (body.maxUses !== undefined) {
+      if (!Number.isInteger(body.maxUses) || body.maxUses < 1 || body.maxUses > 100000) return bad();
+      changes.max_uses = body.maxUses;
+    }
+    if (body.validDays !== undefined) {
+      if (!Number.isInteger(body.validDays) || body.validDays < 0 || body.validDays > 3650) return bad();
+      changes.expires = body.validDays ? now + body.validDays * 86400000 : null;
+    }
+    if (body.note !== undefined) changes.note = String(body.note).slice(0, 80) || null;
+    await usage.updateCode(code, changes);
+    return ok({ ok: true });
+  }
+  // Zurücksetzen: Zähler auf 0, alle dürfen ihn wieder einlösen (bereits vergebene Premium-Zeit bleibt).
+  if (url.pathname === "/admin/codes/reset" && request.method === "POST") {
+    const code = normalizeCode(body?.code);
+    if (!code) return bad();
+    await usage.resetCode(code);
+    return ok({ ok: true });
+  }
+  if (url.pathname === "/admin/codes/delete" && request.method === "POST") {
+    const code = normalizeCode(body?.code);
+    if (!code) return bad();
+    await usage.deleteCode(code);
     return ok({ ok: true });
   }
   if (url.pathname === "/admin/feedback" && request.method === "GET") {
@@ -565,8 +599,26 @@ export class Usage extends DurableObject {
       code, days, maxUses, expires, note || null, now);
   }
 
-  disableCode(code) {
-    this.sql.exec("UPDATE codes SET disabled = 1 WHERE code = ?", code);
+  disableCode(code, disabled = true) {
+    this.sql.exec("UPDATE codes SET disabled = ? WHERE code = ?", disabled ? 1 : 0, code);
+  }
+
+  updateCode(code, changes) {
+    for (const [column, value] of Object.entries(changes)) {
+      if (!["days", "max_uses", "expires", "note"].includes(column)) continue;
+      this.sql.exec(`UPDATE codes SET ${column} = ? WHERE code = ?`, value, code);
+    }
+  }
+
+  resetCode(code) {
+    this.sql.exec("UPDATE codes SET used = 0 WHERE code = ?", code);
+    this.sql.exec("DELETE FROM redemptions WHERE code = ?", code);
+  }
+
+  /** Löschen: Code verschwindet, bereits vergebene Premium-Zeit bleibt bei den Personen. */
+  deleteCode(code) {
+    this.sql.exec("DELETE FROM codes WHERE code = ?", code);
+    this.sql.exec("DELETE FROM redemptions WHERE code = ?", code);
   }
 
   codes(now) {
