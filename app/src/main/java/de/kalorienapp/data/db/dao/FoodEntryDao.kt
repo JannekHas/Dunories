@@ -42,7 +42,15 @@ interface FoodEntryDao {
     @Query("SELECT COUNT(*) FROM food_entry")
     fun observeCount(): kotlinx.coroutines.flow.Flow<Int>
 
-    /** Für Level & Erfolge: alle Tage mit mindestens einem Eintrag. */
+    /** Für Erfolge: Einträge einer Quelle (Name von EntrySource, z. B. "BARCODE"). */
+    @Query("SELECT COUNT(*) FROM food_entry WHERE source = :source")
+    fun observeSourceCount(source: String): kotlinx.coroutines.flow.Flow<Int>
+
+    /** Für den geheimen Erfolg „Mitternachtssnack“: Erfassungszeitpunkte aller Einträge. */
+    @Query("SELECT createdAt FROM food_entry")
+    fun observeCreatedTimes(): kotlinx.coroutines.flow.Flow<List<Long>>
+
+    /** Für Erfolge: alle Tage mit mindestens einem Eintrag. */
     @Query("SELECT DISTINCT dateEpochDay FROM food_entry")
     fun observeLoggedDays(): kotlinx.coroutines.flow.Flow<List<Long>>
 

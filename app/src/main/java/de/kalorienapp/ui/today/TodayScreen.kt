@@ -587,7 +587,8 @@ private fun AchievementBanner(
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.achievement_unlocked), style = MaterialTheme.typography.labelMedium, color = Neon.Yellow)
                 Text(
-                    de.kalorienapp.ui.social.badgeTitle(achievement.key) + " · " + stringResource(R.string.social_xp_reward, achievement.xp),
+                    de.kalorienapp.ui.social.badgeTitle(achievement.key) + " · " +
+                        stringResource(de.kalorienapp.ui.social.rarityName(achievement.rarity)),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )

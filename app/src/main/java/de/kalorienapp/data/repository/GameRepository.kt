@@ -8,12 +8,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.time.LocalDate
 
-/** Alles für den Social-Reiter: Level, Erfolge, Abzeichen. Wird live aus den vorhandenen Daten berechnet. */
+/** Alles für den Social-Reiter: Erfolge und Abzeichen. Wird live aus den vorhandenen Daten berechnet. */
 data class GameState(
     val stats: Gamification.Stats,
-    val level: Gamification.Level,
+    /** In Anzeige-Reihenfolge ([Gamification.sorted]). */
     val progress: List<Gamification.Progress>,
-    /** Verdiente Abzeichen (Schlüssel): freigeschaltete Erfolge + „tester“. */
+    /** Verdiente Abzeichen (Schlüssel), seltenste zuerst: freigeschaltete Erfolge + „tester“. */
     val badges: List<String>,
     val newlyUnlocked: List<Gamification.Achievement>,
 )
@@ -30,8 +30,14 @@ class GameRepository(
         foodDao.observeCount(),
         weights.entries,
         goals.reachedGoals,
-        combine(reports.observeAll(), settings.feedbackSentCount) { r, f -> r.size to f },
-    ) { days, entries, weightList, reached, (reportCount, feedback) ->
+        combine(
+            reports.observeAll(),
+            settings.feedbackSentCount,
+            foodDao.observeSourceCount("BARCODE"),
+            foodDao.observeSourceCount("AI_PHOTO"),
+            foodDao.observeCreatedTimes(),
+        ) { r, f, barcode, photo, times -> Extra(r.size, f, barcode, photo, times.count(::isNight)) },
+    ) { days, entries, weightList, reached, extra ->
         val (longest, current) = Gamification.streaks(days, LocalDate.now().toEpochDay())
         Gamification.Stats(
             loggedDays = days.size,
@@ -40,19 +46,27 @@ class GameRepository(
             currentStreak = current,
             weights = weightList.size,
             goalsReached = reached.size,
-            reports = reportCount,
-            feedbackSent = feedback,
+            reports = extra.reports,
+            feedbackSent = extra.feedback,
+            barcodeEntries = extra.barcode,
+            photoEntries = extra.photo,
+            nightEntries = extra.night,
         )
     }
 
+    private data class Extra(val reports: Int, val feedback: Int, val barcode: Int, val photo: Int, val night: Int)
+
+    /** Erfasst zwischen 0 und 4 Uhr (Handy-Zeitzone). */
+    private fun isNight(createdAt: Long): Boolean =
+        java.time.Instant.ofEpochMilli(createdAt).atZone(java.time.ZoneId.systemDefault()).hour < 4
+
     val state: Flow<GameState> = combine(stats, settings.celebratedAchievements, settings.testerPoints) { s, celebrated, points ->
-        val progress = Gamification.progress(s)
+        val progress = Gamification.sorted(Gamification.progress(s))
         val newly = Gamification.newlyUnlocked(s, celebrated)
         // Erstes Mal (Update auf diese Version): Erreichtes still übernehmen statt viele Karten zu zeigen.
         if (!settings.gamificationInitialized) settings.markCelebrated(newly.map { it.key })
         GameState(
             stats = s,
-            level = Gamification.level(Gamification.xp(s)),
             progress = progress,
             badges = (if (points > 0) listOf(TESTER_BADGE) else emptyList()) + progress.filter { it.unlocked }.map { it.achievement.key },
             newlyUnlocked = if (settings.gamificationInitialized) newly else emptyList(),

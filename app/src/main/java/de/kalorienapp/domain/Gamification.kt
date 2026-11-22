@@ -1,16 +1,17 @@
 package de.kalorienapp.domain
 
 /**
- * Level & Erfolge (Social-Reiter, Nov. 2026). Alles auf dem Handy berechnet.
+ * Erfolge & Abzeichen (Social-Reiter, Nov. 2026). Alles auf dem Handy berechnet.
  *
- * Grundsatz (fest): Erfahrungspunkte gibt es fürs **Dranbleiben** (Eintragen, Serien, Erfolge) –
- * **nie** dafür, weniger zu essen oder schneller abzunehmen. Die Serie zählt deshalb Tage **mit Einträgen**,
- * nicht Tage „im Budget“.
+ * Entscheidungen des Nutzers: **keine Level/XP** (zu viel), Erfolge **gemischt** – sichtbare mit Fortschritt und
+ * **geheime** („???“ bis freigeschaltet) –, Abzeichen mit **Seltenheit** (grau → galaxy).
+ * Grundsatz (fest): Erfolge gibt es fürs **Dranbleiben** – **nie** dafür, weniger zu essen oder schneller abzunehmen.
+ * Serien zählen deshalb Tage **mit Einträgen**, nicht Tage „im Budget“.
  */
 object Gamification {
 
-    /** XP je Tag mit mindestens einem Eintrag. */
-    const val XP_PER_LOGGED_DAY = 10
+    /** Seltenheit = Farbe des Abzeichens (Reihenfolge aufsteigend). */
+    enum class Rarity { COMMON, UNCOMMON, RARE, EPIC, LEGENDARY, GALAXY }
 
     /** Kennzahlen, aus denen Erfolge berechnet werden. */
     data class Stats(
@@ -22,24 +23,35 @@ object Gamification {
         val goalsReached: Int = 0,
         val reports: Int = 0,
         val feedbackSent: Int = 0,
+        val barcodeEntries: Int = 0,
+        val photoEntries: Int = 0,
+        /** Einträge, die zwischen 0 und 4 Uhr erfasst wurden. */
+        val nightEntries: Int = 0,
     )
 
-    enum class Metric { ENTRIES, LOGGED_DAYS, LONGEST_STREAK, WEIGHTS, GOALS_REACHED, REPORTS, FEEDBACK }
+    enum class Metric { ENTRIES, LOGGED_DAYS, LONGEST_STREAK, WEIGHTS, GOALS_REACHED, REPORTS, FEEDBACK, BARCODE, PHOTO, NIGHT }
 
     /** Reihenfolge = Anzeige. [key] ist dauerhaft (Sicherung, „schon gefeiert“) – nie umbenennen. */
-    enum class Achievement(val key: String, val metric: Metric, val target: Int, val xp: Int) {
-        FIRST_ENTRY("first_entry", Metric.ENTRIES, 1, 20),
-        ENTRIES_100("entries_100", Metric.ENTRIES, 100, 100),
-        DAYS_7("days_7", Metric.LOGGED_DAYS, 7, 50),
-        DAYS_30("days_30", Metric.LOGGED_DAYS, 30, 150),
-        DAYS_100("days_100", Metric.LOGGED_DAYS, 100, 400),
-        STREAK_7("streak_7", Metric.LONGEST_STREAK, 7, 75),
-        STREAK_30("streak_30", Metric.LONGEST_STREAK, 30, 250),
-        FIRST_WEIGHT("first_weight", Metric.WEIGHTS, 1, 20),
-        WEIGHTS_30("weights_30", Metric.WEIGHTS, 30, 120),
-        GOAL_REACHED("goal_reached", Metric.GOALS_REACHED, 1, 300),
-        FIRST_REPORT("first_report", Metric.REPORTS, 1, 40),
-        FIRST_FEEDBACK("first_feedback", Metric.FEEDBACK, 1, 40),
+    enum class Achievement(val key: String, val metric: Metric, val target: Int, val rarity: Rarity, val secret: Boolean = false) {
+        FIRST_ENTRY("first_entry", Metric.ENTRIES, 1, Rarity.COMMON),
+        FIRST_WEIGHT("first_weight", Metric.WEIGHTS, 1, Rarity.COMMON),
+        DAYS_7("days_7", Metric.LOGGED_DAYS, 7, Rarity.UNCOMMON),
+        FIRST_REPORT("first_report", Metric.REPORTS, 1, Rarity.UNCOMMON),
+        FIRST_FEEDBACK("first_feedback", Metric.FEEDBACK, 1, Rarity.UNCOMMON),
+        STREAK_7("streak_7", Metric.LONGEST_STREAK, 7, Rarity.RARE),
+        DAYS_30("days_30", Metric.LOGGED_DAYS, 30, Rarity.RARE),
+        ENTRIES_100("entries_100", Metric.ENTRIES, 100, Rarity.RARE),
+        WEIGHTS_30("weights_30", Metric.WEIGHTS, 30, Rarity.RARE),
+        STREAK_30("streak_30", Metric.LONGEST_STREAK, 30, Rarity.EPIC),
+        DAYS_100("days_100", Metric.LOGGED_DAYS, 100, Rarity.EPIC),
+        GOAL_REACHED("goal_reached", Metric.GOALS_REACHED, 1, Rarity.LEGENDARY),
+
+        // Geheim: erscheinen als „???“, bis man sie schafft.
+        NIGHT_SNACK("night_snack", Metric.NIGHT, 1, Rarity.RARE, secret = true),
+        BARCODE_50("barcode_50", Metric.BARCODE, 50, Rarity.EPIC, secret = true),
+        PHOTO_50("photo_50", Metric.PHOTO, 50, Rarity.EPIC, secret = true),
+        STREAK_100("streak_100", Metric.LONGEST_STREAK, 100, Rarity.GALAXY, secret = true),
+        DAYS_365("days_365", Metric.LOGGED_DAYS, 365, Rarity.GALAXY, secret = true),
         ;
 
         companion object {
@@ -55,6 +67,9 @@ object Gamification {
         Metric.GOALS_REACHED -> stats.goalsReached
         Metric.REPORTS -> stats.reports
         Metric.FEEDBACK -> stats.feedbackSent
+        Metric.BARCODE -> stats.barcodeEntries
+        Metric.PHOTO -> stats.photoEntries
+        Metric.NIGHT -> stats.nightEntries
     }
 
     data class Progress(val achievement: Achievement, val current: Int) {
@@ -64,23 +79,15 @@ object Gamification {
 
     fun progress(stats: Stats): List<Progress> = Achievement.entries.map { Progress(it, value(stats, it.metric)) }
 
-    fun xp(stats: Stats): Int =
-        stats.loggedDays * XP_PER_LOGGED_DAY + progress(stats).filter { it.unlocked }.sumOf { it.achievement.xp }
-
-    /** Level ab 1; Level n → n+1 kostet 100·n XP (100, 200, 300 …), damit es anfangs schnell und später langsamer geht. */
-    data class Level(val level: Int, val xpInLevel: Int, val xpForNext: Int, val totalXp: Int) {
-        val fraction: Float get() = if (xpForNext == 0) 0f else xpInLevel.toFloat() / xpForNext
-    }
-
-    fun level(totalXp: Int): Level {
-        var level = 1
-        var rest = totalXp.coerceAtLeast(0)
-        while (rest >= 100 * level) {
-            rest -= 100 * level
-            level++
-        }
-        return Level(level, rest, 100 * level, totalXp.coerceAtLeast(0))
-    }
+    /**
+     * Anzeige-Reihenfolge der Erfolge: freigeschaltete zuerst (seltenste oben), dann offene sichtbare,
+     * geheime offene ganz unten.
+     */
+    fun sorted(progress: List<Progress>): List<Progress> = progress.sortedWith(
+        compareBy<Progress> { if (it.unlocked) 0 else if (it.achievement.secret) 2 else 1 }
+            .thenByDescending { if (it.unlocked) it.achievement.rarity.ordinal else 0 }
+            .thenBy { it.achievement.ordinal },
+    )
 
     /** Längste und aktuelle Serie von Tagen mit Einträgen (aktuell: bis heute oder gestern, heute läuft noch). */
     fun streaks(loggedEpochDays: Collection<Long>, todayEpochDay: Long): Pair<Int, Int> {

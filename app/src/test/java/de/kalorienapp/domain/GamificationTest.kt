@@ -1,23 +1,12 @@
 package de.kalorienapp.domain
 
 import de.kalorienapp.domain.Gamification.Achievement
+import de.kalorienapp.domain.Gamification.Rarity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GamificationTest {
-
-    @Test
-    fun `level kostet 100 mal level xp`() {
-        assertEquals(1, Gamification.level(0).level)
-        assertEquals(1, Gamification.level(99).level)
-        assertEquals(2, Gamification.level(100).level)
-        assertEquals(3, Gamification.level(300).level)
-        val l = Gamification.level(350)
-        assertEquals(3, l.level)
-        assertEquals(50, l.xpInLevel)
-        assertEquals(300, l.xpForNext)
-    }
 
     @Test
     fun `serie zaehlt tage mit eintraegen, heute darf noch fehlen`() {
@@ -29,13 +18,6 @@ class GamificationTest {
     }
 
     @Test
-    fun `xp aus tagen und erfolgen`() {
-        val stats = Gamification.Stats(loggedDays = 7, entries = 20, longestStreak = 7)
-        // 7 Tage × 10 + erster Eintrag 20 + 7 Tage 50 + 7er-Serie 75
-        assertEquals(70 + 20 + 50 + 75, Gamification.xp(stats))
-    }
-
-    @Test
     fun `neu freigeschaltet nur was noch nicht gefeiert ist`() {
         val stats = Gamification.Stats(entries = 1, feedbackSent = 1)
         assertEquals(listOf(Achievement.FIRST_ENTRY, Achievement.FIRST_FEEDBACK), Gamification.newlyUnlocked(stats, emptySet()))
@@ -43,9 +25,28 @@ class GamificationTest {
     }
 
     @Test
-    fun `schluessel sind eindeutig`() {
+    fun `geheime erfolge kommen ueber eigene kennzahlen`() {
+        val stats = Gamification.Stats(nightEntries = 1, barcodeEntries = 50)
+        val unlocked = Gamification.newlyUnlocked(stats, emptySet())
+        assertTrue(Achievement.NIGHT_SNACK in unlocked)
+        assertTrue(Achievement.BARCODE_50 in unlocked)
+        assertTrue(unlocked.all { it.secret })
+    }
+
+    @Test
+    fun `sortierung freigeschaltete seltenste oben, geheime offene unten`() {
+        val stats = Gamification.Stats(entries = 1, goalsReached = 1)
+        val order = Gamification.sorted(Gamification.progress(stats)).map { it.achievement }
+        assertEquals(Achievement.GOAL_REACHED, order[0])
+        assertEquals(Achievement.FIRST_ENTRY, order[1])
+        assertTrue(order.takeLast(5).all { it.secret })
+    }
+
+    @Test
+    fun `schluessel eindeutig, galaxy nur geheim`() {
         val keys = Achievement.entries.map { it.key }
         assertEquals(keys.size, keys.toSet().size)
-        assertTrue(Achievement.entries.all { it.target > 0 && it.xp > 0 })
+        assertTrue(Achievement.entries.all { it.target > 0 })
+        assertTrue(Achievement.entries.filter { it.rarity == Rarity.GALAXY }.all { it.secret })
     }
 }
