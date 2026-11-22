@@ -21,6 +21,6 @@ local.properties
 *.jks
 
 # Lokale Notizen (nicht veröffentlichen)
-TESTLISTE.md
+TESTLISTE*.md
 Patchnotes*.txt
 design/werbung/
