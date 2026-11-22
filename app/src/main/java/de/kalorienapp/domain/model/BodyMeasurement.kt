@@ -32,8 +32,6 @@ enum class MeasureType(
     BMR(MeasureUnit.KCAL, 500.0..5000.0, analysis = true, goodDirection = 0),
     ;
 
-    val isPercent: Boolean get() = unit == MeasureUnit.PERCENT
-
     fun isValid(value: Double) = value in validRange
 
     companion object {

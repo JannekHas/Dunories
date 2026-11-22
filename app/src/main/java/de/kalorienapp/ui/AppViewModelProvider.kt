@@ -54,7 +54,7 @@ object AppViewModelProvider {
             DayNutrientsViewModel(createSavedStateHandle(), container().foodEntryRepository)
         }
         initializer {
-            ProfileViewModel(container().profileRepository, container().weightRepository, container().goalRepository)
+            ProfileViewModel(container().profileRepository, container().weightRepository, container().goalRepository, container().settings)
         }
         initializer {
             CalendarViewModel(container().statsRepository)

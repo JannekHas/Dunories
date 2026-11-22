@@ -34,8 +34,12 @@ data class ProfileFormState(
     val fatOverrideError get() = optionalError(fatOverride, ::gramValue)
     val carbsOverrideError get() = optionalError(carbsOverride, ::gramValue)
 
+    /** Körperdaten ohne Alltag (Einrichtung Schritt 1; der Alltag hat dort eine eigene Seite). */
+    val basicsValid: Boolean
+        get() = sex != null && ageValue != null && heightValue != null && weightValue != null
+
     val bodyDataValid: Boolean
-        get() = sex != null && lifestyle != null && ageValue != null && heightValue != null && weightValue != null
+        get() = basicsValid && lifestyle != null
 
     val targetsValid: Boolean
         get() = !proteinPerKgError && !kcalOverrideError && !proteinOverrideError &&

@@ -1,5 +1,11 @@
 package de.kalorienapp.ui.profile
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,7 +46,7 @@ fun SectionTitle(text: String) {
 }
 
 @Composable
-fun BodyDataSection(form: ProfileFormState, onUpdate: FormUpdate) {
+fun BodyDataSection(form: ProfileFormState, onUpdate: FormUpdate, showLifestyle: Boolean = true) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.profile_sex), style = MaterialTheme.typography.labelLarge)
         ChoiceChips(
@@ -82,7 +88,68 @@ fun BodyDataSection(form: ProfileFormState, onUpdate: FormUpdate) {
             errorText = stringResource(R.string.error_weight),
             modifier = Modifier.fillMaxWidth(),
         )
-        LifestyleChoice(form.lifestyle) { lifestyle -> onUpdate { it.copy(lifestyle = lifestyle) } }
+        if (showLifestyle) LifestyleChoice(form.lifestyle) { lifestyle -> onUpdate { it.copy(lifestyle = lifestyle) } }
+    }
+}
+
+/**
+ * Einrichtung: Alltag als große Karten (füllt die Seite, Nutzer-Feedback „Seiten wirken leer“, Nov. 2026).
+ * Links Balken 1–4 als Stufe, keine Emojis.
+ */
+@Composable
+fun LifestyleCards(selected: Lifestyle?, onSelect: (Lifestyle) -> Unit) {
+    Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Lifestyle.entries.forEachIndexed { index, lifestyle ->
+            ChoiceCard(
+                title = stringResource(lifestyle.labelRes),
+                text = stringResource(lifestyle.exampleRes),
+                selected = lifestyle == selected,
+                accent = Neon.Cyan,
+                onClick = { onSelect(lifestyle) },
+            ) { LevelBars(index + 1, if (lifestyle == selected) Neon.Cyan else Neon.TextSecondary) }
+        }
+    }
+}
+
+/** Große, antippbare Auswahlkarte (Einrichtung): links ein Zeichen, Titel + Erklärung, ausgewählt mit farbigem Rand. */
+@Composable
+fun ChoiceCard(
+    title: String,
+    text: String?,
+    selected: Boolean,
+    accent: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+    leading: @Composable () -> Unit = {},
+) {
+    GlassCard(
+        Modifier
+            .fillMaxWidth()
+            .border(2.dp, if (selected) accent else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(20.dp))
+            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton),
+        strong = selected,
+    ) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) { leading() }
+            Column(Modifier.padding(start = 12.dp).weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, color = if (selected) accent else MaterialTheme.colorScheme.onSurface)
+                if (text != null) Text(text, style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+            }
+        }
+    }
+}
+
+/** Stufe 1–4 als aufsteigende Balken (wie Empfangsbalken). */
+@Composable
+private fun LevelBars(level: Int, color: androidx.compose.ui.graphics.Color) {
+    Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.Bottom) {
+        (1..4).forEach { i ->
+            Box(
+                Modifier
+                    .width(5.dp)
+                    .height((6 + i * 5).dp)
+                    .background(if (i <= level) color else Neon.Track, RoundedCornerShape(2.dp)),
+            )
+        }
     }
 }
 

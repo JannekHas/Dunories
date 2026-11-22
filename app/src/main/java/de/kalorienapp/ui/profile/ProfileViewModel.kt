@@ -45,6 +45,7 @@ class ProfileViewModel(
     private val repository: ProfileRepository,
     private val weightRepository: WeightRepository,
     private val goalRepository: GoalRepository,
+    private val settings: de.kalorienapp.data.AppSettings? = null,
 ) : ViewModel() {
 
     private val currentYear get() = Year.now().value
@@ -116,15 +117,21 @@ class ProfileViewModel(
      * Onboarding-Abschluss: Profil und erstes Ziel speichern;
      * das Startgewicht wird die erste Messung im Gewichtsverlauf.
      */
-    fun save(onSaved: () -> Unit) {
+    fun save(withGoal: Boolean = true, onSaved: () -> Unit) {
         if (saving) return
         val profile = _uiState.value.form.toProfile(currentYear) ?: return
-        val goal = _uiState.value.goalState?.goal ?: return
+        val goal = _uiState.value.goalState?.goal
+        if (withGoal && goal == null) return
         saving = true
         viewModelScope.launch {
             repository.save(profile)
             weightRepository.save(WeightEntry(measuredAt = Instant.now(), weightKg = profile.weightKg))
-            goalRepository.startGoal(profile.weightKg, goal.targetWeightKg, goal.targetDate)
+            if (withGoal && goal != null) {
+                goalRepository.startGoal(profile.weightKg, goal.targetWeightKg, goal.targetDate)
+            } else {
+                // „Erstmal ohne Ziel“ (Nutzer, Nov. 2026): kein „Setz dir ein Ziel“-Banner auf „Heute“.
+                settings?.setGoalSkipped(true)
+            }
             onSaved()
         }
     }

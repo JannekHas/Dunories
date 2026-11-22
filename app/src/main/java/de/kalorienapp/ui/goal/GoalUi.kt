@@ -82,6 +82,7 @@ fun GoalInputs(
     currentWeightKg: Double?,
     onUpdate: (GoalFormState) -> Unit,
     recommendation: GoalRecommendation? = null,
+    showMaintainChip: Boolean = true,
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     val maintain = form.isMaintain(currentWeightKg)
@@ -104,7 +105,7 @@ fun GoalInputs(
             imeAction = ImeAction.Done,
             modifier = Modifier.fillMaxWidth(),
         )
-        if (currentWeightKg != null) {
+        if (currentWeightKg != null && showMaintainChip) {
             FilterChip(
                 selected = maintain,
                 onClick = { onUpdate(form.copy(targetWeight = currentWeightKg.toInputString())) },

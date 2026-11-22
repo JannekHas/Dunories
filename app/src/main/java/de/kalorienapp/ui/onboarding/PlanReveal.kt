@@ -136,7 +136,19 @@ fun PlanReveal(targets: DailyTargets, goalState: GoalState?, onStart: () -> Unit
 /** Weg zum Wunschgewicht in einem Satz, z. B. „98 → 80 kg bis 12. März 2027 · 0,5 kg pro Woche“. */
 @Composable
 private fun GoalLine(state: GoalState) {
-    val goal = state.goal ?: return
+    val goal = state.goal
+    if (goal == null) {
+        // „Erstmal ohne Ziel“: Tagesziel = normaler Bedarf, Ziel geht jederzeit im Profil.
+        GlassCard(Modifier.fillMaxWidth()) {
+            Text(
+                stringResource(R.string.plan_reveal_no_goal),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Neon.TextSecondary,
+                modifier = Modifier.padding(16.dp),
+            )
+        }
+        return
+    }
     val plan = state.plan
     GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

@@ -156,6 +156,7 @@ fun TodayScreen(
     val proteinOnly = LocalProteinOnly.current
     val behaviorTip by viewModel.behaviorTip.collectAsStateWithLifecycle()
     val weightEnabled = LocalWeightEnabled.current
+    val goalSkipped by viewModel.goalSkipped.collectAsStateWithLifecycle()
     // Nach einem Update einmal „Neu in Dunories“ zeigen (nur auf dem echten „Heute“, nicht im Kalender-Tag)
     val unseenChangelog by viewModel.unseenChangelog.collectAsStateWithLifecycle()
     if (onBack == null && unseenChangelog.isNotEmpty()) {
@@ -378,7 +379,7 @@ fun TodayScreen(
                 item(key = "skeleton") { TodaySkeleton() }
                 return@LazyColumn
             }
-            if (!state.hasGoal && state.isToday && !proteinOnly && weightEnabled) {
+            if (!state.hasGoal && state.isToday && !proteinOnly && weightEnabled && !goalSkipped) {
                 item(key = "goal_banner") { GoalBanner(onSetGoal) }
             }
             if (streak > 0 && state.isToday) {

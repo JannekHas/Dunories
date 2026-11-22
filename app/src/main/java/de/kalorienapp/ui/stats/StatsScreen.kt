@@ -33,7 +33,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.pager.rememberPagerState
-import de.kalorienapp.ui.components.LocalWeightEnabled
 import de.kalorienapp.ui.components.LocalProteinOnly
 import de.kalorienapp.ui.components.GlassCard
 import de.kalorienapp.domain.model.DailyTargets

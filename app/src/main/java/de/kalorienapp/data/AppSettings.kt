@@ -87,6 +87,16 @@ class AppSettings(context: Context) {
         _measures.value = enabled
     }
 
+    private val _goalSkipped = MutableStateFlow(prefs.getBoolean(KEY_GOAL_SKIPPED, false))
+
+    /** In der Einrichtung „Erstmal ohne Ziel“ gewählt → kein Ziel-Banner auf „Heute“. */
+    val goalSkipped: StateFlow<Boolean> = _goalSkipped.asStateFlow()
+
+    fun setGoalSkipped(skipped: Boolean) {
+        prefs.edit().putBoolean(KEY_GOAL_SKIPPED, skipped).apply()
+        _goalSkipped.value = skipped
+    }
+
     private val _waterGoalMl = MutableStateFlow(prefs.getInt(KEY_WATER_GOAL, 0).takeIf { it > 0 })
     /** Eigenes Wasser-Tagesziel in ml; null = automatisch aus dem Gewicht. */
     val waterGoalMl: StateFlow<Int?> = _waterGoalMl.asStateFlow()
@@ -313,6 +323,7 @@ class AppSettings(context: Context) {
         private const val KEY_WEIGHT_ENABLED = "weight_enabled"
         private const val KEY_BODY_ANALYSIS = "body_analysis"
         private const val KEY_MEASURES = "measures"
+        private const val KEY_GOAL_SKIPPED = "goal_skipped"
         private const val KEY_FASTING = "fasting_enabled"
         private const val KEY_MEAL_REMINDERS = "meal_reminders"
         private const val KEY_FASTING_PLAN = "fasting_plan"

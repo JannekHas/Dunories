@@ -248,6 +248,9 @@ class TodayViewModel(
     /** Wasser-Karte an (Profil → Ziele → Wasser). */
     val waterEnabled: StateFlow<Boolean> = settings.waterEnabled
 
+    /** „Erstmal ohne Ziel“ in der Einrichtung → kein Ziel-Banner. */
+    val goalSkipped: StateFlow<Boolean> = settings.goalSkipped
+
     fun addWater(ml: Int) {
         viewModelScope.launch { waterRepository.add(date.value, ml) }
     }
