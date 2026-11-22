@@ -54,7 +54,10 @@ private val backupTime = DateTimeFormatter.ofPattern("d. MMM, HH:mm", Locale.GER
  * Unsichtbar, solange Firebase/Google-Anmeldung nicht eingerichtet ist.
  */
 @Composable
-fun AccountSection(viewModel: AccountViewModel = viewModel(factory = AppViewModelProvider.Factory)) {
+fun AccountSection(
+    onPrivacy: () -> Unit = {},
+    viewModel: AccountViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     if (!state.available) return
     val busy by viewModel.busy.collectAsStateWithLifecycle()
@@ -118,7 +121,14 @@ fun AccountSection(viewModel: AccountViewModel = viewModel(factory = AppViewMode
     }
 
     when (val d = dialog) {
-        AccountDialog.Consent -> ConsentDialog(onAccept = { activity?.let(viewModel::acceptConsent) }, onCancel = viewModel::dismissDialog)
+        AccountDialog.Consent -> ConsentDialog(
+            onAccept = { activity?.let(viewModel::acceptConsent) },
+            onCancel = viewModel::dismissDialog,
+            onPrivacy = {
+                viewModel.dismissDialog()
+                onPrivacy()
+            },
+        )
         is AccountDialog.OfferRestore -> AlertDialog(
             onDismissRequest = viewModel::dismissDialog,
             title = { Text(stringResource(R.string.account_offer_restore_title)) },
@@ -138,7 +148,7 @@ fun AccountSection(viewModel: AccountViewModel = viewModel(factory = AppViewMode
 }
 
 @Composable
-private fun ConsentDialog(onAccept: () -> Unit, onCancel: () -> Unit) {
+private fun ConsentDialog(onAccept: () -> Unit, onCancel: () -> Unit, onPrivacy: () -> Unit) {
     AlertDialog(
         onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.account_consent_title)) },
@@ -152,6 +162,7 @@ private fun ConsentDialog(onAccept: () -> Unit, onCancel: () -> Unit) {
                     R.string.account_consent_never,
                     R.string.account_consent_delete,
                 ).forEach { Text("• " + stringResource(it), style = MaterialTheme.typography.bodySmall) }
+                TextButton(onClick = onPrivacy) { Text(stringResource(R.string.privacy_open)) }
             }
         },
         confirmButton = { TextButton(onClick = onAccept) { Text(stringResource(R.string.account_consent_accept)) } },

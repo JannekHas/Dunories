@@ -3,6 +3,7 @@
      Neue Version: Array anlegen und in ChangelogUi.VERSIONS eintragen. -->
 <resources>
     <string-array name="changelog_8">
+        <item>Datenschutz auf einen Blick|Unter Profil → Einstellungen → Datenschutz steht jetzt genau, welche Daten wann wohin gehen – und welche nie dein Handy verlassen.</item>
         <item>Konto mit Cloud-Sicherung|Freiwillig: Unter Profil → Einstellungen → Konto meldest du dich mit Google an. Dann sichert Dunories deine Daten automatisch (täglich und beim Verlassen der App) – auf einem neuen Handy anmelden, und alles ist wieder da. Ohne Konto bleibt alles wie bisher nur auf deinem Handy.</item>
         <item>Feedback direkt aus der App|Fehler gefunden, Idee oder Lob? Tipp auf das Sprechblasen-Symbol neben den Ringen oder unter Profil → Einstellungen auf „Feedback geben“ – schreiben oder einsprechen, auf Wunsch mit Screenshot. Es geht ohne Konto direkt an den Entwickler.</item>
         <item>Willkommen in der neuen App|Dunories hat eine neue App-Kennung bekommen – deshalb war einmal ein Umzug mit der Sicherung nötig. Danke fürs Mitmachen! Läuft hier alles, kannst du die alte App löschen.</item>

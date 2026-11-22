@@ -70,6 +70,10 @@ data class MealPlanDayRoute(val dayIndex: Int)
 @Serializable
 data object MealPlanImportRoute
 
+/** Datenschutzerklärung (Einstellungen, Einwilligung zum Konto). */
+@Serializable
+data object PrivacyRoute
+
 /** Feedback geben (Einstellungen, in der Testphase auch das Symbol auf „Heute“). */
 @Serializable
 data object FeedbackRoute

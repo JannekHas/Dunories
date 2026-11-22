@@ -43,6 +43,7 @@ fun ProfileScreen(
     onNewGoal: () -> Unit,
     onOpenPlan: () -> Unit = {},
     onFeedback: () -> Unit = {},
+    onPrivacy: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -104,7 +105,7 @@ fun ProfileScreen(
                 // Einstellungen: Hinweise und darunter Datensicherung (4 statt 5 Reiter – Wunsch des Nutzers)
                 else -> {
                     // Feedback ganz oben – bleibt für immer (das Symbol auf „Heute“ nur in der Testphase).
-                    AccountSection()
+                    AccountSection(onPrivacy = onPrivacy)
                     FeedbackEntry(onFeedback)
                     SectionTitle(stringResource(R.string.profile_tab_notifications))
                     NotificationSettingsSection()
@@ -115,6 +116,9 @@ fun ProfileScreen(
                     var showChangelog by remember { mutableStateOf(false) }
                     OutlinedButton(onClick = { showChangelog = true }, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.changelog_open))
+                    }
+                    OutlinedButton(onClick = onPrivacy, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.privacy_title))
                     }
                     if (showChangelog) {
                         ChangelogDialog(ChangelogUi.VERSIONS.takeLast(1), onClose = { showChangelog = false })

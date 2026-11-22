@@ -320,6 +320,9 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onAddAnalysis = { navController.navigate(BodyAnalysisRoute) },
                         )
                     }
+                    screen<PrivacyRoute> {
+                        de.kalorienapp.ui.profile.PrivacyScreen(onBack = { navController.popBackStack() })
+                    }
                     screen<FeedbackRoute> {
                         de.kalorienapp.ui.feedback.FeedbackScreen(onBack = { navController.popBackStack() })
                     }
@@ -375,6 +378,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onNewGoal = { navController.navigate(GoalRoute) },
                             onOpenPlan = { navController.navigate(MealPlanRoute) },
                             onFeedback = { navController.navigate(FeedbackRoute) },
+                            onPrivacy = { navController.navigate(PrivacyRoute) },
                         )
                     }
                     screen<MealPlanRoute> {
