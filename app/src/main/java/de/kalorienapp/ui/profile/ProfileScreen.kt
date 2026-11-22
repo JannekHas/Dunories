@@ -104,6 +104,7 @@ fun ProfileScreen(
                 // Einstellungen: Hinweise und darunter Datensicherung (4 statt 5 Reiter – Wunsch des Nutzers)
                 else -> {
                     // Feedback ganz oben – bleibt für immer (das Symbol auf „Heute“ nur in der Testphase).
+                    AccountSection()
                     FeedbackEntry(onFeedback)
                     SectionTitle(stringResource(R.string.profile_tab_notifications))
                     NotificationSettingsSection()

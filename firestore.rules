@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Dunories – Firestore-Regeln (Phase 1: Feedback ohne Konto).
+// Dunories – Firestore-Regeln (Phase 1: Feedback ohne Konto, Phase 2: Konto + Cloud-Sicherung).
 // In der Firebase-Konsole unter Firestore → Regeln einfügen und „Veröffentlichen“.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -28,6 +28,26 @@ service cloud.firestore {
     match /config/app {
       allow read: if true;
       allow write: if false;
+    }
+
+    // Konto (Phase 2): jeder nur in seinem eigenen Bereich, nur angemeldet.
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Zwei Stände „a“/„b“ mit Übersicht (Zahlen, Zeitpunkt)
+      match /backups/{slot} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow write: if request.auth != null && request.auth.uid == uid && slot in ['a', 'b'];
+
+        // Sicherung als Base64-Stücke (je unter 1 MiB)
+        match /chunks/{index} {
+          allow read, delete: if request.auth != null && request.auth.uid == uid;
+          allow write: if request.auth != null && request.auth.uid == uid
+                       && request.resource.data.keys().hasOnly(['data'])
+                       && request.resource.data.data is string
+                       && request.resource.data.data.size() <= 900000;
+        }
+      }
     }
 
     // Alles andere: gesperrt.

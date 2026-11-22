@@ -120,4 +120,16 @@ class MainActivity : ComponentActivity() {
         val container = (application as KalorienApplication).container
         container.appScope.launch { container.calorieNotifier.refresh() }
     }
+
+    override fun onStop() {
+        super.onStop()
+        // App verlassen: angemeldet und letzte Cloud-Sicherung älter als ein paar Stunden → gleich sichern.
+        val container = (application as KalorienApplication).container
+        val last = container.settings.cloudLastUploadAt ?: 0L
+        if (container.account.user.value != null &&
+            System.currentTimeMillis() - last > de.kalorienapp.domain.CloudBackup.MIN_AUTO_INTERVAL_MS
+        ) {
+            container.workScheduler.cloudBackupSoon()
+        }
+    }
 }

@@ -59,6 +59,28 @@ class WorkScheduler(
         scheduleMidnight(keep)
         scheduleWeightReminder(policy = keep)
         scheduleWeekly(policy = keep)
+        scheduleCloudBackup()
+    }
+
+    /** Cloud-Sicherung einmal täglich (nur mit Netz; der Worker tut nichts ohne Konto). */
+    fun scheduleCloudBackup() {
+        val request = androidx.work.PeriodicWorkRequestBuilder<CloudBackupWorker>(Duration.ofHours(24))
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .build()
+        work.enqueueUniquePeriodicWork(NAME_CLOUD, androidx.work.ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
+    /** Beim Verlassen der App: gleich sichern (höchstens alle paar Stunden, siehe [CloudBackupWorker]). */
+    fun cloudBackupSoon() {
+        val request = OneTimeWorkRequestBuilder<CloudBackupWorker>()
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .build()
+        work.enqueueUniqueWork(NAME_CLOUD_NOW, ExistingWorkPolicy.KEEP, request)
+    }
+
+    fun cancelCloudBackup() {
+        work.cancelUniqueWork(NAME_CLOUD)
+        work.cancelUniqueWork(NAME_CLOUD_NOW)
     }
 
     /** Eintrage-Erinnerung: zur nächsten gelernten Erinnerungszeit (siehe [MealReminderPlanner]). */
@@ -158,6 +180,8 @@ class WorkScheduler(
     companion object {
         private const val NAME_MIDNIGHT = "midnight"
         private const val NAME_FASTING = "fasting"
+        private const val NAME_CLOUD = "cloud_backup"
+        private const val NAME_CLOUD_NOW = "cloud_backup_now"
         private const val NAME_MEAL = "meal_reminder"
         private const val NAME_WEIGH = "weight_reminder"
         private const val NAME_WEEKLY = "weekly_report"
@@ -356,5 +380,15 @@ class BootReceiver : BroadcastReceiver() {
                 pending.finish()
             }
         }
+    }
+}
+
+/** Automatische Cloud-Sicherung: nur angemeldet, nur bei Änderungen, nie über den Stand eines anderen Geräts. */
+class CloudBackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        val c = applicationContext.container
+        if (c.account.user.value == null || c.settings.cloudConflict.value) return Result.success()
+        return runCatching { c.cloudBackup.upload(auto = true) }
+            .fold(onSuccess = { Result.success() }, onFailure = { if (runAttemptCount < 3) Result.retry() else Result.success() })
     }
 }

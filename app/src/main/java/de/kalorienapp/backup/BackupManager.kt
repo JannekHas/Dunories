@@ -27,7 +27,12 @@ class BackupManager(
     private val imagesDir get() = File(context.filesDir, "recipe_images")
 
     /** Erstellte Sicherung samt Übersicht des Inhalts. */
-    data class Created(val file: File, val summary: BackupFormat.Summary)
+    data class Created(
+        val file: File,
+        val summary: BackupFormat.Summary,
+        /** Fingerabdruck von Datenbank + Einstellungen (ohne Zeitpunkt) – Cloud-Sicherung lädt nur bei Änderung hoch. */
+        val contentHash: String = "",
+    )
 
     /** Geprüfte, entpackte Sicherung – wird erst mit [applyRestore] übernommen. */
     data class Prepared(val summary: BackupFormat.Summary, internal val manifest: BackupFormat.Manifest)
@@ -102,11 +107,27 @@ class BackupManager(
                 zip.closeEntry()
             }
         }
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        context.getDatabasePath(AppDatabase.NAME).inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                digest.update(buffer, 0, n)
+            }
+        }
+        digest.update(BackupFormat.encode(manifest.copy(createdAt = 0)).toByteArray())
+        imagesDir.listFiles().orEmpty().sortedBy { it.name }.forEach { digest.update(it.name.toByteArray()) }
+        val hash = digest.digest().joinToString("") { "%02x".format(it) }
+        Created(file, localSummary(manifest.createdAt), hash)
+    }
+
+    /** Übersicht der Daten auf diesem Handy (für den Vergleich mit der Cloud). */
+    suspend fun localSummary(createdAt: Long? = null): BackupFormat.Summary = withContext(Dispatchers.IO) {
         val db = database.openHelper.readableDatabase
-        val summary = BackupFormat.summary(manifest.createdAt) { sql ->
+        BackupFormat.summary(createdAt) { sql ->
             runCatching { db.query(sql).use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null } }.getOrNull()
         }
-        Created(file, summary)
     }
 
     /** Kopiert die erstellte Sicherung an einen vom Nutzer gewählten Ort („Speichern unter“). */

@@ -41,6 +41,17 @@ android {
         val firebaseProject = (firebase?.get("project_info") as? Map<*, *>)?.get("project_id") as? String ?: ""
         val firebaseKey = ((((firebase?.get("client") as? List<*>)?.firstOrNull() as? Map<*, *>)
             ?.get("api_key") as? List<*>)?.firstOrNull() as? Map<*, *>)?.get("current_key") as? String ?: ""
+        // App-ID je Paket (normale App bzw. cleantest) und Web-Client-ID für „Mit Google anmelden“ (client_type 3).
+        val packageName = "de.dunories" + if (providers.gradleProperty("cleanTest").isPresent) ".cleantest" else ""
+        val clients = (firebase?.get("client") as? List<*>).orEmpty().filterIsInstance<Map<*, *>>()
+        val ownClient = clients.firstOrNull {
+            ((it["client_info"] as? Map<*, *>)?.get("android_client_info") as? Map<*, *>)?.get("package_name") == packageName
+        }
+        val firebaseAppId = (ownClient?.get("client_info") as? Map<*, *>)?.get("mobilesdk_app_id") as? String ?: ""
+        val webClientId = clients.flatMap { (it["oauth_client"] as? List<*>).orEmpty().filterIsInstance<Map<*, *>>() }
+            .firstOrNull { (it["client_type"] as? Number)?.toInt() == 3 }?.get("client_id") as? String ?: ""
+        buildConfigField("String", "FIREBASE_APP_ID", "\"$firebaseAppId\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$webClientId\"")
         buildConfigField("String", "FIREBASE_PROJECT_ID", "\"$firebaseProject\"")
         buildConfigField("String", "FIREBASE_API_KEY", "\"$firebaseKey\"")
         buildConfigField("float", "TEXT_SCALE", "${providers.gradleProperty("textScale").getOrElse("1.0")}f")
@@ -118,6 +129,12 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.mlkit.barcode.scanning)
+    // Konto (Phase 2): nur Firebase-Anmeldung als SDK, Firestore bleibt REST
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
 
     testImplementation(libs.junit)
 }

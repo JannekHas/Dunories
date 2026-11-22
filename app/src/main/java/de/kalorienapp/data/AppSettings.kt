@@ -183,6 +183,43 @@ class AppSettings(context: Context) {
         prefs.edit().commit()
     }
 
+    // ------------------------------------------------------------ Konto / Cloud-Sicherung (gerätegebunden, nicht in der Sicherung)
+
+    val cloudUid: String? get() = prefs.getString(KEY_CLOUD_UID, null)
+    val cloudLastUploadAt: Long? get() = prefs.getLong(KEY_CLOUD_AT, 0L).takeIf { it > 0 }
+    val cloudLastHash: String get() = prefs.getString(KEY_CLOUD_HASH, null).orEmpty()
+
+    private val _cloudBackupAt = MutableStateFlow(cloudLastUploadAt)
+
+    /** Zeitpunkt des letzten Stands, den dieses Handy in der Cloud hat (für „Zuletzt gesichert …“). */
+    val cloudBackupAt: StateFlow<Long?> = _cloudBackupAt.asStateFlow()
+
+    fun setCloudUploaded(uid: String, at: Long, hash: String) {
+        prefs.edit().putString(KEY_CLOUD_UID, uid).putLong(KEY_CLOUD_AT, at).putString(KEY_CLOUD_HASH, hash).apply()
+        _cloudBackupAt.value = at
+    }
+
+    private val _cloudConflict = MutableStateFlow(prefs.getBoolean(KEY_CLOUD_CONFLICT, false))
+
+    /** Ein anderes Gerät hat gesichert → automatisches Sichern pausiert, bis der Nutzer vergleicht. */
+    val cloudConflict: StateFlow<Boolean> = _cloudConflict.asStateFlow()
+
+    fun setCloudConflict(conflict: Boolean) {
+        prefs.edit().putBoolean(KEY_CLOUD_CONFLICT, conflict).apply()
+        _cloudConflict.value = conflict
+    }
+
+    /** Einwilligung zur Cloud-Speicherung auf diesem Handy gegeben (Textversion). */
+    var cloudConsentVersion: Int
+        get() = prefs.getInt(KEY_CLOUD_CONSENT, 0)
+        set(value) = prefs.edit().putInt(KEY_CLOUD_CONSENT, value).apply()
+
+    fun clearCloud() {
+        prefs.edit().remove(KEY_CLOUD_UID).remove(KEY_CLOUD_AT).remove(KEY_CLOUD_HASH).remove(KEY_CLOUD_CONFLICT).remove(KEY_CLOUD_CONSENT).apply()
+        _cloudBackupAt.value = null
+        _cloudConflict.value = false
+    }
+
     /** Freiwilliger Name beim Feedback (wird beim nächsten Mal vorausgefüllt). */
     val feedbackName: String get() = prefs.getString(KEY_FEEDBACK_NAME, null).orEmpty()
 
@@ -374,6 +411,11 @@ class AppSettings(context: Context) {
         private const val DISLIKE_SEPARATOR = "\n"
         private const val KEY_SEEN_TIPS = "seen_tips"
         private const val KEY_FEEDBACK_NAME = "feedback_name"
+        private const val KEY_CLOUD_UID = "cloud_uid"
+        private const val KEY_CLOUD_AT = "cloud_last_upload_at"
+        private const val KEY_CLOUD_HASH = "cloud_last_hash"
+        private const val KEY_CLOUD_CONFLICT = "cloud_conflict"
+        private const val KEY_CLOUD_CONSENT = "cloud_consent_version"
         private const val KEY_FEEDBACK_TODAY = "feedback_on_today"
         private const val KEY_PENDING_TIPS = "pending_tips"
         private const val KEY_TIP_OF_DAY = "tip_of_day"

@@ -111,6 +111,10 @@ class AppContainer(context: Context) {
 
     val backupManager = BackupManager(context, database, settings)
 
+    /** Freiwilliges Konto + Cloud-Sicherung (Phase 2). */
+    val account = de.kalorienapp.account.AccountManager(context)
+    val cloudBackup = de.kalorienapp.backup.CloudBackupManager(context, account, backupManager, settings, AppIdentity.headers(context))
+
     /** Ziele aus Benachrichtigungen (Wiegen, Wochenauswertung). */
     val navRequests = NavRequests()
 }

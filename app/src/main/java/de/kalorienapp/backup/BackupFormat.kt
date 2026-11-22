@@ -85,7 +85,10 @@ object BackupFormat {
         val reports: Long,
         /** Zeitpunkt der Sicherung (Epoch-ms), falls bekannt. */
         val createdAt: Long? = null,
-    )
+    ) {
+        /** Nichts Eigenes auf dem Handy (frisch eingerichtet) → Cloud-Stand kann ohne Vergleich zurück. */
+        val isEmpty: Boolean get() = foodEntries + recipes + weights + measurements + reports == 0L
+    }
 
     /**
      * Übersicht aus einer Datenbank lesen. [query] liefert die erste Zahl eines SELECT oder null
