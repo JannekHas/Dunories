@@ -225,7 +225,7 @@ class BackupManager(
             m.shareAchievements?.let(settings::setShareAchievements)
             m.shareStreak?.let(settings::setShareStreak)
             m.weeklyDoneFor?.let { settings.weeklyDoneFor = LocalDate.ofEpochDay(it) }
-            // Sicherung aus ≤ 0.6.0 (Umzug auf de.dunories): einmal „Neu in 0.6.1“ zeigen.
+            // Sicherung aus ≤ 0.6.0 (Umzug auf de.dunories): einmal „Neu in 0.7.0“ zeigen.
             settings.markChangelogSeen(m.changelogSeen ?: OLD_BACKUP_CHANGELOG)
         }
         settings.setFastingEnabled(manifest.settings.fastingEnabled)

@@ -23,7 +23,7 @@ android {
         minSdk = 28
         targetSdk = 37
         versionCode = 8
-        versionName = "0.6.1"
+        versionName = "0.7.0"
 
         // KI läuft über den eigenen Cloudflare-Worker (backend/ai-worker) – der Gemini-Schlüssel ist NICHT in der App.
         buildConfigField("String", "AI_BASE_URL", "\"https://dunories-ai.dunories-ai-worker.workers.dev\"")
