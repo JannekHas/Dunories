@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dunories Admin</title>
+<!--
+  Vorlage OHNE Schlüssel (liegt im Repo). Die nutzbare Datei mit Admin-Schlüssel erzeugt
+  `node backend/admin-dashboard/build.mjs` nach admin/Dunories-Admin.html (gitignored).
+  Wer die erzeugte Datei hat, kann verwalten – nicht weitergeben.
+-->
+<style>
+  :root {
+    --bg: #14131a; --card: rgba(255,255,255,0.06); --line: rgba(255,255,255,0.12);
+    --text: #f2f1f7; --muted: #a9a6b8; --cyan: #22d3ee; --yellow: #fde047; --green: #4ade80; --red: #f87171; --purple: #a855f7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text);
+    background: radial-gradient(1200px 600px at 10% -10%, #3b1f5e 0%, transparent 60%),
+                radial-gradient(900px 500px at 110% 10%, #0e4a55 0%, transparent 55%), var(--bg);
+    min-height: 100vh;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { margin: 0 0 4px; font-size: 28px; }
+  h2 { margin: 0 0 12px; font-size: 18px; color: var(--cyan); }
+  .sub { color: var(--muted); margin-bottom: 20px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; backdrop-filter: blur(10px); }
+  .wide { grid-column: 1 / -1; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .kpi { background: rgba(255,255,255,0.04); border-radius: 14px; padding: 12px; }
+  .kpi b { display: block; font-size: 26px; font-variant-numeric: tabular-nums; }
+  .kpi span { color: var(--muted); font-size: 13px; }
+  label { display: block; color: var(--muted); font-size: 13px; margin: 10px 0 4px; }
+  input, select { width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,0.25); color: var(--text); font: inherit; }
+  .row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+  .row > * { flex: 1 1 120px; }
+  button { padding: 9px 14px; border-radius: 999px; border: 0; background: var(--cyan); color: #06121a; font: inherit; font-weight: 600; cursor: pointer; }
+  button.ghost { background: transparent; color: var(--cyan); border: 1px solid var(--line); }
+  button.danger { background: transparent; color: var(--red); border: 1px solid rgba(248,113,113,0.4); }
+  button:disabled { opacity: .5; cursor: default; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  td.num { font-variant-numeric: tabular-nums; }
+  code { font: 600 14px ui-monospace, Consolas, monospace; color: var(--yellow); }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.on { color: var(--green); border-color: rgba(74,222,128,.4); }
+  .pill.off { color: var(--red); border-color: rgba(248,113,113,.4); }
+  .switch { display: flex; align-items: center; gap: 10px; margin-top: 12px; cursor: pointer; }
+  .switch input { width: auto; transform: scale(1.3); }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .msg { min-height: 20px; font-size: 13px; margin-top: 8px; }
+  .msg.ok { color: var(--green); } .msg.err { color: var(--red); }
+  .bars { display: flex; align-items: flex-end; gap: 3px; height: 140px; margin-top: 8px; }
+  .bar { flex: 1; background: linear-gradient(to top, var(--purple), var(--cyan)); border-radius: 4px 4px 0 0; min-height: 2px; position: relative; }
+  .bar:hover::after { content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap;
+    background: #000; padding: 3px 7px; border-radius: 6px; font-size: 12px; margin-bottom: 4px; }
+  .axis { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 4px; }
+  a { color: var(--cyan); }
+  .newcode { margin-top: 10px; font-size: 22px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Dunories Admin</h1>
+  <div class="sub">Läuft nur auf deinem Rechner · spricht direkt mit dem KI-Worker · zeigt nie, was jemand isst</div>
+
+  <div class="grid">
+    <section class="card wide">
+      <div class="row" style="align-items:center">
+        <h2 style="margin:0">Überblick</h2>
+        <select id="days" style="flex:0 0 140px">
+          <option value="7">7 Tage</option><option value="14">14 Tage</option><option value="30" selected>30 Tage</option><option value="90">90 Tage</option>
+        </select>
+        <button class="ghost" style="flex:0 0 auto" onclick="loadStats()">Aktualisieren</button>
+      </div>
+      <div class="kpis" style="margin-top:14px">
+        <div class="kpi"><b id="kToday">–</b><span>KI-Aufrufe heute (alle)</span></div>
+        <div class="kpi"><b id="kUsers">–</b><span>Personen heute</span></div>
+        <div class="kpi"><b id="kPeriod">–</b><span>Personen im Zeitraum</span></div>
+        <div class="kpi"><b id="kPremium">–</b><span>Freischaltungen aktiv</span></div>
+        <div class="kpi"><b id="kTrials">–</b><span>Probezeiten gestartet</span></div>
+        <div class="kpi"><b id="kWeekly">–</b><span>Auto-Wochenauswertungen diese Woche</span></div>
+      </div>
+      <div class="hint">Gemini (kostenlos) erlaubt etwa <b>500 Aufrufe pro Tag</b> für alle zusammen und 15 pro Minute. Heute: <b id="kGemini">–</b> % davon.</div>
+      <div class="bars" id="bars"></div>
+      <div class="axis"><span id="axFrom"></span><span id="axTo"></span></div>
+      <div class="hint" id="errors"></div>
+      <div class="hint">Zum Gegenprüfen bei Google:
+        <a href="https://aistudio.google.com/usage" target="_blank" rel="noopener">AI Studio – Nutzung</a> ·
+        <a href="https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/metrics" target="_blank" rel="noopener">Cloud Console – Gemini-API</a> ·
+        <a href="https://console.firebase.google.com/project/dunories/firestore/databases/-default-/data/~2Ffeedback" target="_blank" rel="noopener">Feedback in Firebase</a> ·
+        <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener">Cloudflare</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Einstellungen</h2>
+      <label class="switch"><input type="checkbox" id="cTest"> <span><b>Testphase:</b> alle sind Premium</span></label>
+      <div class="row">
+        <div><label for="cLimit">KI-Aufrufe pro Tag (Premium)</label><input id="cLimit" type="number" min="0" max="10000"></div>
+        <div><label for="cGuest">Gratis-Aufrufe für Gäste</label><input id="cGuest" type="number" min="0" max="10000"></div>
+        <div><label for="cTrial">Probezeit (Tage)</label><input id="cTrial" type="number" min="0" max="3650"></div>
+      </div>
+      <div style="margin-top:12px"><button onclick="saveConfig()">Speichern</button></div>
+      <div class="hint">Gilt sofort für alle, ohne neue App. Probezeit 0 = keine Probezeit.</div>
+      <div class="msg" id="cMsg"></div>
+    </section>
+
+    <section class="card">
+      <h2>Code erzeugen</h2>
+      <div class="row">
+        <div><label for="nDays">Laufzeit</label>
+          <select id="nDays">
+            <option value="7">7 Tage</option><option value="30" selected>30 Tage</option><option value="90">3 Monate</option>
+            <option value="365">1 Jahr</option><option value="0">Für immer (Lifetime)</option><option value="custom">Eigene Tage …</option>
+          </select></div>
+        <div id="nCustomWrap" style="display:none"><label for="nCustom">Tage</label><input id="nCustom" type="number" min="1" max="3650" value="14"></div>
+      </div>
+      <div class="row">
+        <div><label for="nUses">Wie oft einlösbar</label><input id="nUses" type="number" min="1" max="100000" value="1"></div>
+        <div><label for="nValid">Einlösbar für … Tage (0 = unbegrenzt)</label><input id="nValid" type="number" min="0" max="3650" value="0"></div>
+      </div>
+      <label for="nNote">Notiz (nur für dich, z. B. „TikTok 12.12.“ oder „Tester Tim“)</label><input id="nNote" maxlength="80">
+      <div style="margin-top:12px"><button onclick="createCode()">Code erzeugen</button></div>
+      <div class="newcode" id="newCode"></div>
+      <div class="msg" id="nMsg"></div>
+    </section>
+
+    <section class="card wide">
+      <h2>Person suchen</h2>
+      <div class="row">
+        <div style="flex:3"><label for="uPrefix">Kennung (steht in der App unter Profil → Einstellungen → KI &amp; Premium, mind. 4 Zeichen)</label><input id="uPrefix" placeholder="z. B. mEktzaVJ"></div>
+        <button style="flex:0 0 auto" onclick="findUsers()">Suchen</button>
+      </div>
+      <div class="msg" id="uMsg"></div>
+      <table id="users" style="margin-top:8px"></table>
+    </section>
+
+    <section class="card wide">
+      <div class="row" style="align-items:center"><h2 style="margin:0">Codes</h2><button class="ghost" style="flex:0 0 auto" onclick="loadCodes()">Aktualisieren</button></div>
+      <table id="codes" style="margin-top:10px"></table>
+    </section>
+  </div>
+</main>
+
+<script>
+const WORKER = "__WORKER_URL__";
+const KEY = "__ADMIN_KEY__";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const day = (ms) => ms ? new Date(ms).toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" }) : "";
+const duration = (d) => d === 0 ? "für immer" : d === 365 ? "1 Jahr" : `${d} Tage`;
+
+async function api(path, method = "GET", body) {
+  const res = await fetch(WORKER + path, {
+    method, headers: { "X-Admin-Key": KEY, ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+function show(id, text, ok = true) { const el = $(id); el.textContent = text; el.className = "msg " + (ok ? "ok" : "err"); }
+
+async function loadStats() {
+  try {
+    const s = await api(`/admin/stats?days=${$("days").value}`);
+    const today = s.perDay.find((d) => d.day === s.today);
+    $("kToday").textContent = today?.calls ?? 0;
+    $("kUsers").textContent = today?.users ?? 0;
+    $("kPeriod").textContent = s.users;
+    $("kPremium").textContent = s.premiumEntitlements;
+    $("kTrials").textContent = s.trialsStarted;
+    $("kWeekly").textContent = s.weeklyAutoThisWeek;
+    $("kGemini").textContent = Math.round(((today?.calls ?? 0) / 500) * 100);
+    const c = s.config;
+    $("cTest").checked = c.testAllPremium; $("cLimit").value = c.dailyLimit; $("cGuest").value = c.guestFree; $("cTrial").value = c.trialDays;
+    // Balken je Tag (fehlende Tage = 0)
+    const days = [];
+    for (let i = s.days - 1; i >= 0; i--) {
+      const d = new Date(s.today + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const row = s.perDay.find((r) => r.day === key);
+      days.push({ key, calls: row?.calls ?? 0, users: row?.users ?? 0, top: row?.top ?? 0 });
+    }
+    const max = Math.max(1, ...days.map((d) => d.calls));
+    $("bars").innerHTML = days.map((d) =>
+      `<div class="bar" style="height:${(d.calls / max) * 100}%" data-tip="${d.key.slice(8)}.${d.key.slice(5, 7)}.: ${d.calls} Aufrufe, ${d.users} Pers., max ${d.top}"></div>`).join("");
+    $("axFrom").textContent = days[0].key.split("-").reverse().join(".");
+    $("axTo").textContent = "heute";
+    const errs = s.errors.reduce((m, e) => (m[e.code] = (m[e.code] || 0) + e.n, m), {});
+    const names = { 429: "Gemini-Kontingent voll", 503: "Google überlastet", 500: "Google-Fehler", 400: "Anfrage abgelehnt", 404: "Modell nicht gefunden" };
+    $("errors").textContent = Object.keys(errs).length
+      ? "Fehler von Google im Zeitraum: " + Object.entries(errs).map(([k, n]) => `${n}× ${names[k] || "HTTP " + k}`).join(", ") + " (die App versucht es dann automatisch erneut)"
+      : "Keine Fehler von Google im Zeitraum.";
+  } catch (e) { show("cMsg", "Laden fehlgeschlagen: " + e.message, false); }
+}
+
+async function saveConfig() {
+  try {
+    await api("/admin/config", "PUT", {
+      testAllPremium: $("cTest").checked, dailyLimit: Number($("cLimit").value), guestFree: Number($("cGuest").value), trialDays: Number($("cTrial").value),
+    });
+    show("cMsg", "Gespeichert ✓ – gilt sofort.");
+    loadStats();
+  } catch (e) { show("cMsg", "Fehler: " + e.message, false); }
+}
+
+$("nDays").addEventListener("change", () => { $("nCustomWrap").style.display = $("nDays").value === "custom" ? "" : "none"; });
+
+async function createCode() {
+  const days = $("nDays").value === "custom" ? Number($("nCustom").value) : Number($("nDays").value);
+  try {
+    const r = await api("/admin/codes", "POST", { days, maxUses: Number($("nUses").value), validDays: Number($("nValid").value), note: $("nNote").value });
+    $("newCode").innerHTML = `<code>${esc(r.code)}</code> <button class="ghost" onclick="navigator.clipboard.writeText('${esc(r.code)}');show('nMsg','Kopiert ✓')">Kopieren</button>`;
+    show("nMsg", `${duration(days)}, ${$("nUses").value}× einlösbar.`);
+    loadCodes();
+  } catch (e) { show("nMsg", "Fehler: " + e.message, false); }
+}
+
+async function loadCodes() {
+  try {
+    const codes = await api("/admin/codes");
+    $("codes").innerHTML = "<tr><th>Code</th><th>Laufzeit</th><th>Eingelöst</th><th>Einlösbar bis</th><th>Notiz</th><th>Status</th><th></th></tr>" +
+      (codes.length ? codes.map((c) => {
+        const state = c.disabled ? '<span class="pill off">deaktiviert</span>' : c.expired ? '<span class="pill off">abgelaufen</span>'
+          : c.used >= c.maxUses ? '<span class="pill">aufgebraucht</span>' : '<span class="pill on">aktiv</span>';
+        return `<tr><td><code>${esc(c.code)}</code></td><td>${duration(c.days)}</td><td class="num">${c.used} / ${c.maxUses}</td>
+          <td>${c.expires ? day(c.expires) : "unbegrenzt"}</td><td>${esc(c.note)}</td><td>${state}</td>
+          <td>${c.disabled ? "" : `<button class="danger" onclick="disableCode('${esc(c.code)}')">Deaktivieren</button>`}</td></tr>`;
+      }).join("") : '<tr><td colspan="7" class="hint">Noch keine Codes.</td></tr>');
+  } catch (e) { $("codes").innerHTML = `<tr><td class="hint">Laden fehlgeschlagen: ${esc(e.message)}</td></tr>`; }
+}
+
+async function disableCode(code) {
+  if (!confirm(`Code ${code} deaktivieren? Bereits eingelöste Premium-Zeit bleibt.`)) return;
+  try { await api("/admin/codes/disable", "POST", { code }); loadCodes(); } catch (e) { alert(e.message); }
+}
+
+function entText(u) {
+  if (u.testAllPremium) return '<span class="pill on">Testphase</span>';
+  const e = u.entitlement;
+  if (!e) return '<span class="pill">kein Premium (ggf. Probezeit)</span>';
+  if (e.lifetime) return `<span class="pill on">für immer</span> <span class="hint">${esc(e.note)}</span>`;
+  return u.premiumByEntitlement ? `<span class="pill on">bis ${day(e.until)}</span> <span class="hint">${esc(e.note)}</span>`
+    : `<span class="pill off">abgelaufen ${day(e.until)}</span>`;
+}
+
+async function findUsers() {
+  const prefix = $("uPrefix").value.trim();
+  if (prefix.length < 4) return show("uMsg", "Mindestens 4 Zeichen der Kennung.", false);
+  try {
+    const users = await api(`/admin/users?prefix=${encodeURIComponent(prefix)}`);
+    show("uMsg", users.length ? `${users.length} gefunden.` : "Niemand gefunden (die Person muss die KI schon einmal genutzt haben).", !!users.length);
+    $("users").innerHTML = users.length ? "<tr><th>Kennung</th><th>Premium</th><th>KI heute</th><th>KI insgesamt</th><th>Zuletzt</th><th>Premium vergeben</th></tr>" +
+      users.map((u) => `<tr><td><code>${esc(u.uid.slice(0, 8))}</code></td><td>${entText(u)}</td><td class="num">${u.usedToday}</td><td class="num">${u.total}</td>
+        <td>${esc(u.lastDay ?? "")}</td><td>
+        <button class="ghost" onclick="grant('${esc(u.uid)}',30)">+30 Tage</button>
+        <button class="ghost" onclick="grant('${esc(u.uid)}',365)">+1 Jahr</button>
+        <button class="ghost" onclick="grant('${esc(u.uid)}',0)">Für immer</button>
+        <button class="danger" onclick="removeGrant('${esc(u.uid)}')">Entziehen</button></td></tr>`).join("") : "";
+  } catch (e) { show("uMsg", "Fehler: " + e.message, false); }
+}
+
+async function grant(uid, days) {
+  const note = prompt("Notiz (optional), z. B. „Tester-Belohnung“:", "") ?? "";
+  try { await api("/admin/user", "PUT", { uid, days, note }); findUsers(); loadStats(); } catch (e) { alert(e.message); }
+}
+
+async function removeGrant(uid) {
+  if (!confirm("Freischaltung entziehen? (Probezeit und Testphase bleiben unberührt.)")) return;
+  try { await api("/admin/user", "PUT", { uid, remove: true }); findUsers(); loadStats(); } catch (e) { alert(e.message); }
+}
+
+$("days").addEventListener("change", loadStats);
+$("uPrefix").addEventListener("keydown", (e) => { if (e.key === "Enter") findUsers(); });
+loadStats();
+loadCodes();
+</script>
+</body>
+</html>
