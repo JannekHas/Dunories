@@ -10,6 +10,10 @@ workers_dev = true
 FIREBASE_PROJECT_ID = "dunories"
 # Startwert; im Admin-Dashboard änderbar (gespeichert im Durable Object).
 DEFAULT_DAILY_LIMIT = "40"
+DEFAULT_GUEST_FREE = "5"
+DEFAULT_TRIAL_DAYS = "7"
+# Testphase: alle sind Premium (im Dashboard abschaltbar).
+DEFAULT_TEST_ALL_PREMIUM = "true"
 
 [[durable_objects.bindings]]
 name = "USAGE"

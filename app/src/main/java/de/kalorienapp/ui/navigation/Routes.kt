@@ -70,6 +70,10 @@ data class MealPlanDayRoute(val dayIndex: Int)
 @Serializable
 data object MealPlanImportRoute
 
+/** Dunories Premium (Konto-Karte, KI-Fehler „Gratis aufgebraucht“/„nur Premium“). */
+@Serializable
+data object PaywallRoute
+
 /** Datenschutzerklärung (Einstellungen, Einwilligung zum Konto). */
 @Serializable
 data object PrivacyRoute

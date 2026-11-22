@@ -173,6 +173,7 @@ private val ReportError.messageRes: Int
         ReportError.NO_API_KEY -> R.string.error_ai_no_key
         ReportError.QUOTA -> R.string.error_ai_quota
         ReportError.DAILY_LIMIT -> R.string.error_ai_daily_limit
+        ReportError.NEEDS_PREMIUM -> R.string.error_ai_needs_premium
         ReportError.OVERLOADED -> R.string.error_ai_overloaded
         ReportError.NETWORK -> R.string.error_network
         ReportError.INVALID -> R.string.error_ai_invalid

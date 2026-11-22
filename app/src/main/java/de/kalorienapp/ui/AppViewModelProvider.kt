@@ -138,6 +138,7 @@ object AppViewModelProvider {
                 container().backupManager,
                 container().settings,
                 container().workScheduler,
+                container().premium,
             )
         }
         initializer {

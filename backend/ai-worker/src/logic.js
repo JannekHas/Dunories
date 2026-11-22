@@ -44,7 +44,7 @@ export function fileFromPath(path) {
   return match ? match[1] : null;
 }
 
-/** Firebase-ID-Token: Inhalt prüfen (Signatur prüft index.js). @return uid oder null */
+/** Firebase-ID-Token: Inhalt prüfen (Signatur prüft index.js). @return {uid, anonymous, email} oder null */
 export function checkClaims(payload, projectId, nowSeconds) {
   if (!payload || typeof payload !== "object") return null;
   if (payload.iss !== `https://securetoken.google.com/${projectId}`) return null;
@@ -52,7 +52,9 @@ export function checkClaims(payload, projectId, nowSeconds) {
   if (typeof payload.exp !== "number" || payload.exp < nowSeconds - 30) return null;
   if (typeof payload.iat !== "number" || payload.iat > nowSeconds + 300) return null;
   if (typeof payload.sub !== "string" || payload.sub.length === 0 || payload.sub.length > 128) return null;
-  return payload.sub;
+  const provider = payload.firebase?.sign_in_provider;
+  const email = typeof payload.email === "string" && payload.email_verified !== false ? payload.email.toLowerCase() : null;
+  return { uid: payload.sub, anonymous: provider === "anonymous" || !email, email };
 }
 
 export function base64UrlDecode(text) {
@@ -71,12 +73,59 @@ export function safeEqual(a, b) {
   return diff === 0;
 }
 
+/** Code-Alphabet ohne verwechselbare Zeichen (0/O, 1/I/L). */
+const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+/** Neuer Code „DUNO-XXXX-XXXX“ aus Zufallsbytes. */
+export function makeCode(bytes) {
+  let out = "";
+  for (let i = 0; i < 8; i++) out += CODE_CHARS[bytes[i] % CODE_CHARS.length];
+  return `DUNO-${out.slice(0, 4)}-${out.slice(4)}`;
+}
+
+/** Eingabe des Nutzers vereinheitlichen (Groß, ohne Leerzeichen, Bindestriche egal). */
+export function normalizeCode(input) {
+  const raw = String(input ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const body = raw.startsWith("DUNO") ? raw.slice(4) : raw;
+  return body.length === 8 ? `DUNO-${body.slice(0, 4)}-${body.slice(4)}` : null;
+}
+
+/**
+ * Stufe einer Person. ent = Freischaltung {lifetime, until} oder null, trialStart = Beginn der Probezeit (ms) oder null.
+ * @return {tier: "premium"|"guest"|"free", source, until, lifetime}
+ */
+export function tierOf({ now, anonymous, testAllPremium, ent, trialStart, trialDays }) {
+  if (testAllPremium) return { tier: "premium", source: "test", until: null, lifetime: false };
+  if (ent && (ent.lifetime || ent.until > now)) {
+    return { tier: "premium", source: ent.lifetime ? "lifetime" : ent.source, until: ent.lifetime ? null : ent.until, lifetime: !!ent.lifetime };
+  }
+  if (!anonymous && trialStart != null) {
+    const until = trialStart + trialDays * 86400000;
+    if (until > now) return { tier: "premium", source: "trial", until, lifetime: false };
+  }
+  return { tier: anonymous ? "guest" : "free", source: null, until: null, lifetime: false };
+}
+
+/** Neue Freischaltung auf eine bestehende draufrechnen (Restzeit geht nicht verloren). */
+export function extend(ent, now, days) {
+  if (ent?.lifetime) return { lifetime: true, until: null };
+  if (days === 0) return { lifetime: true, until: null };
+  const base = ent && ent.until > now ? ent.until : now;
+  return { lifetime: false, until: base + days * 86400000 };
+}
+
 /**
  * Darf dieser Aufruf laufen? usedToday = schon gezählte Aufrufe heute, alreadyCounted = gleiche Anfrage-Kennung
- * (Wiederholung/zweite Spur) wurde schon gezählt, weeklyDone = automatische Auswertung diese Woche schon gelaufen.
+ * (Wiederholung/zweite Spur) wurde schon gezählt, weeklyDone = automatische Auswertung diese Woche schon gelaufen,
+ * freeLeft = übrige Gratis-Aufrufe (nur Gast).
  */
-export function decide({ kind, usedToday, limit, alreadyCounted, weeklyDone }) {
-  if (kind === "weekly-auto") return weeklyDone ? "weekly_done" : "ok";
+export function decide({ kind, tier, usedToday, limit, alreadyCounted, weeklyDone, freeLeft }) {
+  if (kind === "weekly-auto") {
+    if (tier !== "premium") return "needs_premium";
+    return weeklyDone ? "weekly_done" : "ok";
+  }
   if (alreadyCounted) return "ok";
+  if (tier === "guest" && freeLeft <= 0) return "needs_account";
+  if (tier === "free") return "needs_premium";
   return usedToday >= limit ? "daily_limit" : "ok";
 }

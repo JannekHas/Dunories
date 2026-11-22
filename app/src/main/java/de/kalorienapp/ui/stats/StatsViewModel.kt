@@ -64,7 +64,7 @@ sealed interface ReportGeneration {
     data class Failed(val error: ReportError) : ReportGeneration
 }
 
-enum class ReportError { NOT_ENOUGH_DATA, NO_API_KEY, QUOTA, DAILY_LIMIT, OVERLOADED, NETWORK, INVALID }
+enum class ReportError { NOT_ENOUGH_DATA, NO_API_KEY, QUOTA, DAILY_LIMIT, NEEDS_PREMIUM, OVERLOADED, NETWORK, INVALID }
 
 /** Führt eine Auswertung aus und übersetzt Fehler in [ReportGeneration.Failed]. */
 suspend fun runReport(block: suspend () -> Unit): ReportGeneration = try {
@@ -78,6 +78,7 @@ suspend fun runReport(block: suspend () -> Unit): ReportGeneration = try {
             GeminiError.NO_API_KEY -> ReportError.NO_API_KEY
             GeminiError.QUOTA -> ReportError.QUOTA
             GeminiError.DAILY_LIMIT -> ReportError.DAILY_LIMIT
+            GeminiError.NEEDS_ACCOUNT, GeminiError.NEEDS_PREMIUM -> ReportError.NEEDS_PREMIUM
             GeminiError.OVERLOADED -> ReportError.OVERLOADED
             GeminiError.NETWORK -> ReportError.NETWORK
             else -> ReportError.INVALID

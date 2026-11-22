@@ -97,6 +97,7 @@ import de.kalorienapp.ui.AppViewModelProvider
 fun CaptureScreen(
     onClose: () -> Unit,
     onManualEntry: (MealType) -> Unit,
+    onPaywall: () -> Unit = {},
     viewModel: CaptureViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -174,10 +175,21 @@ fun CaptureScreen(
                 modifier = contentModifier,
             )
             is CaptureStep.Failed -> MessageContent(
-                title = stringResource(R.string.capture_failed_title),
+                title = stringResource(
+                    when (step.error) {
+                        CaptureError.NEEDS_ACCOUNT -> R.string.capture_free_used_title
+                        CaptureError.NEEDS_PREMIUM -> R.string.capture_premium_title
+                        CaptureError.DAILY_LIMIT -> R.string.capture_daily_limit_title
+                        else -> R.string.capture_failed_title
+                    },
+                ),
                 message = stringResource(step.error.messageRes),
-                primaryLabel = stringResource(R.string.capture_retry).takeIf { step.error.retryable },
-                onPrimary = viewModel::retry,
+                primaryLabel = when (step.error) {
+                    CaptureError.NEEDS_ACCOUNT -> stringResource(R.string.paywall_create_account)
+                    CaptureError.NEEDS_PREMIUM -> stringResource(R.string.paywall_show)
+                    else -> stringResource(R.string.capture_retry).takeIf { step.error.retryable }
+                },
+                onPrimary = if (step.error.paywall) onPaywall else viewModel::retry,
                 onManual = { manual(state.mealType) },
                 onNewPhoto = viewModel::backToCamera,
                 modifier = contentModifier,
@@ -526,8 +538,12 @@ private val CaptureStep.titleRes: Int
         is CaptureStep.Proposal -> R.string.proposal_title
     }
 
+private val CaptureError.paywall: Boolean
+    get() = this == CaptureError.NEEDS_ACCOUNT || this == CaptureError.NEEDS_PREMIUM
+
 private val CaptureError.retryable: Boolean
-    get() = this != CaptureError.NO_API_KEY && this != CaptureError.REJECTED && this != CaptureError.DAILY_LIMIT
+    get() = this != CaptureError.NO_API_KEY && this != CaptureError.REJECTED && this != CaptureError.DAILY_LIMIT &&
+        this != CaptureError.NEEDS_ACCOUNT && this != CaptureError.NEEDS_PREMIUM
 
 internal val CaptureError.messageRes: Int
     get() = when (this) {
@@ -536,6 +552,8 @@ internal val CaptureError.messageRes: Int
         CaptureError.NETWORK -> R.string.error_network
         CaptureError.QUOTA -> R.string.error_ai_quota
         CaptureError.DAILY_LIMIT -> R.string.error_ai_daily_limit
+        CaptureError.NEEDS_ACCOUNT -> R.string.error_ai_needs_account
+        CaptureError.NEEDS_PREMIUM -> R.string.error_ai_needs_premium
         CaptureError.OVERLOADED -> R.string.error_ai_overloaded
         CaptureError.INVALID_RESPONSE -> R.string.error_ai_invalid
         CaptureError.NO_FOOD -> R.string.error_ai_no_food

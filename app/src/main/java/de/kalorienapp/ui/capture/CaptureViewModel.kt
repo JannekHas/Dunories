@@ -53,7 +53,7 @@ data class ProposalItem(
     fun totalNutrients(): Nutrients? = dish?.totalNutrients() ?: form.totalNutrients()
 }
 
-enum class CaptureError { NO_API_KEY, REJECTED, NETWORK, QUOTA, DAILY_LIMIT, OVERLOADED, INVALID_RESPONSE, NO_FOOD, IMAGE, UNKNOWN }
+enum class CaptureError { NO_API_KEY, REJECTED, NETWORK, QUOTA, DAILY_LIMIT, NEEDS_ACCOUNT, NEEDS_PREMIUM, OVERLOADED, INVALID_RESPONSE, NO_FOOD, IMAGE, UNKNOWN }
 
 sealed interface CaptureStep {
     data object Camera : CaptureStep
@@ -378,6 +378,8 @@ internal fun Exception.toCaptureError(): CaptureError = when (this) {
         GeminiError.NETWORK -> CaptureError.NETWORK
         GeminiError.QUOTA -> CaptureError.QUOTA
         GeminiError.DAILY_LIMIT -> CaptureError.DAILY_LIMIT
+        GeminiError.NEEDS_ACCOUNT -> CaptureError.NEEDS_ACCOUNT
+        GeminiError.NEEDS_PREMIUM -> CaptureError.NEEDS_PREMIUM
         GeminiError.OVERLOADED -> CaptureError.OVERLOADED
         GeminiError.INVALID_RESPONSE -> CaptureError.INVALID_RESPONSE
         GeminiError.NO_FOOD -> CaptureError.NO_FOOD

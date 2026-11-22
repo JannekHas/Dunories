@@ -9,6 +9,9 @@ import androidx.lifecycle.viewModelScope
 import de.kalorienapp.R
 import de.kalorienapp.account.AccountManager
 import de.kalorienapp.account.AccountUser
+import de.kalorienapp.account.AiStatus
+import de.kalorienapp.account.PremiumClient
+import de.kalorienapp.account.RedeemResult
 import de.kalorienapp.backup.BackupFormat
 import de.kalorienapp.backup.BackupManager
 import de.kalorienapp.backup.CloudBackupManager
@@ -37,6 +40,7 @@ sealed interface AccountDialog {
     data class OfferRestore(val cloud: BackupFormat.Summary) : AccountDialog
     data class Compare(val local: BackupFormat.Summary, val cloud: BackupFormat.Summary) : AccountDialog
     data class DeleteCode(val code: String) : AccountDialog
+    data object Redeem : AccountDialog
 }
 
 data class AccountUiState(
@@ -53,7 +57,47 @@ class AccountViewModel(
     private val backup: BackupManager,
     private val settings: AppSettings,
     private val scheduler: WorkScheduler,
+    private val premium: PremiumClient,
 ) : ViewModel() {
+
+    /** KI-Stufe vom Worker (Gast/Konto/Premium); null = unbekannt (offline oder nicht eingerichtet). */
+    private val _aiStatus = MutableStateFlow<AiStatus?>(null)
+    val aiStatus: StateFlow<AiStatus?> = _aiStatus.asStateFlow()
+
+    /** Ergebnis des letzten Einlöseversuchs (für den Dialog). */
+    private val _redeem = MutableStateFlow<RedeemResult?>(null)
+    val redeemResult: StateFlow<RedeemResult?> = _redeem.asStateFlow()
+    private val _redeeming = MutableStateFlow(false)
+    val redeeming: StateFlow<Boolean> = _redeeming.asStateFlow()
+
+    init {
+        refreshStatus()
+    }
+
+    fun refreshStatus() {
+        if (!account.available) return
+        viewModelScope.launch { premium.status()?.let { _aiStatus.value = it } }
+    }
+
+    fun openRedeem() {
+        _redeem.value = null
+        _dialog.value = AccountDialog.Redeem
+    }
+
+    fun redeem(code: String) {
+        if (_redeeming.value) return
+        _redeeming.value = true
+        viewModelScope.launch {
+            try {
+                val (result, status) = premium.redeem(code)
+                _redeem.value = result
+                status?.let { _aiStatus.value = it }
+                if (result == RedeemResult.OK) _message.value = R.string.premium_redeemed
+            } finally {
+                _redeeming.value = false
+            }
+        }
+    }
 
     val state: StateFlow<AccountUiState> = combine(account.user, settings.cloudBackupAt, settings.cloudConflict) { user, at, conflict ->
         AccountUiState(account.available, user, at, conflict)
@@ -94,6 +138,8 @@ class AccountViewModel(
             cloud.saveConsent(CONSENT_VERSION)
             settings.cloudConsentVersion = CONSENT_VERSION
         }
+        // Startet beim Worker die Probezeit (einmal pro Google-Konto) und zeigt sie gleich an.
+        premium.status()?.let { _aiStatus.value = it }
         check()
     }
 
@@ -151,6 +197,7 @@ class AccountViewModel(
         scheduler.cancelCloudBackup()
         settings.clearCloud()
         _message.value = R.string.account_signed_out
+        _aiStatus.value = premium.status()
     }
 
     fun askDelete() {
@@ -165,6 +212,7 @@ class AccountViewModel(
             scheduler.cancelCloudBackup()
             settings.clearCloud()
             _message.value = R.string.account_deleted
+            _aiStatus.value = premium.status()
         }
     }
 

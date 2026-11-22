@@ -44,6 +44,7 @@ fun ProfileScreen(
     onOpenPlan: () -> Unit = {},
     onFeedback: () -> Unit = {},
     onPrivacy: () -> Unit = {},
+    onPremium: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -105,7 +106,7 @@ fun ProfileScreen(
                 // Einstellungen: Hinweise und darunter Datensicherung (4 statt 5 Reiter – Wunsch des Nutzers)
                 else -> {
                     // Feedback ganz oben – bleibt für immer (das Symbol auf „Heute“ nur in der Testphase).
-                    AccountSection(onPrivacy = onPrivacy)
+                    AccountSection(onPrivacy = onPrivacy, onPremium = onPremium)
                     FeedbackEntry(onFeedback)
                     SectionTitle(stringResource(R.string.profile_tab_notifications))
                     NotificationSettingsSection()

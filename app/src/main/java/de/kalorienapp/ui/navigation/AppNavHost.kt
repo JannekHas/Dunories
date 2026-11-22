@@ -320,6 +320,12 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onAddAnalysis = { navController.navigate(BodyAnalysisRoute) },
                         )
                     }
+                    screen<PaywallRoute> {
+                        de.kalorienapp.ui.profile.PaywallScreen(
+                            onBack = { navController.popBackStack() },
+                            onPrivacy = { navController.navigate(PrivacyRoute) },
+                        )
+                    }
                     screen<PrivacyRoute> {
                         de.kalorienapp.ui.profile.PrivacyScreen(onBack = { navController.popBackStack() })
                     }
@@ -379,6 +385,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onOpenPlan = { navController.navigate(MealPlanRoute) },
                             onFeedback = { navController.navigate(FeedbackRoute) },
                             onPrivacy = { navController.navigate(PrivacyRoute) },
+                            onPremium = { navController.navigate(PaywallRoute) },
                         )
                     }
                     screen<MealPlanRoute> {
@@ -476,6 +483,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                         val route = entry.toRoute<CaptureRoute>()
                         CaptureScreen(
                             onClose = { navController.popBackStack() },
+                            onPaywall = { navController.navigate(PaywallRoute) },
                             onManualEntry = { meal ->
                                 // Erfassung durch den manuellen Editor ersetzen, damit „Zurück“ zur Übersicht führt.
                                 navController.navigate(EntryEditRoute(epochDay = route.epochDay, mealType = meal.name)) {

@@ -38,7 +38,12 @@ import java.io.IOException
 import java.net.SocketTimeoutException
 
 /** Warum eine KI-Analyse fehlgeschlagen ist – die UI bietet dann immer die manuelle Eingabe an. */
-enum class GeminiError { NO_API_KEY, REJECTED, NETWORK, QUOTA, OVERLOADED, INVALID_RESPONSE, NO_FOOD, DAILY_LIMIT }
+enum class GeminiError { NO_API_KEY, REJECTED, NETWORK, QUOTA, OVERLOADED, INVALID_RESPONSE, NO_FOOD, DAILY_LIMIT,
+    /** Gast-Gratis-Aufrufe aufgebraucht → Konto erstellen. */
+    NEEDS_ACCOUNT,
+    /** Konto ohne Premium (Probezeit vorbei) → Paywall. */
+    NEEDS_PREMIUM,
+}
 
 /** Art des KI-Aufrufs – der Worker zählt danach (automatische Wochenauswertung zählt nicht mit). */
 enum class AiKind(val header: String) { FOOD("food"), BODY("body"), PLAN("plan"), RECIPE("recipe"), WEEKLY("weekly"), WEEKLY_AUTO("weekly-auto") }
@@ -220,7 +225,12 @@ class GeminiClient(
 
         internal fun errorFor(code: Int, body: String = ""): GeminiError = when (code) {
             // Eigenes Tageslimit des Workers (oder automatische Wochenauswertung schon gelaufen) – kein anderes Modell hilft.
-            429 -> if ("daily_limit" in body || "weekly_done" in body) GeminiError.DAILY_LIMIT else GeminiError.QUOTA
+            429 -> when {
+                "needs_account" in body -> GeminiError.NEEDS_ACCOUNT
+                "needs_premium" in body -> GeminiError.NEEDS_PREMIUM
+                "daily_limit" in body || "weekly_done" in body -> GeminiError.DAILY_LIMIT
+                else -> GeminiError.QUOTA
+            }
             // Ungültiger Key liefert je nach Fall 400, 401 oder 403.
             400, 401, 403 -> GeminiError.REJECTED
             in 500..599 -> GeminiError.OVERLOADED

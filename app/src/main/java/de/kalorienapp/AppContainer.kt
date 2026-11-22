@@ -66,6 +66,9 @@ class AppContainer(context: Context) {
     // KI über den eigenen Worker; Anmeldung per Konto oder still angelegtem Gast-Konto.
     private val gemini = GeminiClient(BuildConfig.AI_BASE_URL) { account.aiToken() }
 
+    /** KI-Stufe (Gast/Konto/Premium) und Code-Einlösen beim Worker. */
+    val premium = de.kalorienapp.account.PremiumClient(BuildConfig.AI_BASE_URL) { account.aiToken() }
+
     val foodAnalyzer = FoodAnalyzer(
         context = context,
         openFoodFacts = OpenFoodFactsClient(context.cacheDir),

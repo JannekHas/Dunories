@@ -33,3 +33,4 @@ backend/ai-worker/.wrangler/
 backend/ai-worker/node_modules/
 backend/ai-worker/.dev.vars
 admin/
+UEBERSICHT*.md

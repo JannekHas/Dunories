@@ -38,6 +38,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.account.AiStatus
+import de.kalorienapp.account.AiTier
+import de.kalorienapp.account.PremiumSource
+import de.kalorienapp.account.RedeemResult
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import de.kalorienapp.backup.BackupFormat
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.GlassCard
@@ -48,6 +54,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val backupTime = DateTimeFormatter.ofPattern("d. MMM, HH:mm", Locale.GERMAN)
+private val premiumDate = DateTimeFormatter.ofPattern("d. MMMM yyyy", Locale.GERMAN)
+
+internal fun Long.premiumDay(): String = Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).format(premiumDate)
 
 /**
  * Konto-Karte ganz oben in Profil → Einstellungen (Phase 2): freiwillig, ohne Konto bleibt alles lokal.
@@ -56,14 +65,29 @@ private val backupTime = DateTimeFormatter.ofPattern("d. MMM, HH:mm", Locale.GER
 @Composable
 fun AccountSection(
     onPrivacy: () -> Unit = {},
+    onPremium: () -> Unit = {},
     viewModel: AccountViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     if (!state.available) return
     val busy by viewModel.busy.collectAsStateWithLifecycle()
-    val dialog by viewModel.dialog.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
+    val aiStatus by viewModel.aiStatus.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
+    // Stand bei jedem Erscheinen und Zurückkehren neu holen (KI-Aufrufe zählen woanders hoch).
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        viewModel.refreshStatus()
+        onPauseOrDispose { }
+    }
+
+    aiStatus?.let { status ->
+        PremiumCard(
+            status = status,
+            signedIn = state.user != null,
+            onPremium = onPremium,
+            onRedeem = viewModel::openRedeem,
+        )
+    }
 
     GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -120,6 +144,14 @@ fun AccountSection(
         }
     }
 
+    AccountDialogs(viewModel, onPrivacy)
+}
+
+/** Alle Dialoge rund ums Konto (auch von der Paywall aus genutzt). */
+@Composable
+internal fun AccountDialogs(viewModel: AccountViewModel, onPrivacy: () -> Unit) {
+    val dialog by viewModel.dialog.collectAsStateWithLifecycle()
+    val activity = LocalContext.current.findActivity()
     when (val d = dialog) {
         AccountDialog.Consent -> ConsentDialog(
             onAccept = { activity?.let(viewModel::acceptConsent) },
@@ -143,12 +175,101 @@ fun AccountSection(
         )
         is AccountDialog.Compare -> CompareDialog(d.local, d.cloud, viewModel::keepPhone, viewModel::takeCloud, viewModel::dismissDialog)
         is AccountDialog.DeleteCode -> DeleteDialog(d.code, onConfirm = { activity?.let(viewModel::confirmDelete) }, onCancel = viewModel::dismissDialog)
+        AccountDialog.Redeem -> RedeemDialog(viewModel)
         null -> Unit
     }
 }
 
+/** KI-Stufe: Testphase, Probezeit, Premium bis …, Gast mit Gratis-Aufrufen oder ohne Premium. */
 @Composable
-private fun ConsentDialog(onAccept: () -> Unit, onCancel: () -> Unit, onPrivacy: () -> Unit) {
+private fun PremiumCard(status: AiStatus, signedIn: Boolean, onPremium: () -> Unit, onRedeem: () -> Unit) {
+    GlassCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.premium_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                premiumStatusText(status),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (status.premium) Neon.Yellow else Neon.TextSecondary,
+            )
+            if (status.premium) {
+                Text(stringResource(R.string.premium_used_today, status.usedToday, status.dailyLimit), style = MaterialTheme.typography.bodySmall)
+            }
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                if (status.source != PremiumSource.LIFETIME && status.source != PremiumSource.TEST) {
+                    TextButton(onClick = onPremium) { Text(stringResource(R.string.paywall_show)) }
+                }
+                if (signedIn) TextButton(onClick = onRedeem) { Text(stringResource(R.string.premium_redeem)) }
+            }
+            if (status.id.isNotBlank()) {
+                Text(stringResource(R.string.premium_id, status.id), style = MaterialTheme.typography.labelSmall, color = Neon.TextSecondary)
+            }
+        }
+    }
+}
+
+@Composable
+internal fun premiumStatusText(status: AiStatus): String = when (status.tier) {
+    AiTier.PREMIUM -> when (status.source) {
+        PremiumSource.TEST -> stringResource(R.string.premium_status_test)
+        PremiumSource.LIFETIME -> stringResource(R.string.premium_status_lifetime)
+        PremiumSource.TRIAL -> stringResource(R.string.premium_status_trial, status.until?.premiumDay().orEmpty())
+        else -> stringResource(R.string.premium_status_until, status.until?.premiumDay().orEmpty())
+    }
+    AiTier.GUEST -> (status.freeLeft ?: 0).let { pluralStringResource(R.plurals.premium_status_guest, it, it) }
+    AiTier.FREE -> stringResource(R.string.premium_status_free)
+}
+
+@Composable
+internal fun RedeemDialog(viewModel: AccountViewModel) {
+    var code by remember { mutableStateOf("") }
+    val result by viewModel.redeemResult.collectAsStateWithLifecycle()
+    val running by viewModel.redeeming.collectAsStateWithLifecycle()
+    if (result == RedeemResult.OK) {
+        viewModel.dismissDialog()
+        return
+    }
+    AlertDialog(
+        onDismissRequest = viewModel::dismissDialog,
+        title = { Text(stringResource(R.string.premium_redeem)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.premium_redeem_text))
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it.uppercase().take(20) },
+                    label = { Text(stringResource(R.string.premium_code)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, autoCorrectEnabled = false),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                result?.let { Text(stringResource(it.messageRes), style = MaterialTheme.typography.bodySmall, color = Neon.Yellow) }
+                if (running) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Neon.Cyan)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { viewModel.redeem(code) }, enabled = !running && code.count(Char::isLetterOrDigit) >= 8) {
+                Text(stringResource(R.string.premium_redeem_confirm))
+            }
+        },
+        dismissButton = { TextButton(onClick = viewModel::dismissDialog) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+private val RedeemResult.messageRes: Int
+    get() = when (this) {
+        RedeemResult.OK -> R.string.premium_redeemed
+        RedeemResult.INVALID -> R.string.premium_code_invalid
+        RedeemResult.EXPIRED -> R.string.premium_code_expired
+        RedeemResult.USED_UP -> R.string.premium_code_used_up
+        RedeemResult.ALREADY -> R.string.premium_code_already
+        RedeemResult.TOO_MANY -> R.string.premium_code_too_many
+        RedeemResult.NEEDS_ACCOUNT -> R.string.premium_code_needs_account
+        RedeemResult.NETWORK -> R.string.account_error
+    }
+
+@Composable
+internal fun ConsentDialog(onAccept: () -> Unit, onCancel: () -> Unit, onPrivacy: () -> Unit) {
     AlertDialog(
         onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.account_consent_title)) },
@@ -246,7 +367,7 @@ private fun DeleteDialog(code: String, onConfirm: () -> Unit, onCancel: () -> Un
     )
 }
 
-private fun Context.findActivity(): Activity? = when (this) {
+internal fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()
     else -> null
