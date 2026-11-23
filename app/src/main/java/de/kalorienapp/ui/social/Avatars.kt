@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -86,7 +87,12 @@ internal fun AvatarPicker(current: String?, name: String, onPick: (String?) -> U
         onDismissRequest = onClose,
         title = { Text(stringResource(R.string.social_avatar_title)) },
         text = {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Zentriert: sonst bleibt rechts mehr Platz als links (Hinweis des Nutzers).
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 val letter = stringResource(R.string.social_avatar_letter)
                 Choice(selected = current == null, description = letter, onClick = { onPick(null) }) {
                     AvatarImage(null, name, 56)
