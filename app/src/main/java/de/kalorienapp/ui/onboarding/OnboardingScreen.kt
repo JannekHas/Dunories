@@ -68,6 +68,7 @@ private enum class GoalChoice { LOSE, GAIN, MAINTAIN, NONE }
 @Composable
 fun OnboardingScreen(
     onFinished: () -> Unit,
+    onYazio: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -170,6 +171,10 @@ fun OnboardingScreen(
                     StepTitle(stringResource(R.string.onboarding_body_title))
                     StepIntro(stringResource(R.string.onboarding_body_intro))
                     BodyDataSection(form, viewModel::update, showLifestyle = false)
+                    // Wechsel von YAZIO: Serie mitnehmen – freiwillig, geht auch später unter Einstellungen.
+                    TextButton(onClick = onYazio, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.yazio_onboarding_entry))
+                    }
                 }
                 1 -> {
                     StepTitle(stringResource(R.string.onboarding_lifestyle_title))

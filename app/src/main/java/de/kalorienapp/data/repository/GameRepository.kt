@@ -26,7 +26,7 @@ class GameRepository(
     private val settings: AppSettings,
 ) {
     private val stats: Flow<Gamification.Stats> = combine(
-        foodDao.observeLoggedDays(),
+        combine(foodDao.observeLoggedDays(), settings.importedStreak) { days, imported -> days to imported },
         foodDao.observeCount(),
         weights.entries,
         goals.reachedGoals,
@@ -37,8 +37,8 @@ class GameRepository(
             foodDao.observeSourceCount("AI_PHOTO"),
             foodDao.observeCreatedTimes(),
         ) { r, f, barcode, photo, times -> Extra(r.size, f, barcode, photo, times.count(::isNight)) },
-    ) { days, entries, weightList, reached, extra ->
-        val (longest, current) = Gamification.streaks(days, LocalDate.now().toEpochDay())
+    ) { (days, imported), entries, weightList, reached, extra ->
+        val (longest, current) = Gamification.streaks(days, LocalDate.now().toEpochDay(), imported)
         Gamification.Stats(
             loggedDays = days.size,
             entries = entries,

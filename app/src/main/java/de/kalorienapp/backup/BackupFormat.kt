@@ -81,6 +81,8 @@ object BackupFormat {
         val shareBadges: Boolean? = null,
         val shareAchievements: Boolean? = null,
         val shareStreak: Boolean? = null,
+        /** Aus YAZIO übernommene Serie („laufend;längste;Tag“). */
+        val importedStreak: String? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }

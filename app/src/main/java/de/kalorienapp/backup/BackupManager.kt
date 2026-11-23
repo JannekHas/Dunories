@@ -7,13 +7,14 @@ import android.net.Uri
 import de.kalorienapp.MainActivity
 import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.db.AppDatabase
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import de.kalorienapp.domain.Gamification
 import java.io.File
 import java.time.LocalDate
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Sicherung erstellen und einspielen. Die Datei bleibt beim Nutzer (Teilen/Speichern) –
@@ -98,6 +99,7 @@ class BackupManager(
                 shareBadges = settings.shareBadges.value,
                 shareAchievements = settings.shareAchievements.value,
                 shareStreak = settings.shareStreak.value,
+                importedStreak = settings.importedStreak.value?.encode(),
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
                         .joinToString(";")
@@ -224,6 +226,7 @@ class BackupManager(
             m.shareBadges?.let(settings::setShareBadges)
             m.shareAchievements?.let(settings::setShareAchievements)
             m.shareStreak?.let(settings::setShareStreak)
+            Gamification.ImportedStreak.decode(m.importedStreak)?.let(settings::setImportedStreak)
             m.weeklyDoneFor?.let { settings.weeklyDoneFor = LocalDate.ofEpochDay(it) }
             // Sicherung aus ≤ 0.6.0 (Umzug auf de.dunories): einmal „Neu in 0.7.0“ zeigen.
             settings.markChangelogSeen(m.changelogSeen ?: OLD_BACKUP_CHANGELOG)

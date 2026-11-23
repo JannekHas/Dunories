@@ -20,6 +20,8 @@ data class Friend(
     val badge: String?,
     val achievements: List<String>?,
     val streak: Int?,
+    /** Längste Serie (zusammen mit der Serie freigegeben). */
+    val best: Int? = null,
 )
 
 /** Offene Anfrage (eingehend oder ausgehend). */
@@ -49,6 +51,7 @@ data class SocialData(
                         badge = f.string("badge"),
                         achievements = (f["achievements"] as? JsonArray)?.mapNotNull { (it as? kotlinx.serialization.json.JsonPrimitive)?.content },
                         streak = f.number("streak")?.toInt(),
+                        best = f.number("best")?.toInt(),
                     )
                 },
                 incoming = requests("incoming"),
@@ -63,6 +66,8 @@ data class SocialProfile(
     val name: String,
     val badge: String?,
     val streak: Int,
+    /** Längste Serie (inkl. aus YAZIO übernommener). */
+    val best: Int,
     val achievements: List<String>,
     val shareBadges: Boolean,
     val shareAchievements: Boolean,
@@ -90,6 +95,7 @@ class SocialClient(
         put("name", p.name)
         p.badge?.let { put("badge", it) }
         put("streak", p.streak)
+        put("best", p.best)
         putJsonArray("achievements") { p.achievements.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } }
         putJsonObject("share") {
             put("badges", p.shareBadges)

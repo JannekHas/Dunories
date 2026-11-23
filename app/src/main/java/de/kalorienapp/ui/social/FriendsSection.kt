@@ -302,6 +302,14 @@ private fun FriendDialog(friend: Friend, onRemove: () -> Unit, onClose: () -> Un
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (friend.streak != null) Neon.Orange else Neon.TextSecondary,
                 )
+                // Längste Serie kommt mit der Freigabe „Serie“ (ältere App-Versionen schicken sie noch nicht).
+                friend.best?.takeIf { friend.streak != null }?.let {
+                    Text(
+                        pluralStringResource(R.plurals.friends_best, it, it),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Neon.Yellow,
+                    )
+                }
                 val keys = friend.achievements
                 if (keys == null) {
                     Text(stringResource(R.string.friends_achievements_private), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)

@@ -87,6 +87,7 @@ class AppContainer(context: Context) {
 
     val mealPlanImporter = MealPlanImporter(context, GeminiMealPlanAnalyzer(gemini))
     val bodyAnalysisReader = de.kalorienapp.capture.BodyAnalysisReader(context, de.kalorienapp.data.remote.gemini.GeminiBodyAnalyzer(gemini))
+    val streakScreenshotReader = de.kalorienapp.ui.social.StreakScreenshotReader(context, de.kalorienapp.data.remote.gemini.GeminiStreakReader(gemini))
 
     /** Feedback an Firestore (ohne Konto) + Fernschalter. */
     val feedbackClient = de.kalorienapp.data.remote.firebase.FeedbackClient(

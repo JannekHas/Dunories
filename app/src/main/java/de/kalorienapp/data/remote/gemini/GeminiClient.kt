@@ -46,7 +46,7 @@ enum class GeminiError { NO_API_KEY, REJECTED, NETWORK, QUOTA, OVERLOADED, INVAL
 }
 
 /** Art des KI-Aufrufs – der Worker zählt danach (automatische Wochenauswertung zählt nicht mit). */
-enum class AiKind(val header: String) { FOOD("food"), BODY("body"), PLAN("plan"), RECIPE("recipe"), WEEKLY("weekly"), WEEKLY_AUTO("weekly-auto") }
+enum class AiKind(val header: String) { FOOD("food"), BODY("body"), PLAN("plan"), RECIPE("recipe"), WEEKLY("weekly"), WEEKLY_AUTO("weekly-auto"), STREAK("streak") }
 
 class GeminiException(val error: GeminiError, cause: Throwable? = null) : Exception(error.name, cause)
 

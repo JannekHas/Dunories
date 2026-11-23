@@ -157,6 +157,7 @@ object AppViewModelProvider {
                 container().settings,
             )
         }
+        initializer { de.kalorienapp.ui.social.YazioStreakViewModel(container().streakScreenshotReader, container().settings) }
         initializer { de.kalorienapp.ui.stats.BodyAnalysisViewModel(container().bodyAnalysisReader, container().bodyMeasurementRepository) }
         initializer {
             CaptureViewModel(

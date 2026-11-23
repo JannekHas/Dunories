@@ -39,6 +39,8 @@ data class SocialUiState(
     /** Mit Google angemeldet (Freunde nur mit Konto). */
     val signedIn: Boolean = false,
     val share: ShareSettings = ShareSettings(),
+    /** Serie enthält eine aus YAZIO übernommene. */
+    val importedStreak: Boolean = false,
 )
 
 /** Social-Reiter: Profil, Erfolge & Abzeichen, Freunde (Konto), Tester-Bereich. */
@@ -63,10 +65,10 @@ class SocialViewModel(
     val state: StateFlow<SocialUiState> = combine(
         game.state,
         profileFlags,
-        combine(settings.testerPoints, status) { points, s -> points to s },
+        combine(settings.testerPoints, status, settings.importedStreak) { points, s, imported -> Triple(points, s, imported != null) },
         account.user,
         shareFlags,
-    ) { g, p, (points, s), user, share ->
+    ) { g, p, (points, s, imported), user, share ->
         SocialUiState(
             game = g,
             gamificationEnabled = p.on,
@@ -78,6 +80,7 @@ class SocialViewModel(
             testPhase = s?.source == PremiumSource.TEST || points > 0,
             signedIn = user != null,
             share = share,
+            importedStreak = imported,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SocialUiState())
 
@@ -114,6 +117,7 @@ class SocialViewModel(
                 name = settings.feedbackName,
                 badge = settings.favoriteBadge.value?.takeIf { it in g.badges },
                 streak = g.stats.currentStreak,
+                best = g.stats.longestStreak,
                 achievements = g.progress.filter { it.unlocked }.map { it.achievement.key },
                 shareBadges = settings.shareBadges.value,
                 shareAchievements = settings.shareAchievements.value,

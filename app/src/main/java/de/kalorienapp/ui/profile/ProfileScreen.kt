@@ -45,6 +45,7 @@ fun ProfileScreen(
     onFeedback: () -> Unit = {},
     onPrivacy: () -> Unit = {},
     onPremium: () -> Unit = {},
+    onYazio: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -116,6 +117,10 @@ fun ProfileScreen(
                     HorizontalDivider()
                     SectionTitle(stringResource(R.string.section_backup))
                     BackupSection()
+                    // YAZIO hat keinen Export – die Serie kommt per Screenshot (Wunsch des Nutzers, Nov. 2026).
+                    OutlinedButton(onClick = onYazio, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.yazio_settings_entry))
+                    }
                     HorizontalDivider()
                     var showChangelog by remember { mutableStateOf(false) }
                     OutlinedButton(onClick = { showChangelog = true }, modifier = Modifier.fillMaxWidth()) {

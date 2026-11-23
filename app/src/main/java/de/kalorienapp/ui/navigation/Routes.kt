@@ -86,6 +86,10 @@ data object PrivacyRoute
 @Serializable
 data object FeedbackRoute
 
+/** Serie aus YAZIO übernehmen (Screenshot oder eintippen) – aus Einrichtung und Einstellungen. */
+@Serializable
+data object YazioStreakRoute
+
 /** Körperanalyse eintragen (eintippen, Foto, einsprechen). */
 @Serializable
 data object BodyAnalysisRoute

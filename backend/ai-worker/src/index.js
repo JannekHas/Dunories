@@ -408,6 +408,10 @@ export class Usage extends DurableObject {
       CREATE TABLE IF NOT EXISTS friend_requests (from_uid TEXT NOT NULL, to_uid TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (from_uid, to_uid));
       CREATE TABLE IF NOT EXISTS friends (a TEXT NOT NULL, b TEXT NOT NULL, since INTEGER NOT NULL, PRIMARY KEY (a, b));
     `);
+    // Spalte „best“ (längste Serie) kam nach dem ersten Deploy dazu.
+    if (!this.sql.exec("PRAGMA table_info(profiles)").toArray().some((c) => c.name === "best")) {
+      this.sql.exec("ALTER TABLE profiles ADD COLUMN best INTEGER NOT NULL DEFAULT 0");
+    }
   }
 
   config(d) {
@@ -542,7 +546,7 @@ export class Usage extends DurableObject {
     const p = this.sql.exec("SELECT * FROM profiles WHERE uid = ?", uid).toArray()[0];
     if (!p) return null;
     return {
-      uid: p.uid, code: p.code, name: p.name, badge: p.badge, streak: p.streak, achievements: JSON.parse(p.achievements || "[]"),
+      uid: p.uid, code: p.code, name: p.name, badge: p.badge, streak: p.streak, best: p.best, achievements: JSON.parse(p.achievements || "[]"),
       shareBadges: !!p.share_badges, shareAchievements: !!p.share_achievements, shareStreak: !!p.share_streak,
     };
   }
@@ -555,12 +559,12 @@ export class Usage extends DurableObject {
       while (this.sql.exec("SELECT 1 FROM profiles WHERE code = ?", code).toArray().length);
     }
     this.sql.exec(
-      `INSERT INTO profiles (uid, code, name, badge, streak, achievements, share_badges, share_achievements, share_streak, updated)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT (uid) DO UPDATE SET name = excluded.name, badge = excluded.badge, streak = excluded.streak,
+      `INSERT INTO profiles (uid, code, name, badge, streak, best, achievements, share_badges, share_achievements, share_streak, updated)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (uid) DO UPDATE SET name = excluded.name, badge = excluded.badge, streak = excluded.streak, best = excluded.best,
          achievements = excluded.achievements, share_badges = excluded.share_badges,
          share_achievements = excluded.share_achievements, share_streak = excluded.share_streak, updated = excluded.updated`,
-      uid, code, p.name || null, p.badge, p.streak, JSON.stringify(p.achievements),
+      uid, code, p.name || null, p.badge, p.streak, p.best, JSON.stringify(p.achievements),
       p.shareBadges ? 1 : 0, p.shareAchievements ? 1 : 0, p.shareStreak ? 1 : 0, now,
     );
     return this.socialState(uid);

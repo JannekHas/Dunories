@@ -253,6 +253,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                 ) {
                     screen<OnboardingRoute> {
                         OnboardingScreen(
+                            onYazio = { navController.navigate(YazioStreakRoute) },
                             onFinished = {
                                 // Neue Nutzer bekommen keine Patchnotes der Version, mit der sie anfangen.
                                 container.settings.markChangelogSeen(de.kalorienapp.BuildConfig.VERSION_CODE)
@@ -319,6 +320,9 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     screen<FeedbackRoute> {
                         de.kalorienapp.ui.feedback.FeedbackScreen(onBack = { navController.popBackStack() })
                     }
+                    screen<YazioStreakRoute> {
+                        de.kalorienapp.ui.social.YazioStreakScreen(onBack = { navController.popBackStack() })
+                    }
                     screen<BodyAnalysisRoute> {
                         de.kalorienapp.ui.stats.BodyAnalysisScreen(onBack = { navController.popBackStack() })
                     }
@@ -373,6 +377,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onFeedback = { navController.navigate(FeedbackRoute) },
                             onPrivacy = { navController.navigate(PrivacyRoute) },
                             onPremium = { navController.navigate(PaywallRoute) },
+                            onYazio = { navController.navigate(YazioStreakRoute) },
                         )
                     }
                     screen<MealPlanRoute> {

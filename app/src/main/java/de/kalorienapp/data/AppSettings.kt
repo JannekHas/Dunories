@@ -3,18 +3,19 @@ package de.kalorienapp.data
 import android.content.Context
 import de.kalorienapp.domain.FastingConfig
 import de.kalorienapp.domain.FastingPlan
+import de.kalorienapp.domain.Gamification
 import de.kalorienapp.domain.model.Budget
 import de.kalorienapp.domain.model.CookingTime
 import de.kalorienapp.domain.model.DietStyle
 import de.kalorienapp.domain.model.ExcludedFood
-import de.kalorienapp.domain.model.Intolerance
 import de.kalorienapp.domain.model.FoodPreferences
+import de.kalorienapp.domain.model.Intolerance
 import de.kalorienapp.domain.model.MealPlanSettings
+import java.time.DayOfWeek
+import java.time.LocalTime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.time.DayOfWeek
-import java.time.LocalTime
 
 /** Einstellungen für Benachrichtigungen (klein, kein Teil des Profils → SharedPreferences statt Room). */
 class AppSettings(context: Context) {
@@ -322,6 +323,16 @@ class AppSettings(context: Context) {
         _shareStreak.value = on
     }
 
+    private val _importedStreak = MutableStateFlow(Gamification.ImportedStreak.decode(prefs.getString(KEY_IMPORTED_STREAK, null)))
+
+    /** Aus YAZIO übernommene Serie (null = keine). Zählt für Serie und Serien-Erfolge mit. */
+    val importedStreak: StateFlow<Gamification.ImportedStreak?> = _importedStreak.asStateFlow()
+
+    fun setImportedStreak(value: Gamification.ImportedStreak?) {
+        prefs.edit().apply { if (value == null) remove(KEY_IMPORTED_STREAK) else putString(KEY_IMPORTED_STREAK, value.encode()) }.apply()
+        _importedStreak.value = value
+    }
+
     /** Hat die Danke-Liste je eingeschaltet → Schalter bleibt im Social-Reiter sichtbar (Wunsch des Nutzers). */
     val creditsEverOn: Boolean get() = prefs.getBoolean(KEY_CREDITS_EVER, false) || _testerCredits.value
 
@@ -530,6 +541,7 @@ class AppSettings(context: Context) {
         private const val KEY_SHARE_BADGES = "share_badges"
         private const val KEY_SHARE_ACHIEVEMENTS = "share_achievements"
         private const val KEY_SHARE_STREAK = "share_streak"
+        private const val KEY_IMPORTED_STREAK = "imported_streak"
         private const val KEY_GAME_ENABLED = "game_enabled"
         private const val KEY_GAME_CELEBRATED = "game_celebrated"
         private const val KEY_GAME_INIT = "game_initialized"

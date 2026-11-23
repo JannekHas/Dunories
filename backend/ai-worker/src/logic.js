@@ -4,7 +4,7 @@
 export const MODELS = new Set(["gemini-3.1-flash-lite", "gemini-3.1-flash-lite-preview", "gemini-flash-lite-latest"]);
 
 /** Art des KI-Aufrufs (Header X-Ai-Kind). weekly-auto = automatische Wochenauswertung, zählt nicht mit. */
-export const KINDS = new Set(["food", "body", "plan", "recipe", "weekly", "weekly-auto"]);
+export const KINDS = new Set(["food", "body", "plan", "recipe", "weekly", "weekly-auto", "streak"]);
 
 /** Größte erlaubte Anfrage (Fotos/PDF inline): 20 MB. */
 export const MAX_BODY = 20 * 1024 * 1024;
@@ -135,11 +135,14 @@ export function cleanSocialProfile(body) {
   const keys = Array.isArray(body.achievements) ? body.achievements.filter((k) => typeof k === "string" && /^[a-z0-9_]{1,30}$/.test(k)).slice(0, 100) : [];
   const badge = typeof body.badge === "string" && /^[a-z0-9_]{1,30}$/.test(body.badge) ? body.badge : null;
   const streak = Number.isInteger(body.streak) && body.streak >= 0 && body.streak < 100000 ? body.streak : 0;
+  // Längste Serie (seit 0.7.0, auch aus YAZIO übernommen); nie kleiner als die aktuelle.
+  const best = Number.isInteger(body.best) && body.best >= 0 && body.best < 100000 ? Math.max(body.best, streak) : streak;
   const share = body.share && typeof body.share === "object" ? body.share : {};
   return {
     name,
     badge,
     streak,
+    best,
     achievements: keys,
     shareBadges: share.badges === true,
     shareAchievements: share.achievements === true,
@@ -155,6 +158,7 @@ export function friendView(p) {
     badge: p.shareBadges ? p.badge : null,
     achievements: p.shareAchievements ? p.achievements : null,
     streak: p.shareStreak ? p.streak : null,
+    best: p.shareStreak ? (p.best ?? p.streak) : null,
   };
 }
 

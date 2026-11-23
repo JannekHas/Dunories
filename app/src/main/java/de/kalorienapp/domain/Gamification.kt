@@ -35,6 +35,7 @@ object Gamification {
     enum class Achievement(val key: String, val metric: Metric, val target: Int, val rarity: Rarity, val secret: Boolean = false) {
         FIRST_ENTRY("first_entry", Metric.ENTRIES, 1, Rarity.COMMON),
         FIRST_WEIGHT("first_weight", Metric.WEIGHTS, 1, Rarity.COMMON),
+        STREAK_3("streak_3", Metric.LONGEST_STREAK, 3, Rarity.COMMON),
         DAYS_7("days_7", Metric.LOGGED_DAYS, 7, Rarity.UNCOMMON),
         FIRST_REPORT("first_report", Metric.REPORTS, 1, Rarity.UNCOMMON),
         FIRST_FEEDBACK("first_feedback", Metric.FEEDBACK, 1, Rarity.UNCOMMON),
@@ -44,6 +45,7 @@ object Gamification {
         WEIGHTS_30("weights_30", Metric.WEIGHTS, 30, Rarity.RARE),
         STREAK_30("streak_30", Metric.LONGEST_STREAK, 30, Rarity.EPIC),
         DAYS_100("days_100", Metric.LOGGED_DAYS, 100, Rarity.EPIC),
+        STREAK_50("streak_50", Metric.LONGEST_STREAK, 50, Rarity.LEGENDARY),
         GOAL_REACHED("goal_reached", Metric.GOALS_REACHED, 1, Rarity.LEGENDARY),
 
         // Geheim: erscheinen als „???“, bis man sie schafft.
@@ -89,9 +91,35 @@ object Gamification {
             .thenBy { it.achievement.ordinal },
     )
 
-    /** Längste und aktuelle Serie von Tagen mit Einträgen (aktuell: bis heute oder gestern, heute läuft noch). */
-    fun streaks(loggedEpochDays: Collection<Long>, todayEpochDay: Long): Pair<Int, Int> {
-        val days = loggedEpochDays.toSortedSet()
+    /**
+     * Aus einer anderen App (YAZIO) übernommene Serie, abgelesen am Tag [epochDay].
+     * Die laufende Serie zählt als [current] Tage direkt **vor** diesem Tag – wer in Dunories ab dann weiter einträgt,
+     * führt sie fort. Die längste Serie gilt als Bestwert (Entscheidung des Nutzers: zählt auch für Erfolge).
+     */
+    data class ImportedStreak(val current: Int, val longest: Int, val epochDay: Long) {
+        /** Tage, die durch die übernommene laufende Serie als „mit Einträgen“ gelten. */
+        fun days(): List<Long> = (1..current.coerceIn(0, MAX_IMPORT)).map { epochDay - it }
+
+        fun encode(): String = "$current;$longest;$epochDay"
+
+        companion object {
+            /** Obergrenze gegen Tippfehler/Unsinn beim Ablesen (rund 27 Jahre). */
+            const val MAX_IMPORT = 10_000
+
+            fun decode(raw: String?): ImportedStreak? {
+                val p = raw?.split(';')?.mapNotNull { it.toLongOrNull() }?.takeIf { it.size == 3 } ?: return null
+                return ImportedStreak(p[0].toInt(), p[1].toInt(), p[2]).takeIf { it.current >= 0 && it.longest >= 0 }
+            }
+        }
+    }
+
+    /**
+     * Längste und aktuelle Serie von Tagen mit Einträgen (aktuell: bis heute oder gestern, heute läuft noch).
+     * Eine übernommene Serie ([imported]) zählt mit: ihre laufenden Tage verlängern die eigene Serie, ihr Bestwert
+     * hebt die längste Serie an.
+     */
+    fun streaks(loggedEpochDays: Collection<Long>, todayEpochDay: Long, imported: ImportedStreak? = null): Pair<Int, Int> {
+        val days = (loggedEpochDays + imported?.days().orEmpty()).toSortedSet()
         var longest = 0
         var run = 0
         var previous: Long? = null
@@ -106,7 +134,8 @@ object Gamification {
             current++
             day--
         }
-        return longest to current
+        val importedBest = imported?.longest?.coerceAtMost(ImportedStreak.MAX_IMPORT) ?: 0
+        return maxOf(longest, importedBest) to current
     }
 
     /** Neu freigeschaltet = erreicht, aber noch nicht gefeiert. */
