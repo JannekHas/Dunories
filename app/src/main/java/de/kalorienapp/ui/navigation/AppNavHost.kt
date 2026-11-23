@@ -254,6 +254,8 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     screen<OnboardingRoute> {
                         OnboardingScreen(
                             onYazio = { navController.navigate(YazioStreakRoute) },
+                            initialName = container.settings.feedbackName,
+                            onSaveName = { if (it.isNotBlank()) container.settings.setFeedbackName(it) },
                             onFinished = {
                                 // Neue Nutzer bekommen keine Patchnotes der Version, mit der sie anfangen.
                                 container.settings.markChangelogSeen(de.kalorienapp.BuildConfig.VERSION_CODE)

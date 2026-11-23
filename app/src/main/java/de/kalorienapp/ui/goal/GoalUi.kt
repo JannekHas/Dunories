@@ -83,19 +83,21 @@ fun GoalInputs(
     onUpdate: (GoalFormState) -> Unit,
     recommendation: GoalRecommendation? = null,
     showMaintainChip: Boolean = true,
+    /** Einrichtung: Wunschgewicht kommt aus der großen Zahl-Auswahl darüber. */
+    showWeightField: Boolean = true,
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     val maintain = form.isMaintain(currentWeightKg)
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        currentWeightKg?.let {
+        if (showWeightField) currentWeightKg?.let {
             Text(
                 stringResource(R.string.goal_current_weight, it.toInputString()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Neon.TextSecondary,
             )
         }
-        NumberField(
+        if (showWeightField) NumberField(
             value = form.targetWeight,
             onValueChange = { onUpdate(form.copy(targetWeight = it)) },
             label = stringResource(R.string.goal_target_weight),

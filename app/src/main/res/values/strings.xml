@@ -82,11 +82,19 @@
     <string name="targets_kcal">Kalorienziel</string>
 
     <!-- Onboarding -->
-    <string name="onboarding_title">Willkommen</string>
-    <string name="onboarding_step">Schritt %1$d von %2$d</string>
-    <string name="onboarding_body_intro">Für die Berechnung deines Kalorienbedarfs brauchen wir ein paar Angaben.</string>
-    <string name="onboarding_goal_intro">Was ist dein Ziel?</string>
-    <string name="onboarding_body_title">Erzähl uns von dir</string>
+    <string name="onb_welcome_title">Willkommen bei Dunories</string>
+    <string name="onb_welcome_text">Ein paar kurze Fragen – in einer Minute steht dein Plan.</string>
+    <string name="onb_start">Los geht’s</string>
+    <string name="onb_skip">Überspringen</string>
+    <string name="onb_name_title">Wie heißt du?</string>
+    <string name="onb_name_text">Für dein Profil unter Social und für Freunde. Du kannst es leer lassen und später ändern.</string>
+    <string name="onb_sex_title">Dein Geschlecht</string>
+    <string name="onb_age_title">Wie alt bist du?</string>
+    <string name="onb_height_title">Wie groß bist du?</string>
+    <string name="onb_weight_title">Was wiegst du gerade?</string>
+    <string name="onb_weight_text">Schätzen ist okay – du kannst es jederzeit ändern.</string>
+    <string name="onb_target_title">Dein Wunschgewicht</string>
+    <string name="picker_tap_to_type">Zahl antippen zum Eintippen</string>
     <string name="onboarding_lifestyle_title">Wie sieht dein Alltag aus?</string>
     <string name="onboarding_lifestyle_text">Ohne Sport – nur Arbeit, Schule oder Studium und was du sonst tagsüber machst.</string>
     <string name="onboarding_goal_title">Was hast du vor?</string>
