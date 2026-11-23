@@ -124,6 +124,7 @@ fun SocialScreen(
                     myName = state.name,
                     myStreak = game?.stats?.currentStreak ?: 0,
                     myAvatar = state.avatar,
+                    testPhase = state.testPhase,
                     onPrivacy = onPrivacy,
                 )
                 if (state.signedIn) ShareSettingsCard(viewModel, state.share)

@@ -41,7 +41,7 @@ class GameRepository(
 
     private data class Counts(val entries: Int, val barcode: Int, val photo: Int, val createdTimes: List<Long>, val reports: Int)
 
-    private data class Social(val rated: Int, val friends: Int)
+    private data class Social(val rated: Int, val friends: Int, val invites: Int)
 
     private val days = combine(foodDao.observeLoggedDays(), settings.importedStreak) { d, i -> Days(d, i) }
 
@@ -74,7 +74,7 @@ class GameRepository(
         protein to waterDays
     }
 
-    private val social = combine(settings.ratedFeedback, settings.friendsCount) { r, f -> Social(r, f) }
+    private val social = combine(settings.ratedFeedback, settings.friendsCount, settings.invitesCount) { r, f, i -> Social(r, f, i) }
 
     private val stats: Flow<Gamification.Stats> = combine(
         days, counts, targetDays, combine(weights.entries, goals.reachedGoals) { w, g -> w.size to g.size }, social,
@@ -97,6 +97,7 @@ class GameRepository(
             reports = c.reports,
             ratedFeedback = s.rated,
             friends = s.friends,
+            invites = s.invites,
             goalsReached = goalCount,
             nightEntries = hours.count { it < 4 },
             earlyEntries = hours.count { it in 4..5 },

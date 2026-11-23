@@ -29,12 +29,20 @@ data class Friend(
 /** Offene Anfrage (eingehend oder ausgehend). */
 data class FriendRequest(val code: String, val name: String)
 
+/** Von wem man eingeladen wurde; [rewarded] = die 7 Tage sind geschafft, der andere hat seine Punkte. */
+data class InvitedBy(val code: String?, val name: String, val rewarded: Boolean)
+
 data class SocialData(
     /** Eigener Freundescode (null = noch kein Profil beim Server). */
     val code: String?,
     val friends: List<Friend>,
     val incoming: List<FriendRequest>,
     val outgoing: List<FriendRequest>,
+    val invitedBy: InvitedBy? = null,
+    /** Eingeladene, die schon 7 Tage dabei sind (= Punkte bekommen). */
+    val invites: Int = 0,
+    /** Eingeladene, die die 7 Tage noch nicht geschafft haben. */
+    val pendingInvites: Int = 0,
 ) {
     companion object {
         fun parse(json: String): SocialData? {
@@ -59,6 +67,11 @@ data class SocialData(
                 },
                 incoming = requests("incoming"),
                 outgoing = requests("outgoing"),
+                invitedBy = o["invitedBy"]?.asObject()?.let {
+                    InvitedBy(it.string("code"), it.string("name").orEmpty(), (it["rewarded"] as? kotlinx.serialization.json.JsonPrimitive)?.content == "true")
+                },
+                invites = o.number("invites")?.toInt() ?: 0,
+                pendingInvites = o.number("pendingInvites")?.toInt() ?: 0,
             )
         }
     }
@@ -77,6 +90,9 @@ data class SocialProfile(
     val shareAchievements: Boolean,
     val shareStreak: Boolean,
 )
+
+/** Ergebnis von „Eingeladen von“. */
+enum class InviteResult { OK, UNKNOWN_CODE, SELF, ALREADY, MUTUAL, NETWORK }
 
 /** Ergebnis einer Freundschaftsanfrage. */
 enum class FriendRequestResult { SENT, ACCEPTED, UNKNOWN_CODE, SELF, ALREADY, TOO_MANY, NETWORK }
@@ -122,6 +138,25 @@ class SocialClient(
         }
     }
 
+    /** „Eingeladen von“ eintragen (einmal); ihr werdet dabei direkt Freunde. */
+    suspend fun invited(code: String): Pair<InviteResult, SocialData?> {
+        val h = headers() ?: return InviteResult.NETWORK to null
+        return try {
+            val body = Http.postJson("$baseUrl/v1/social/invited", buildJsonObject { put("code", code) }.toString(), h, timeoutMs = 15_000)
+            InviteResult.OK to SocialData.parse(body)
+        } catch (e: HttpStatusException) {
+            inviteError(e.body) to null
+        } catch (e: java.io.IOException) {
+            InviteResult.NETWORK to null
+        }
+    }
+
+    /** Tage mit Einträgen melden → ab 7 bekommt der Einladende seine Tester-Punkte. true = geschafft. */
+    suspend fun inviteProgress(days: Int): Boolean? =
+        post("/v1/social/invite-progress", buildJsonObject { put("days", days) })?.let { body ->
+            runCatching { lenientJson.parseToJsonElement(body).asObject()?.get("rewarded")?.toString() == "true" }.getOrNull()
+        }
+
     suspend fun respond(code: String, accept: Boolean): SocialData? =
         post("/v1/social/respond", buildJsonObject { put("code", code); put("accept", accept) })?.let(SocialData::parse)
 
@@ -138,6 +173,15 @@ class SocialClient(
     }
 
     internal companion object {
+        fun inviteError(body: String): InviteResult =
+            when (runCatching { lenientJson.parseToJsonElement(body).asObject()?.string("error") }.getOrNull()) {
+                "unknown_code", "invalid_code" -> InviteResult.UNKNOWN_CODE
+                "self" -> InviteResult.SELF
+                "already_invited" -> InviteResult.ALREADY
+                "mutual" -> InviteResult.MUTUAL
+                else -> InviteResult.NETWORK
+            }
+
         fun requestError(body: String): FriendRequestResult =
             when (runCatching { lenientJson.parseToJsonElement(body).asObject()?.string("error") }.getOrNull()) {
                 "unknown_code", "invalid_code" -> FriendRequestResult.UNKNOWN_CODE

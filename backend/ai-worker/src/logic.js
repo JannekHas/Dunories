@@ -111,6 +111,27 @@ const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 /** Höchstzahl Freunde pro Person. */
 export const MAX_FRIENDS = 100;
 
+/** Einladen (Testphase): Punkte für den Einladenden, sobald die eingeladene Person so viele Tage eingetragen hat. */
+export const REFERRAL_POINTS = 5;
+export const REFERRAL_MIN_DAYS = 7;
+
+/**
+ * Darf [invitee] den Code von [inviter] als „Eingeladen von“ eintragen? Nur einmal pro Person, nicht sich selbst,
+ * nicht gegenseitig (sonst laden sich zwei Freunde einfach gegenseitig ein). null = ok, sonst Fehlerschlüssel.
+ */
+export function referralError({ inviter, invitee, alreadyInvited, invitedByInvitee }) {
+  if (!inviter) return "unknown_code";
+  if (inviter === invitee) return "self";
+  if (alreadyInvited) return "already_invited";
+  if (invitedByInvitee) return "mutual";
+  return null;
+}
+
+/** Hat die eingeladene Person genug Tage eingetragen? (Zahl kommt aus der App, ganzzahlig und plausibel.) */
+export function referralQualifies(days) {
+  return Number.isInteger(days) && days >= REFERRAL_MIN_DAYS && days < 100000;
+}
+
 /** Freundescode „ABCD-2345“ (8 Zeichen, ohne verwechselbare Zeichen). */
 export function makeFriendCode(bytes) {
   let out = "";

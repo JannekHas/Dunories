@@ -98,6 +98,28 @@ class SocialViewModel(
     private val _friendsBusy = MutableStateFlow(false)
     val friendsBusy: StateFlow<Boolean> = _friendsBusy.asStateFlow()
 
+    /** Rückmeldung nach „Eingeladen von“. */
+    private val _inviteResult = MutableStateFlow<de.kalorienapp.account.InviteResult?>(null)
+    val inviteResult: StateFlow<de.kalorienapp.account.InviteResult?> = _inviteResult.asStateFlow()
+
+    fun enterInvite(code: String) = friendAction {
+        val (result, data) = social.invited(code)
+        _inviteResult.value = result
+        data?.let(::applyData)
+    }
+
+    fun clearInviteResult() {
+        _inviteResult.value = null
+    }
+
+    /** Neuer Stand vom Server: Freunde, Einladungen (Erfolge „Freunde“/„Botschafter“), eigene Einladung. */
+    private fun applyData(data: SocialData) {
+        _friends.value = data
+        settings.setFriendsCount(data.friends.size)
+        settings.setInvitesCount(data.invites)
+        settings.setInvitePending(data.invitedBy?.rewarded == false)
+    }
+
     /** Rückmeldung nach „Freund hinzufügen“. */
     private val _requestResult = MutableStateFlow<FriendRequestResult?>(null)
     val requestResult: StateFlow<FriendRequestResult?> = _requestResult.asStateFlow()
@@ -133,25 +155,22 @@ class SocialViewModel(
                 shareStreak = settings.shareStreak.value,
             ),
         )
-        if (result != null) {
-            _friends.value = result
-            settings.setFriendsCount(result.friends.size)
-        }
+        if (result != null) applyData(result)
     }
 
     fun sendRequest(code: String) = friendAction {
         val (result, data) = social.request(code)
         _requestResult.value = result
-        data?.let { _friends.value = it }
+        data?.let(::applyData)
     }
 
     fun clearRequestResult() {
         _requestResult.value = null
     }
 
-    fun respond(code: String, accept: Boolean) = friendAction { social.respond(code, accept)?.let { _friends.value = it } }
+    fun respond(code: String, accept: Boolean) = friendAction { social.respond(code, accept)?.let(::applyData) }
 
-    fun remove(code: String) = friendAction { social.remove(code)?.let { _friends.value = it } }
+    fun remove(code: String) = friendAction { social.remove(code)?.let(::applyData) }
 
     private fun friendAction(block: suspend () -> Unit) {
         if (_friendsBusy.value) return

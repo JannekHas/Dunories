@@ -1034,7 +1034,18 @@
     <string name="friends_loading">Freunde werden geladen …</string>
     <string name="friends_my_code">Dein Freundescode</string>
     <string name="friends_share">Teilen</string>
-    <string name="friends_share_text">Füg mich in Dunories als Freund hinzu: Social → Freund hinzufügen → %1$s</string>
+    <string name="friends_share_text">Füg mich in Dunories als Freund hinzu: Social → Freunde → „Eingeladen worden?“ (neu dabei) oder „Freund hinzufügen“ → %1$s</string>
+    <string name="invite_hint">Lad Freunde mit deinem Code ein: Sobald jemand 7 Tage eingetragen hat, bekommst du Tester-Punkte.</string>
+    <string name="invite_status">Eingeladen: %1$d geschafft, %2$d noch unterwegs</string>
+    <string name="invite_enter">Eingeladen worden? Code eingeben</string>
+    <string name="invite_title">Wer hat dich eingeladen?</string>
+    <string name="invite_text">Gib den Freundescode der Person ein. Ihr werdet dabei Freunde – und sobald du 7 Tage eingetragen hast, bekommt sie Tester-Punkte. Geht nur einmal.</string>
+    <string name="invite_confirm">Eintragen</string>
+    <string name="invite_ok">Danke! Ihr seid jetzt Freunde.</string>
+    <string name="invite_already">Du hast schon jemanden als Einladenden eingetragen.</string>
+    <string name="invite_mutual">Diese Person hast du selbst eingeladen.</string>
+    <string name="invite_by_pending">Eingeladen von %1$s – trag 7 Tage ein, dann bekommt %1$s Tester-Punkte.</string>
+    <string name="invite_by_done">Eingeladen von %1$s ✓ – die 7 Tage hast du geschafft.</string>
     <string name="friends_add">Freund hinzufügen</string>
     <string name="friends_add_text">Tipp den Freundescode ein, den dir jemand gegeben hat. Die Person muss deine Anfrage annehmen.</string>
     <string name="friends_code">Freundescode</string>
@@ -1135,6 +1146,7 @@
     <string name="ach_rueckblick">Rückblick</string>
     <string name="ach_mitgestalter">Mitgestalter</string>
     <string name="ach_freunde">Freunde</string>
+    <string name="ach_botschafter">Botschafter</string>
     <string name="ach_ziel_erreicht">Ziel erreicht</string>
     <string name="ach_mitternachtssnack">Mitternachtssnack</string>
     <string name="ach_fruehaufsteher">Frühaufsteher</string>
@@ -1188,6 +1200,10 @@
     <plurals name="ach_freunde_text">
         <item quantity="one">Füg deinen ersten Freund hinzu.</item>
         <item quantity="other">Hab %1$d Freunde in Dunories.</item>
+    </plurals>
+    <plurals name="ach_botschafter_text">
+        <item quantity="one">Lad jemanden ein, der 7 Tage dabeibleibt.</item>
+        <item quantity="other">Lad %1$d Leute ein, die 7 Tage dabeibleiben.</item>
     </plurals>
     <plurals name="ach_ziel_erreicht_text">
         <item quantity="one">Erreich ein Gewichtsziel.</item>

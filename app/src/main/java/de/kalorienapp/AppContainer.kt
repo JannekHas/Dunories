@@ -1,5 +1,7 @@
 package de.kalorienapp
 
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
 import android.content.Context
 import de.kalorienapp.backup.BackupManager
@@ -137,4 +139,20 @@ class AppContainer(context: Context) {
 
     /** Ziele aus Benachrichtigungen (Wiegen, Wochenauswertung). */
     val navRequests = NavRequests()
+
+    init {
+        // Einladung (Testphase): Wer eingeladen wurde, meldet seine Tage mit Einträgen, bis die 7 geschafft sind –
+        // dann bekommt der Einladende seine Tester-Punkte. Nur bei Änderungen, nur mit Konto.
+        appScope.launch {
+            kotlinx.coroutines.flow.combine(settings.invitePending, foodEntryDao.observeLoggedDays().map { it.size }) { pending, days ->
+                if (pending && days >= INVITE_DAYS) days else null
+            }.distinctUntilChanged().collect { days ->
+                if (days != null && account.user.value != null && social.inviteProgress(days) == true) settings.setInvitePending(false)
+            }
+        }
+    }
+
+    private companion object {
+        const val INVITE_DAYS = 7
+    }
 }

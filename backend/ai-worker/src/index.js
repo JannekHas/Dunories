@@ -3,7 +3,7 @@
 // und leitet an Gemini weiter. Inhalte (Fotos, Texte, Antworten) werden weder gespeichert noch geloggt – nur Zähler.
 import { DurableObject } from "cloudflare:workers";
 import {
-  FEEDBACK_POINTS, KINDS, MAX_FRIENDS, cleanSocialProfile, friendView, makeFriendCode, normalizeFriendCode, MAX_BODY, MAX_FEEDBACK_PER_MINUTE, base64UrlDecode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays,
+  FEEDBACK_POINTS, KINDS, MAX_FRIENDS, REFERRAL_POINTS, referralError, referralQualifies, cleanSocialProfile, friendView, makeFriendCode, normalizeFriendCode, MAX_BODY, MAX_FEEDBACK_PER_MINUTE, base64UrlDecode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays,
   modelFromPath, normalizeCode, safeEqual, tierOf,
 } from "./logic.js";
 
@@ -91,6 +91,15 @@ async function app(request, env, url) {
       if (!code) return json({ error: "invalid_code" }, 400);
       await usage.friendRemove(person.uid, code);
       return json(await usage.socialState(person.uid));
+    }
+    if (url.pathname === "/v1/social/invited" && request.method === "POST") {
+      const code = normalizeFriendCode(body?.code);
+      if (!code) return json({ error: "invalid_code" }, 400);
+      const result = await usage.invited(person.uid, code, now);
+      return result === "ok" ? json(await usage.socialState(person.uid)) : json({ error: result }, 400);
+    }
+    if (url.pathname === "/v1/social/invite-progress" && request.method === "POST") {
+      return json({ rewarded: await usage.inviteProgress(person.uid, body?.days, now) });
     }
     // Konto löschen: alles zu Freunden und Profil entfernen.
     if (url.pathname === "/v1/social/delete" && request.method === "POST") {
@@ -407,6 +416,7 @@ export class Usage extends DurableObject {
         share_achievements INTEGER NOT NULL DEFAULT 0, share_streak INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS friend_requests (from_uid TEXT NOT NULL, to_uid TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (from_uid, to_uid));
       CREATE TABLE IF NOT EXISTS friends (a TEXT NOT NULL, b TEXT NOT NULL, since INTEGER NOT NULL, PRIMARY KEY (a, b));
+      CREATE TABLE IF NOT EXISTS referrals (invitee TEXT PRIMARY KEY, inviter TEXT NOT NULL, ts INTEGER NOT NULL, rewarded INTEGER);
     `);
     // Spalte „best“ (längste Serie) kam nach dem ersten Deploy dazu.
     const profileCols = this.sql.exec("PRAGMA table_info(profiles)").toArray().map((c) => c.name);
@@ -519,7 +529,8 @@ export class Usage extends DurableObject {
               COALESCE(SUM(CASE WHEN rated IS NOT NULL AND points > 0 THEN 1 ELSE 0 END), 0) AS rated
        FROM feedback WHERE uid = ?`, uid,
     ).toArray()[0];
-    return { total: row.total, newCount: row.newCount, newPoints: row.newPoints, rated: row.rated };
+    const invites = this.rewardedInvites(uid);
+    return { total: row.total + invites * REFERRAL_POINTS, newCount: row.newCount, newPoints: row.newPoints, rated: row.rated };
   }
 
   addFeedback(uid, f, day, now) {
@@ -628,6 +639,8 @@ export class Usage extends DurableObject {
   }
 
   socialDelete(uid) {
+    // Einladungen: eigene Einladungen weg; wurde man selbst eingeladen, bleibt eine schon verdiente Belohnung beim anderen.
+    this.sql.exec("DELETE FROM referrals WHERE inviter = ? OR (invitee = ? AND rewarded IS NULL)", uid, uid);
     this.sql.exec("DELETE FROM friends WHERE a = ? OR b = ?", uid, uid);
     this.sql.exec("DELETE FROM friend_requests WHERE from_uid = ? OR to_uid = ?", uid, uid);
     this.sql.exec("DELETE FROM profiles WHERE uid = ?", uid);
@@ -642,7 +655,43 @@ export class Usage extends DurableObject {
       .map((r) => this.profileRow(r.from_uid)).filter(Boolean).map((p) => ({ code: p.code, name: p.name || "" }));
     const outgoing = this.sql.exec("SELECT to_uid FROM friend_requests WHERE from_uid = ? ORDER BY ts DESC", uid).toArray()
       .map((r) => this.profileRow(r.to_uid)).filter(Boolean).map((p) => ({ code: p.code, name: p.name || "" }));
-    return { code: me?.code ?? null, friends, incoming, outgoing };
+    const ref = this.sql.exec("SELECT inviter, rewarded FROM referrals WHERE invitee = ?", uid).toArray()[0];
+    const inviter = ref ? this.profileRow(ref.inviter) : null;
+    return {
+      code: me?.code ?? null, friends, incoming, outgoing,
+      invitedBy: ref ? { code: inviter?.code ?? null, name: inviter?.name || "", rewarded: ref.rewarded != null } : null,
+      invites: this.rewardedInvites(uid),
+      pendingInvites: this.sql.exec("SELECT COUNT(*) AS n FROM referrals WHERE inviter = ? AND rewarded IS NULL", uid).toArray()[0].n,
+    };
+  }
+
+  rewardedInvites(uid) {
+    return this.sql.exec("SELECT COUNT(*) AS n FROM referrals WHERE inviter = ? AND rewarded IS NOT NULL", uid).toArray()[0].n;
+  }
+
+  /** „Eingeladen von“ eintragen – einmal pro Person; ihr werdet dabei direkt Freunde. */
+  invited(uid, code, now) {
+    if (!this.profileRow(uid)) return "no_profile";
+    const inviter = this.uidByCode(code);
+    const error = referralError({
+      inviter,
+      invitee: uid,
+      alreadyInvited: this.sql.exec("SELECT 1 FROM referrals WHERE invitee = ?", uid).toArray().length > 0,
+      invitedByInvitee: inviter != null && this.sql.exec("SELECT 1 FROM referrals WHERE invitee = ? AND inviter = ?", inviter, uid).toArray().length > 0,
+    });
+    if (error) return error;
+    this.sql.exec("INSERT INTO referrals (invitee, inviter, ts, rewarded) VALUES (?, ?, ?, NULL)", uid, inviter, now);
+    if (!this.areFriends(uid, inviter) && this.friendCount(uid) < MAX_FRIENDS && this.friendCount(inviter) < MAX_FRIENDS) {
+      this.makeFriends(uid, inviter, now);
+    }
+    return "ok";
+  }
+
+  /** Die App meldet, an wie vielen Tagen eingetragen wurde → ab 7 bekommt der Einladende seine Punkte. */
+  inviteProgress(uid, days, now) {
+    if (!referralQualifies(days)) return false;
+    this.sql.exec("UPDATE referrals SET rewarded = ? WHERE invitee = ? AND rewarded IS NULL", now, uid);
+    return this.sql.exec("SELECT 1 FROM referrals WHERE invitee = ? AND rewarded IS NOT NULL", uid).toArray().length > 0;
   }
 
   /** Sperren/entsperren; beim Sperren auf Wunsch alle unbewerteten Feedbacks dieser Person löschen. */

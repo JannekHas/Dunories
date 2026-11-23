@@ -39,6 +39,8 @@ object Gamification {
         /** Von dir (Admin) mit Punkten bewertetes Feedback – nicht einfach gesendetes. */
         val ratedFeedback: Int = 0,
         val friends: Int = 0,
+        /** Eingeladene, die 7 Tage dabei sind. */
+        val invites: Int = 0,
         val goalsReached: Int = 0,
         /** Einträge, die zwischen 0 und 4 Uhr erfasst wurden. */
         val nightEntries: Int = 0,
@@ -86,6 +88,7 @@ object Gamification {
         REPORTS("rueckblick", listOf(1, 4, 12, 26, 52), value = { it.reports }),
         FEEDBACK("mitgestalter", listOf(1, 3, 10, 25, 50), value = { it.ratedFeedback }),
         FRIENDS("freunde", listOf(1, 3, 10), requirement = Requirement.ACCOUNT, value = { it.friends }),
+        INVITES("botschafter", listOf(1, 3, 10), requirement = Requirement.ACCOUNT, value = { it.invites }),
         GOAL("ziel_erreicht", listOf(1, 2, 3), fixedRarity = Rarity.LEGENDARY, value = { it.goalsReached }),
 
         // Geheim: als „???“ sichtbar, bis man sie schafft.

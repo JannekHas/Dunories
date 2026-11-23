@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanSocialProfile, friendView, makeFriendCode, normalizeFriendCode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays, modelFromPath, normalizeCode, safeEqual, tierOf } from "../src/logic.js";
+import { referralError, referralQualifies, cleanSocialProfile, friendView, makeFriendCode, normalizeFriendCode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays, modelFromPath, normalizeCode, safeEqual, tierOf } from "../src/logic.js";
 
 test("Tag nach deutscher Zeit: 23:30 UTC im Winter ist schon der nächste Tag", () => {
   assert.equal(berlinDay(Date.UTC(2026, 10, 22, 22, 59)), "2026-11-22");
@@ -110,6 +110,17 @@ test("Freundescode", () => {
   assert.equal(normalizeFriendCode(" abcd efgh "), "ABCD-EFGH");
   assert.equal(normalizeFriendCode("ABCD-EFG0"), null); // 0 gibt es nicht
   assert.equal(normalizeFriendCode("abc"), null);
+});
+
+test("Einladen: einmal, nicht selbst, nicht gegenseitig; Punkte ab 7 Tagen", () => {
+  assert.equal(referralError({ inviter: "a", invitee: "b", alreadyInvited: false, invitedByInvitee: false }), null);
+  assert.equal(referralError({ inviter: null, invitee: "b" }), "unknown_code");
+  assert.equal(referralError({ inviter: "b", invitee: "b" }), "self");
+  assert.equal(referralError({ inviter: "a", invitee: "b", alreadyInvited: true }), "already_invited");
+  assert.equal(referralError({ inviter: "a", invitee: "b", alreadyInvited: false, invitedByInvitee: true }), "mutual");
+  assert.equal(referralQualifies(6), false);
+  assert.equal(referralQualifies(7), true);
+  assert.equal(referralQualifies("7"), false);
 });
 
 test("Freunde sehen nur Freigegebenes, standardmäßig privat", () => {

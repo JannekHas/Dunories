@@ -82,6 +82,7 @@ private fun motifRes(key: String): Int = when (Achievement.byKey(key)) {
     Achievement.REPORTS -> R.drawable.badge_motif_rueckblick
     Achievement.FEEDBACK -> R.drawable.badge_motif_mitgestalter
     Achievement.FRIENDS -> R.drawable.badge_motif_freunde
+    Achievement.INVITES -> R.drawable.badge_motif_botschafter
     Achievement.GOAL -> R.drawable.badge_motif_ziel_erreicht
     Achievement.NIGHT -> R.drawable.badge_motif_geheim_mitternachtssnack
     Achievement.EARLY -> R.drawable.badge_motif_geheim_fruehaufsteher
@@ -143,6 +144,7 @@ internal fun badgeTitle(key: String): String = stringResource(
         Achievement.REPORTS -> R.string.ach_rueckblick
         Achievement.FEEDBACK -> R.string.ach_mitgestalter
         Achievement.FRIENDS -> R.string.ach_freunde
+        Achievement.INVITES -> R.string.ach_botschafter
         Achievement.GOAL -> R.string.ach_ziel_erreicht
         Achievement.NIGHT -> R.string.ach_mitternachtssnack
         Achievement.EARLY -> R.string.ach_fruehaufsteher
@@ -174,6 +176,7 @@ internal fun achievementText(p: Gamification.Progress): String {
         Achievement.REPORTS -> pluralStringResource(R.plurals.ach_rueckblick_text, p.target, p.target)
         Achievement.FEEDBACK -> pluralStringResource(R.plurals.ach_mitgestalter_text, p.target, p.target)
         Achievement.FRIENDS -> pluralStringResource(R.plurals.ach_freunde_text, p.target, p.target)
+        Achievement.INVITES -> pluralStringResource(R.plurals.ach_botschafter_text, p.target, p.target)
         Achievement.GOAL -> pluralStringResource(R.plurals.ach_ziel_erreicht_text, p.target, p.target)
         Achievement.NIGHT -> stringResource(R.string.ach_mitternachtssnack_text)
         Achievement.EARLY -> stringResource(R.string.ach_fruehaufsteher_text)

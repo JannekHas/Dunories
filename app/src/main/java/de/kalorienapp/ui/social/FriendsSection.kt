@@ -47,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
 import de.kalorienapp.account.Friend
 import de.kalorienapp.account.FriendRequestResult
+import de.kalorienapp.account.InviteResult
 import de.kalorienapp.ui.AppViewModelProvider
 import de.kalorienapp.ui.components.ExpandableCard
 import de.kalorienapp.ui.components.GlassCard
@@ -67,12 +68,15 @@ internal fun FriendsSection(
     myName: String,
     myStreak: Int,
     myAvatar: String?,
+    /** Testphase: Einladen bringt Tester-Punkte. */
+    testPhase: Boolean,
     onPrivacy: () -> Unit,
 ) {
     val data by viewModel.friends.collectAsStateWithLifecycle()
     val busy by viewModel.friendsBusy.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var adding by rememberSaveable { mutableStateOf(false) }
+    var enteringInvite by rememberSaveable { mutableStateOf(false) }
     var openFriend by remember { mutableStateOf<Friend?>(null) }
 
     GlassCard(Modifier.fillMaxWidth()) {
@@ -109,6 +113,31 @@ internal fun FriendsSection(
                 colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.friends_add)) }
+
+            // Einladen (Testphase: Tester-Punkte, sobald der Eingeladene 7 Tage eingetragen hat)
+            if (testPhase) {
+                Text(stringResource(R.string.invite_hint), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+                if (d.invites > 0 || d.pendingInvites > 0) {
+                    Text(
+                        stringResource(R.string.invite_status, d.invites, d.pendingInvites),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Neon.Green,
+                    )
+                }
+            }
+            val by = d.invitedBy
+            if (by == null) {
+                TextButton(onClick = { viewModel.clearInviteResult(); enteringInvite = true }, enabled = !busy) {
+                    Text(stringResource(R.string.invite_enter))
+                }
+            } else {
+                Text(
+                    if (by.rewarded) stringResource(R.string.invite_by_done, by.name.ifBlank { by.code.orEmpty() })
+                    else stringResource(R.string.invite_by_pending, by.name.ifBlank { by.code.orEmpty() }),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (by.rewarded) Neon.Green else Neon.TextSecondary,
+                )
+            }
 
             // Eingehende Anfragen
             if (d.incoming.isNotEmpty()) {
@@ -177,6 +206,7 @@ internal fun FriendsSection(
     }
 
     if (adding) AddFriendDialog(viewModel, onClose = { adding = false })
+    if (enteringInvite) InviteDialog(viewModel, onClose = { enteringInvite = false })
     openFriend?.let { f -> FriendDialog(f, onRemove = { viewModel.remove(f.code); openFriend = null }, onClose = { openFriend = null }) }
 }
 
@@ -268,6 +298,54 @@ private fun AddFriendDialog(viewModel: SocialViewModel, onClose: () -> Unit) {
         dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.cancel)) } },
     )
 }
+
+/** „Eingeladen von“: Code der Person, die einen eingeladen hat – einmalig, ihr werdet dabei Freunde. */
+@Composable
+private fun InviteDialog(viewModel: SocialViewModel, onClose: () -> Unit) {
+    var code by remember { mutableStateOf("") }
+    val result by viewModel.inviteResult.collectAsStateWithLifecycle()
+    val busy by viewModel.friendsBusy.collectAsStateWithLifecycle()
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(stringResource(R.string.invite_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.invite_text), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it.uppercase().take(12) },
+                    label = { Text(stringResource(R.string.friends_code)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, autoCorrectEnabled = false),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                result?.let {
+                    Text(stringResource(it.messageRes), style = MaterialTheme.typography.bodySmall, color = if (it == InviteResult.OK) Neon.Green else Neon.Yellow)
+                }
+            }
+        },
+        confirmButton = {
+            if (result == InviteResult.OK) {
+                TextButton(onClick = onClose) { Text(stringResource(R.string.ok)) }
+            } else {
+                TextButton(onClick = { viewModel.enterInvite(code) }, enabled = !busy && code.count(Char::isLetterOrDigit) == 8) {
+                    Text(stringResource(R.string.invite_confirm))
+                }
+            }
+        },
+        dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+private val InviteResult.messageRes: Int
+    get() = when (this) {
+        InviteResult.OK -> R.string.invite_ok
+        InviteResult.UNKNOWN_CODE -> R.string.friends_unknown_code
+        InviteResult.SELF -> R.string.friends_self
+        InviteResult.ALREADY -> R.string.invite_already
+        InviteResult.MUTUAL -> R.string.invite_mutual
+        InviteResult.NETWORK -> R.string.account_error
+    }
 
 private val FriendRequestResult.messageRes: Int
     get() = when (this) {

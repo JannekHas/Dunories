@@ -296,6 +296,28 @@ class AppSettings(context: Context) {
         _friendsCount.value = n
     }
 
+    private val _invitesCount = MutableStateFlow(prefs.getInt(KEY_INVITES, 0))
+
+    /** Eingeladene, die 7 Tage dabei sind (Server) – für den Erfolg „Botschafter“ (bleibt der Höchststand). */
+    val invitesCount: StateFlow<Int> = _invitesCount.asStateFlow()
+
+    fun setInvitesCount(n: Int) {
+        if (n <= _invitesCount.value) return
+        prefs.edit().putInt(KEY_INVITES, n).apply()
+        _invitesCount.value = n
+    }
+
+    private val _invitePending = MutableStateFlow(prefs.getBoolean(KEY_INVITE_PENDING, false))
+
+    /** Selbst eingeladen worden, die 7 Tage aber noch nicht gemeldet → App meldet die Tage mit Einträgen. */
+    val invitePending: StateFlow<Boolean> = _invitePending.asStateFlow()
+
+    fun setInvitePending(on: Boolean) {
+        if (on == _invitePending.value) return
+        prefs.edit().putBoolean(KEY_INVITE_PENDING, on).apply()
+        _invitePending.value = on
+    }
+
     private val _premiumSeen = MutableStateFlow(prefs.getBoolean(KEY_PREMIUM_SEEN, false))
 
     /** Zuletzt gesehen: KI-Premium aktiv (Testphase, Probezeit, Code) – dann taucht „Foto-Profi“ auf. */
@@ -598,6 +620,8 @@ class AppSettings(context: Context) {
         private const val KEY_FRIENDS_COUNT = "friends_count"
         private const val KEY_PREMIUM_SEEN = "premium_seen"
         private const val KEY_AVATAR = "avatar"
+        private const val KEY_INVITES = "invites_count"
+        private const val KEY_INVITE_PENDING = "invite_pending"
         private const val KEY_GAME_BADGE = "game_badge"
         private const val KEY_FEEDBACK_SENT = "feedback_sent"
         private const val KEY_TESTER_POINTS = "tester_points"
