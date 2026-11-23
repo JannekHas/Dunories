@@ -14,6 +14,14 @@ DEFAULT_GUEST_FREE = "5"
 DEFAULT_TRIAL_DAYS = "7"
 # Testphase: alle sind Premium (im Dashboard abschaltbar).
 DEFAULT_TEST_ALL_PREMIUM = "true"
+# Play-Store-Link für die Einladungsseite (…/i/CODE). Leer = Testphase („frag nach der Testversion“).
+# Sobald die App im Store ist: "https://play.google.com/store/apps/details?id=de.dunories"
+STORE_URL = ""
+
+# Vorschaubild der Einladungsseite als Binärdatei einbinden.
+[[rules]]
+type = "Data"
+globs = ["**/*.png"]
 
 [[durable_objects.bindings]]
 name = "USAGE"

@@ -1033,8 +1033,9 @@
     <string name="friends_need_account">Für Freunde brauchst du ein Konto – so bleiben sie auch auf einem neuen Handy erhalten. Freunde sehen nur, was du einzeln freigibst; Gewicht und Kalorien nie.</string>
     <string name="friends_loading">Freunde werden geladen …</string>
     <string name="friends_my_code">Dein Freundescode</string>
-    <string name="friends_share">Teilen</string>
-    <string name="friends_share_text">Füg mich in Dunories als Freund hinzu: Social → Freunde → „Eingeladen worden?“ (neu dabei) oder „Freund hinzufügen“ → %1$s</string>
+    <string name="friends_share_text">Komm mit zu Dunories – Kalorien &amp; Makros tracken mit Foto, Serien und Freunden. Mein Freundescode: %1$s
+%2$s</string>
+    <string name="friends_invite">Freunde einladen</string>
     <string name="invite_hint">Lad Freunde mit deinem Code ein: Sobald jemand 7 Tage eingetragen hat, bekommst du Tester-Punkte.</string>
     <string name="invite_status">Eingeladen: %1$d geschafft, %2$d noch unterwegs</string>
     <string name="invite_enter">Eingeladen worden? Code eingeben</string>

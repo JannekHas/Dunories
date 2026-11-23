@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { invitePage, storeLink } from "../src/invite.js";
 import { referralError, referralQualifies, cleanSocialProfile, friendView, makeFriendCode, normalizeFriendCode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays, modelFromPath, normalizeCode, safeEqual, tierOf } from "../src/logic.js";
 
 test("Tag nach deutscher Zeit: 23:30 UTC im Winter ist schon der nächste Tag", () => {
@@ -144,4 +145,15 @@ test("safeEqual", () => {
   assert.ok(safeEqual("abc", "abc"));
   assert.ok(!safeEqual("abc", "abd"));
   assert.ok(!safeEqual("abc", "abcd"));
+});
+
+test("Einladungsseite: Vorschau, Code, Name maskiert, Store-Link mit Referrer", () => {
+  const html = invitePage({ code: "ABCD-2345", name: "<Tim>", base: "https://x.dev", storeUrl: "" });
+  assert.ok(html.includes('og:image" content="https://x.dev/i/card.png"'));
+  assert.ok(html.includes("&lt;Tim&gt; lädt dich zu Dunories ein"));
+  assert.ok(!html.includes("<Tim>"));
+  assert.ok(html.includes("Testphase"));
+  assert.equal(storeLink("https://play.google.com/store/apps/details?id=de.dunories", "ABCD-2345"),
+    "https://play.google.com/store/apps/details?id=de.dunories&referrer=code%3DABCD-2345");
+  assert.ok(invitePage({ code: "ABCD-2345", name: "", base: "b", storeUrl: "https://s?id=1" }).includes("Im Play Store laden"));
 });

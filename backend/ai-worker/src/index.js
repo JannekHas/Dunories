@@ -2,6 +2,8 @@
 // entscheidet über Gast / Konto / Premium, zählt KI-Aufrufe pro Person und Tag (Uhr des Servers, deutsche Zeit)
 // und leitet an Gemini weiter. Inhalte (Fotos, Texte, Antworten) werden weder gespeichert noch geloggt – nur Zähler.
 import { DurableObject } from "cloudflare:workers";
+import inviteCard from "./invite-card.png";
+import { invitePage } from "./invite.js";
 import {
   FEEDBACK_POINTS, KINDS, MAX_FRIENDS, REFERRAL_POINTS, referralError, referralQualifies, cleanSocialProfile, friendView, makeFriendCode, normalizeFriendCode, MAX_BODY, MAX_FEEDBACK_PER_MINUTE, base64UrlDecode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays,
   modelFromPath, normalizeCode, safeEqual, tierOf,
@@ -18,12 +20,26 @@ export default {
     const url = new URL(request.url);
     try {
       if (url.pathname.startsWith("/admin/")) return await admin(request, env, url);
+      if (url.pathname.startsWith("/i/") && request.method === "GET") return await invite(env, url);
       return await app(request, env, url);
     } catch (e) {
       return json({ error: "server" }, 500);
     }
   },
 };
+
+// ---------- Einladungsseite (öffentlich, ohne Anmeldung) ----------
+
+async function invite(env, url) {
+  if (url.pathname === "/i/card.png") {
+    return new Response(inviteCard, { headers: { "content-type": "image/png", "cache-control": "public, max-age=86400" } });
+  }
+  const code = normalizeFriendCode(decodeURIComponent(url.pathname.slice(3)));
+  if (!code) return new Response("Diese Einladung gibt es nicht.", { status: 404, headers: { "content-type": "text/plain; charset=utf-8" } });
+  const name = await usageObject(env).inviterName(code);
+  const html = invitePage({ code, name, base: url.origin, storeUrl: env.STORE_URL || "" });
+  return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=300" } });
+}
 
 // ---------- App ----------
 
@@ -583,6 +599,11 @@ export class Usage extends DurableObject {
       p.shareBadges ? 1 : 0, p.shareAchievements ? 1 : 0, p.shareStreak ? 1 : 0, now,
     );
     return this.socialState(uid);
+  }
+
+  /** Nur der Name zum Freundescode (Einladungsseite) – sonst nichts. */
+  inviterName(code) {
+    return this.sql.exec("SELECT name FROM profiles WHERE code = ?", code).toArray()[0]?.name ?? "";
   }
 
   uidByCode(code) {

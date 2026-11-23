@@ -101,16 +101,24 @@ internal fun FriendsSection(
                         Text(stringResource(R.string.friends_my_code), style = MaterialTheme.typography.labelMedium, color = Neon.TextSecondary)
                         Text(code, style = MaterialTheme.typography.titleLarge, color = Neon.Yellow, fontWeight = FontWeight.Bold)
                     }
-                    TextButton(onClick = {
-                        val text = context.getString(R.string.friends_share_text, code)
-                        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null))
-                    }) { Text(stringResource(R.string.friends_share)) }
                 }
+                // Einladen: Teilen-Menü (meist WhatsApp) mit Link zur Einladungsseite – dort Vorschaubild, Code
+                // und später der Play-Store-Link mit dem Code als Referrer.
+                Button(
+                    onClick = {
+                        val link = "${de.kalorienapp.BuildConfig.AI_BASE_URL}/i/$code"
+                        val text = context.getString(R.string.friends_share_text, code, link)
+                        context.startActivity(
+                            Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null),
+                        )
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.friends_invite)) }
             }
-            Button(
+            OutlinedButton(
                 onClick = { viewModel.clearRequestResult(); adding = true },
                 enabled = !busy,
-                colors = ButtonDefaults.buttonColors(containerColor = Neon.Cyan, contentColor = Neon.OnNeon),
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.friends_add)) }
 
