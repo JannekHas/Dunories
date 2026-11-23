@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erzeugt aus 2-ungewoehnlich.svg mit design/abzeichen/svg2vd_full.py -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:pathData="M18,60a42,42 0 1,0 84,0a42,42 0 1,0 -84,0Z"
+        android:fillColor="#FF1A1A22" />
+    <path
+        android:pathData="M18,60a42,42 0 1,0 84,0a42,42 0 1,0 -84,0Z"
+        android:fillColor="#1A3DDC84" />
+    <path
+        android:pathData="M15,60a45,45 0 1,0 90,0a45,45 0 1,0 -90,0Z"
+        android:strokeColor="#FF3DDC84"
+        android:strokeWidth="5" />
+    <path
+        android:pathData="M60 2.5 L64.5 7 L60 11.5 L55.5 7 Z"
+        android:fillColor="#FF3DDC84" />
+    <path
+        android:pathData="M113 55.5 L117.5 60 L113 64.5 L108.5 60 Z"
+        android:fillColor="#FF3DDC84" />
+    <path
+        android:pathData="M60 108.5 L64.5 113 L60 117.5 L55.5 113 Z"
+        android:fillColor="#FF3DDC84" />
+    <path
+        android:pathData="M7 55.5 L11.5 60 L7 64.5 L2.5 60 Z"
+        android:fillColor="#FF3DDC84" />
+    <path
+        android:pathData="M95.48,22.52a2,2 0 1,0 4,0a2,2 0 1,0 -4,0Z"
+        android:fillColor="#FF3DDC84" />
+    <path
+        android:pathData="M95.48,97.48a2,2 0 1,0 4,0a2,2 0 1,0 -4,0Z"
+        android:fillColor="#FF3DDC84" />
+    <path
+        android:pathData="M20.52,97.48a2,2 0 1,0 4,0a2,2 0 1,0 -4,0Z"
+        android:fillColor="#FF3DDC84" />
+    <path
+        android:pathData="M20.52,22.52a2,2 0 1,0 4,0a2,2 0 1,0 -4,0Z"
+        android:fillColor="#FF3DDC84" />
+</vector>

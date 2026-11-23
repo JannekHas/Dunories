@@ -51,6 +51,10 @@ interface FoodEntryDao {
     fun observeCreatedTimes(): kotlinx.coroutines.flow.Flow<List<Long>>
 
     /** Für Erfolge: alle Tage mit mindestens einem Eintrag. */
+    /** Getränke (ml) für den Erfolg „Wasser“ – Alkohol wird in Kotlin aussortiert ([de.kalorienapp.domain.Water]). */
+    @Query("SELECT dateEpochDay, name, amountG FROM food_entry WHERE unit = 'MILLILITER'")
+    fun observeDrinks(): kotlinx.coroutines.flow.Flow<List<DrinkRow>>
+
     @Query("SELECT DISTINCT dateEpochDay FROM food_entry")
     fun observeLoggedDays(): kotlinx.coroutines.flow.Flow<List<Long>>
 
@@ -91,3 +95,6 @@ data class FrequentEntryRow(
     @Embedded val entry: FoodEntryEntity,
     val useCount: Int,
 )
+
+/** Getränk eines Tages (Menge in ml). */
+data class DrinkRow(val dateEpochDay: Long, val name: String, val amountG: Double?)

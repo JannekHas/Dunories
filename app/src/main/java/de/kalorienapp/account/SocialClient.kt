@@ -18,6 +18,8 @@ data class Friend(
     val code: String,
     val name: String,
     val badge: String?,
+    /** Avatar-Schlüssel (immer sichtbar wie der Name) oder null. */
+    val avatar: String? = null,
     val achievements: List<String>?,
     val streak: Int?,
     /** Längste Serie (zusammen mit der Serie freigegeben). */
@@ -49,6 +51,7 @@ data class SocialData(
                         code = f.string("code") ?: return@mapNotNull null,
                         name = f.string("name").orEmpty(),
                         badge = f.string("badge"),
+                        avatar = f.string("avatar"),
                         achievements = (f["achievements"] as? JsonArray)?.mapNotNull { (it as? kotlinx.serialization.json.JsonPrimitive)?.content },
                         streak = f.number("streak")?.toInt(),
                         best = f.number("best")?.toInt(),
@@ -65,6 +68,7 @@ data class SocialData(
 data class SocialProfile(
     val name: String,
     val badge: String?,
+    val avatar: String?,
     val streak: Int,
     /** Längste Serie (inkl. aus YAZIO übernommener). */
     val best: Int,
@@ -94,6 +98,7 @@ class SocialClient(
     suspend fun saveProfile(p: SocialProfile): SocialData? = post("/v1/social/profile", buildJsonObject {
         put("name", p.name)
         p.badge?.let { put("badge", it) }
+        p.avatar?.let { put("avatar", it) }
         put("streak", p.streak)
         put("best", p.best)
         putJsonArray("achievements") { p.achievements.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } }

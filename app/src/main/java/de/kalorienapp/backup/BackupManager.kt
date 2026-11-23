@@ -100,6 +100,7 @@ class BackupManager(
                 shareAchievements = settings.shareAchievements.value,
                 shareStreak = settings.shareStreak.value,
                 importedStreak = settings.importedStreak.value?.encode(),
+                avatar = settings.avatar.value,
                 fasting = settings.fastingConfig.value.let { c ->
                     listOf(c.plan.name, c.windowStart.toSecondOfDay() / 60, c.customFastHours, c.fastDays.joinToString(",") { it.name })
                         .joinToString(";")
@@ -219,7 +220,11 @@ class BackupManager(
                 settings.setFeedbackCredits(false)
             }
             m.gamificationEnabled?.let(settings::setGamificationEnabled)
-            m.celebratedAchievements?.let { settings.markCelebrated(it) }
+            m.celebratedAchievements?.let { keys ->
+                settings.markCelebrated(keys)
+                // Sicherung von vor den Stufen-Erfolgen („streak_7“ statt „serie@2“): Erreichtes still neu übernehmen.
+                if (keys.none { '@' in it }) settings.resetGamificationInit()
+            }
             m.favoriteBadge?.let(settings::setFavoriteBadge)
             m.feedbackSent?.let { settings.countFeedbackSent(it) }
             m.testerPoints?.let(settings::setTesterPoints)
@@ -227,6 +232,7 @@ class BackupManager(
             m.shareAchievements?.let(settings::setShareAchievements)
             m.shareStreak?.let(settings::setShareStreak)
             Gamification.ImportedStreak.decode(m.importedStreak)?.let(settings::setImportedStreak)
+            m.avatar?.let(settings::setAvatar)
             m.weeklyDoneFor?.let { settings.weeklyDoneFor = LocalDate.ofEpochDay(it) }
             // Sicherung aus ≤ 0.6.0 (Umzug auf de.dunories): einmal „Neu in 0.7.0“ zeigen.
             settings.markChangelogSeen(m.changelogSeen ?: OLD_BACKUP_CHANGELOG)

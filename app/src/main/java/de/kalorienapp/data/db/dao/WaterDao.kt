@@ -13,6 +13,10 @@ interface WaterDao {
     @Query("SELECT COALESCE(SUM(ml), 0) FROM water_entry WHERE dateEpochDay = :epochDay")
     fun observeTotal(epochDay: Long): Flow<Int>
 
+    /** Alle Tage mit Wasser – für den Erfolg „Wasser“. */
+    @Query("SELECT dateEpochDay, SUM(ml) AS ml FROM water_entry GROUP BY dateEpochDay")
+    fun observeDailyTotals(): Flow<List<DailyWaterRow>>
+
     @Query("SELECT dateEpochDay, SUM(ml) AS ml FROM water_entry WHERE dateEpochDay BETWEEN :fromEpochDay AND :toEpochDay GROUP BY dateEpochDay")
     suspend fun dailyTotals(fromEpochDay: Long, toEpochDay: Long): List<DailyWaterRow>
 

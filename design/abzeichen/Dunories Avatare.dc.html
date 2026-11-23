@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"><style>body{margin:0;background:#111116;}a{color:#22D3EE;text-decoration:none;}a:hover{color:#3DDC84;}</style></helmet>
+<div style="min-height:100vh;background:#111116;color:#ECECF2;font-family:'Space Grotesk',sans-serif;padding:48px 32px;box-sizing:border-box;">
+  <div style="max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:40px;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:28px;font-weight:600;">Dunories · Profil-Avatare</div>
+      <div style="font-size:14px;color:#9A9AAD;">16 Figuren · SVG 120 × 120 · transparent außerhalb des Kreises</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;">
+      <sc-for list="{{ items }}" as="it" hint-placeholder-count="16">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 12px 16px;background:#18181F;border-radius:16px;">
+          <img src="{{ it.file }}" alt="{{ it.label }}" style="width:128px;height:128px;display:block;">
+          <div style="font-size:14px;text-align:center;">{{ it.label }}</div>
+          <a href="{{ it.file }}" download="{{ it.name }}" style="font-family:'JetBrains Mono',monospace;font-size:11px;">{{ it.name }}</a>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="font-size:14px;color:#9A9AAD;">Kleingrößen-Test · 48 px und 32 px</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;">
+        <sc-for list="{{ items }}" as="it" hint-placeholder-count="16"><img src="{{ it.file }}" alt="{{ it.label }}" style="width:48px;height:48px;display:block;"></sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        <sc-for list="{{ items }}" as="it" hint-placeholder-count="16"><img src="{{ it.file }}" alt="{{ it.label }}" style="width:32px;height:32px;display:block;"></sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;padding:16px;background:#F4F4F7;border-radius:12px;">
+        <sc-for list="{{ items }}" as="it" hint-placeholder-count="16"><img src="{{ it.file }}" alt="{{ it.label }}" style="width:48px;height:48px;display:block;"></sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const L = [["01-fuchs","Fuchs"],["02-mensch-kurzhaar","Mensch · kurzes Haar"],["03-avocado","Avocado"],["04-roboter","Roboter"],["05-mensch-kopftuch","Mensch · Kopftuch"],["06-panda","Panda"],["07-mensch-muetze","Mensch · Mütze"],["08-banane","Banane"],["09-alien","Alien"],["10-mensch-brille","Mensch · Brille & Bart"],["11-frosch","Frosch"],["12-mensch-langhaar","Mensch · lange Haare"],["13-erdbeere","Erdbeere"],["14-mensch-undercut","Mensch · Undercut"],["15-katze","Katze"],["16-brokkoli","Brokkoli"]];
+    return { items: L.map(([s, label]) => ({ file: "avatars/" + s + ".svg", name: s + ".svg", label })) };
+  }
+}
+</script>
+</body>
+</html>

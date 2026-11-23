@@ -1076,7 +1076,7 @@
     <string name="social_badges_empty">Noch keine Abzeichen – trag dein erstes Essen ein.</string>
     <string name="social_badges_hint">Tipp eines an: Es erscheint neben deinem Namen.</string>
     <string name="social_achievements">Erfolge</string>
-    <string name="social_achievements_hint">Erfolge gibt es fürs Dranbleiben. Ein paar sind geheim – die findest du nebenbei.</string>
+    <string name="social_achievements_hint">Erfolge gibt es fürs Dranbleiben – jeder steigt in Stufen auf, von grau bis gold. Ein paar sind geheim, und manche tauchen erst auf, wenn du sie zufällig schaffst.</string>
     <string name="social_secret">Geheimer Erfolg</string>
     <string name="social_count">%1$d von %2$d Erfolgen</string>
     <string name="social_tab_me">Ich</string>
@@ -1117,52 +1117,113 @@
     <string name="rarity_epic">Episch</string>
     <string name="rarity_legendary">Legendär</string>
     <string name="rarity_galaxy">Galaxy</string>
-    <string name="ach_days_365">Ein Jahr dabei</string>
-    <string name="ach_days_365_text">An 365 Tagen etwas eingetragen.</string>
-    <string name="ach_streak_100">100 Tage am Stück</string>
-    <string name="ach_streak_100_text">100 Tage hintereinander etwas eingetragen.</string>
-    <string name="ach_night_snack">Mitternachtssnack</string>
-    <string name="ach_night_snack_text">Zwischen Mitternacht und 4 Uhr etwas eingetragen.</string>
-    <string name="ach_barcode_50">Barcode-Sammler</string>
-    <string name="ach_barcode_50_text">50 Produkte per Barcode eingetragen.</string>
-    <string name="ach_photo_50">Food-Fotograf</string>
-    <string name="ach_photo_50_text">50-mal Essen per Foto erkannt.</string>
     <string name="social_tester_title">Tester</string>
     <string name="social_tester_text">Für hilfreiches Feedback gibt es Tester-Punkte – die fleißigsten Tester bekommen zum Start eine Belohnung.</string>
-    <string name="social_more_soon">Bald mehr: Avatare und neue Erfolge.</string>
     <string name="achievement_unlocked">Erfolg freigeschaltet</string>
     <string name="areas_social">Social</string>
     <string name="game_enable">Erfolge &amp; Abzeichen</string>
     <string name="game_enable_text">Erfolge und Abzeichen im Reiter „Social“ – und eine kurze Karte auf „Heute“, wenn du etwas freischaltest.</string>
     <string name="ach_tester">Tester</string>
-    <string name="ach_first_entry">Erster Eintrag</string>
-    <string name="ach_first_entry_text">Trag dein erstes Essen ein.</string>
-    <string name="ach_entries_100">100 Einträge</string>
-    <string name="ach_entries_100_text">Trag insgesamt 100-mal etwas ein.</string>
-    <string name="ach_days_7">Eine Woche dabei</string>
-    <string name="ach_days_7_text">Trag an 7 Tagen etwas ein.</string>
-    <string name="ach_days_30">Ein Monat dabei</string>
-    <string name="ach_days_30_text">Trag an 30 Tagen etwas ein.</string>
-    <string name="ach_days_100">100 Tage dabei</string>
-    <string name="ach_days_100_text">Trag an 100 Tagen etwas ein.</string>
-    <string name="ach_streak_3">Guter Start</string>
-    <string name="ach_streak_3_text">Trag 3 Tage hintereinander etwas ein.</string>
-    <string name="ach_streak_50">50 Tage am Stück</string>
-    <string name="ach_streak_50_text">Trag 50 Tage hintereinander etwas ein.</string>
-    <string name="ach_streak_7">7 Tage am Stück</string>
-    <string name="ach_streak_7_text">Trag 7 Tage hintereinander etwas ein.</string>
-    <string name="ach_streak_30">30 Tage am Stück</string>
-    <string name="ach_streak_30_text">Trag 30 Tage hintereinander etwas ein.</string>
-    <string name="ach_first_weight">Erstes Gewicht</string>
-    <string name="ach_first_weight_text">Trag dein Gewicht ein.</string>
-    <string name="ach_weights_30">Waagen-Profi</string>
-    <string name="ach_weights_30_text">Trag 30-mal dein Gewicht ein.</string>
-    <string name="ach_goal_reached">Ziel erreicht</string>
-    <string name="ach_goal_reached_text">Erreiche ein Gewichtsziel.</string>
-    <string name="ach_first_report">Erste Auswertung</string>
-    <string name="ach_first_report_text">Hol dir deine erste KI-Wochenauswertung.</string>
-    <string name="ach_first_feedback">Mitgestalter</string>
-    <string name="ach_first_feedback_text">Schick dein erstes Feedback.</string>
+    <string name="ach_eintragen">Eintragen</string>
+    <string name="ach_dabei">Dabei</string>
+    <string name="ach_serie">Serie</string>
+    <string name="ach_proteinziel">Proteinziel</string>
+    <string name="ach_foto_profi">Foto-Profi</string>
+    <string name="ach_barcode_jaeger">Barcode-Jäger</string>
+    <string name="ach_waage">Waage</string>
+    <string name="ach_wasser">Wasser</string>
+    <string name="ach_rueckblick">Rückblick</string>
+    <string name="ach_mitgestalter">Mitgestalter</string>
+    <string name="ach_freunde">Freunde</string>
+    <string name="ach_ziel_erreicht">Ziel erreicht</string>
+    <string name="ach_mitternachtssnack">Mitternachtssnack</string>
+    <string name="ach_fruehaufsteher">Frühaufsteher</string>
+    <string name="ach_comeback">Comeback</string>
+    <string name="ach_wochenend_held">Wochenend-Held</string>
+    <string name="ach_weihnachten">Weihnachten</string>
+    <string name="ach_silvester">Silvester</string>
+    <string name="ach_neujahrsvorsatz">Neujahrsvorsatz</string>
+    <string name="ach_ostern">Ostern</string>
+    <string name="ach_halloween">Halloween</string>
+    <plurals name="ach_eintragen_text">
+        <item quantity="one">Trag dein erstes Essen ein.</item>
+        <item quantity="other">Trag insgesamt %1$d-mal etwas ein.</item>
+    </plurals>
+    <plurals name="ach_dabei_text">
+        <item quantity="one">Trag an %1$d Tag etwas ein.</item>
+        <item quantity="other">Trag an %1$d Tagen etwas ein.</item>
+    </plurals>
+    <plurals name="ach_serie_text">
+        <item quantity="one">Trag %1$d Tag am Stück etwas ein.</item>
+        <item quantity="other">Trag %1$d Tage am Stück etwas ein.</item>
+    </plurals>
+    <plurals name="ach_proteinziel_text">
+        <item quantity="one">Erreich an einem Tag dein Proteinziel.</item>
+        <item quantity="other">Erreich an %1$d Tagen dein Proteinziel.</item>
+    </plurals>
+    <plurals name="ach_foto_profi_text">
+        <item quantity="one">Lass dein erstes Essen per Foto erkennen.</item>
+        <item quantity="other">Lass %1$d-mal Essen per Foto erkennen.</item>
+    </plurals>
+    <plurals name="ach_barcode_jaeger_text">
+        <item quantity="one">Scann deinen ersten Barcode.</item>
+        <item quantity="other">Scann %1$d Barcodes.</item>
+    </plurals>
+    <plurals name="ach_waage_text">
+        <item quantity="one">Trag dein Gewicht ein.</item>
+        <item quantity="other">Trag %1$d-mal dein Gewicht ein.</item>
+    </plurals>
+    <plurals name="ach_wasser_text">
+        <item quantity="one">Erreich an einem Tag dein Wasserziel.</item>
+        <item quantity="other">Erreich an %1$d Tagen dein Wasserziel.</item>
+    </plurals>
+    <plurals name="ach_rueckblick_text">
+        <item quantity="one">Hol dir deine erste KI-Wochenauswertung.</item>
+        <item quantity="other">Hol dir %1$d KI-Wochenauswertungen.</item>
+    </plurals>
+    <plurals name="ach_mitgestalter_text">
+        <item quantity="one">Schick Feedback, das mit Tester-Punkten belohnt wird.</item>
+        <item quantity="other">Bekomm für %1$d Feedbacks Tester-Punkte.</item>
+    </plurals>
+    <plurals name="ach_freunde_text">
+        <item quantity="one">Füg deinen ersten Freund hinzu.</item>
+        <item quantity="other">Hab %1$d Freunde in Dunories.</item>
+    </plurals>
+    <plurals name="ach_ziel_erreicht_text">
+        <item quantity="one">Erreich ein Gewichtsziel.</item>
+        <item quantity="other">Erreich %1$d Gewichtsziele.</item>
+    </plurals>
+    <string name="ach_mitternachtssnack_text">Zwischen Mitternacht und 4 Uhr etwas eingetragen.</string>
+    <string name="ach_fruehaufsteher_text">Vor 6 Uhr morgens etwas eingetragen.</string>
+    <string name="ach_comeback_text">Nach mindestens einer Woche Pause wieder eingetragen. Schön, dass du da bist!</string>
+    <string name="ach_wochenend_held_text">In einem Monat an jedem Samstag und Sonntag eingetragen.</string>
+    <plurals name="ach_weihnachten_text">
+        <item quantity="one">An Weihnachten eingetragen.</item>
+        <item quantity="other">An Weihnachten eingetragen – %1$d Jahre.</item>
+    </plurals>
+    <plurals name="ach_silvester_text">
+        <item quantity="one">An Silvester oder Neujahr eingetragen.</item>
+        <item quantity="other">An Silvester eingetragen – %1$d Jahre.</item>
+    </plurals>
+    <plurals name="ach_neujahrsvorsatz_text">
+        <item quantity="one">In der ersten Januarwoche jeden Tag eingetragen.</item>
+        <item quantity="other">Den Neujahrsvorsatz gehalten – %1$d Jahre.</item>
+    </plurals>
+    <plurals name="ach_ostern_text">
+        <item quantity="one">An Ostern eingetragen.</item>
+        <item quantity="other">An Ostern eingetragen – %1$d Jahre.</item>
+    </plurals>
+    <plurals name="ach_halloween_text">
+        <item quantity="one">An Halloween eingetragen.</item>
+        <item quantity="other">An Halloween eingetragen – %1$d Jahre.</item>
+    </plurals>
+    <string name="rarity_event">Event</string>
+    <string name="social_level">Stufe %1$d von %2$d</string>
+    <string name="social_maxed">Höchste Stufe erreicht</string>
+    <string name="social_event_found">Event-Erfolg – nur zu besonderen Tagen</string>
+    <string name="social_avatar_title">Avatar wählen</string>
+    <string name="social_avatar_letter">Anfangsbuchstabe</string>
+    <string name="social_avatar_change">Avatar ändern</string>
     <string name="tester_name">Dein Tester-Name</string>
     <string name="tester_name_save">Speichern</string>
     <string name="feedback_sent_as">Du sendest als „%1$s“. Name und Danke-Liste änderst du im Reiter „Social“.</string>

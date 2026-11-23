@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erzeugt aus foto-profi.svg mit design/abzeichen/svg2vd_full.py -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:pathData="M10,16 h24 a5,5 0 0,1 5,5 v15 a5,5 0 0,1 -5,5 h-24 a5,5 0 0,1 -5,-5 v-15 a5,5 0 0,1 5,-5 Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M15 16 L18 11 H26 L29 16"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M15.5,28.5a6.5,6.5 0 1,0 13,0a6.5,6.5 0 1,0 -13,0Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M41 3 Q41 9 47 9 Q41 9 41 15 Q41 9 35 9 Q41 9 41 3 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

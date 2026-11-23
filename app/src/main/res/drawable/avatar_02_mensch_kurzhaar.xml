@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erzeugt aus 02-mensch-kurzhaar.svg mit design/abzeichen/svg2vd_full.py -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="72dp"
+    android:height="72dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:pathData="M0,60a60,60 0 1,0 120,0a60,60 0 1,0 -120,0Z"
+        android:fillColor="#FF1A1A22" />
+    <group>
+        <clip-path android:pathData="M3,60a57,57 0 1,0 114,0a57,57 0 1,0 -114,0Z"/>
+        <path
+            android:pathData="M16,60a44,44 0 1,0 88,0a44,44 0 1,0 -88,0Z"
+            android:fillColor="#2422D3EE" />
+        <path
+            android:pathData="M14 124 C14 98 32 88 60 88 C88 88 106 98 106 124 Z"
+            android:fillColor="#FF22D3EE"
+            android:strokeColor="#FF0E0E13"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M51 70 H69 V90 C64 94 56 94 51 90 Z"
+            android:fillColor="#FF8D5A3B"
+            android:strokeColor="#FF0E0E13"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M52 89 L60 98 L68 89"
+            android:strokeColor="#FF0E0E13"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M31.5,55a5.5,5.5 0 1,0 11,0a5.5,5.5 0 1,0 -11,0Z"
+            android:fillColor="#FF8D5A3B"
+            android:strokeColor="#FF0E0E13"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M77.5,55a5.5,5.5 0 1,0 11,0a5.5,5.5 0 1,0 -11,0Z"
+            android:fillColor="#FF8D5A3B"
+            android:strokeColor="#FF0E0E13"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M37,52a23,25 0 1,0 46,0a23,25 0 1,0 -46,0Z"
+            android:fillColor="#FF8D5A3B"
+            android:strokeColor="#FF0E0E13"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M36 50 V36 C36 26 46 20 60 20 C74 20 84 26 84 36 V50 C80 42 72 39 60 39 C48 39 40 42 36 50 Z"
+            android:fillColor="#FF1E1B24"
+            android:strokeColor="#FF0E0E13"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M47.8,55a3.2,4 0 1,0 6.4,0a3.2,4 0 1,0 -6.4,0Z"
+            android:fillColor="#FF0E0E13" />
+        <path
+            android:pathData="M50.8,53.6a1.2,1.2 0 1,0 2.4,0a1.2,1.2 0 1,0 -2.4,0Z"
+            android:fillColor="#FFFFFFFF" />
+        <path
+            android:pathData="M65.8,55a3.2,4 0 1,0 6.4,0a3.2,4 0 1,0 -6.4,0Z"
+            android:fillColor="#FF0E0E13" />
+        <path
+            android:pathData="M68.8,53.6a1.2,1.2 0 1,0 2.4,0a1.2,1.2 0 1,0 -2.4,0Z"
+            android:fillColor="#FFFFFFFF" />
+        <path
+            android:pathData="M54 65 Q60 70 66 65"
+            android:strokeColor="#FF0E0E13"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M41.4,62a3.6,3.6 0 1,0 7.2,0a3.6,3.6 0 1,0 -7.2,0Z"
+            android:fillColor="#99FF6FA8" />
+        <path
+            android:pathData="M71.4,62a3.6,3.6 0 1,0 7.2,0a3.6,3.6 0 1,0 -7.2,0Z"
+            android:fillColor="#99FF6FA8" />
+    </group>
+    <path
+        android:pathData="M2.5,60a57.5,57.5 0 1,0 115,0a57.5,57.5 0 1,0 -115,0Z"
+        android:strokeColor="#FF22D3EE"
+        android:strokeWidth="5" />
+</vector>

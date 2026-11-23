@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erzeugt aus serie.svg mit design/abzeichen/svg2vd_full.py -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:pathData="M24 4 C28 13 38 19 38 30 C38 38 32 44 24 44 C16 44 10 38 10 30 C10 23 14 19 17 15 C18 21 21 23 23 23 C21 16 22 10 24 4 Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M24 44 C20 44 18 41 18 37.5 C18 34 21 32 24 28 C27 32 30 34 30 37.5 C30 41 28 44 24 44 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

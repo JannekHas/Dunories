@@ -265,8 +265,57 @@ class AppSettings(context: Context) {
         _celebrated.value = next
     }
 
-    /** Beim ersten Mal (Update) bereits Erreichtes still als gefeiert markieren – keine Flut an Karten. */
+    /**
+     * Beim ersten Mal (Update) bereits Erreichtes still als gefeiert markieren – keine Flut an Karten.
+     * Seit den Stufen-Erfolgen eigener Schlüssel („…_v2“): gefeiert wird je Stufe („serie@3“).
+     */
     val gamificationInitialized: Boolean get() = prefs.getBoolean(KEY_GAME_INIT, false)
+
+    /** Sicherung aus der Zeit vor den Stufen-Erfolgen eingespielt → Erreichtes beim nächsten Mal wieder still übernehmen. */
+    fun resetGamificationInit() = prefs.edit().putBoolean(KEY_GAME_INIT, false).apply()
+
+    private val _ratedFeedback = MutableStateFlow(prefs.getInt(KEY_RATED_FEEDBACK, 0))
+
+    /** Vom Admin mit Punkten bewertetes Feedback (Server) – für den Erfolg „Mitgestalter“. */
+    val ratedFeedback: StateFlow<Int> = _ratedFeedback.asStateFlow()
+
+    fun setRatedFeedback(n: Int) {
+        if (n == _ratedFeedback.value) return
+        prefs.edit().putInt(KEY_RATED_FEEDBACK, n).apply()
+        _ratedFeedback.value = n
+    }
+
+    private val _friendsCount = MutableStateFlow(prefs.getInt(KEY_FRIENDS_COUNT, 0))
+
+    /** Zuletzt geladene Anzahl Freunde – für den Erfolg „Freunde“ (bleibt der Höchststand). */
+    val friendsCount: StateFlow<Int> = _friendsCount.asStateFlow()
+
+    fun setFriendsCount(n: Int) {
+        if (n <= _friendsCount.value) return
+        prefs.edit().putInt(KEY_FRIENDS_COUNT, n).apply()
+        _friendsCount.value = n
+    }
+
+    private val _premiumSeen = MutableStateFlow(prefs.getBoolean(KEY_PREMIUM_SEEN, false))
+
+    /** Zuletzt gesehen: KI-Premium aktiv (Testphase, Probezeit, Code) – dann taucht „Foto-Profi“ auf. */
+    val premiumSeen: StateFlow<Boolean> = _premiumSeen.asStateFlow()
+
+    fun setPremiumSeen(on: Boolean) {
+        if (on == _premiumSeen.value) return
+        prefs.edit().putBoolean(KEY_PREMIUM_SEEN, on).apply()
+        _premiumSeen.value = on
+    }
+
+    private val _avatar = MutableStateFlow(prefs.getString(KEY_AVATAR, null))
+
+    /** Gewählter Avatar (Schlüssel wie „06_panda“) oder null = Anfangsbuchstabe. */
+    val avatar: StateFlow<String?> = _avatar.asStateFlow()
+
+    fun setAvatar(key: String?) {
+        prefs.edit().apply { if (key == null) remove(KEY_AVATAR) else putString(KEY_AVATAR, key) }.apply()
+        _avatar.value = key
+    }
 
     private val _favoriteBadge = MutableStateFlow(prefs.getString(KEY_GAME_BADGE, null))
 
@@ -544,7 +593,11 @@ class AppSettings(context: Context) {
         private const val KEY_IMPORTED_STREAK = "imported_streak"
         private const val KEY_GAME_ENABLED = "game_enabled"
         private const val KEY_GAME_CELEBRATED = "game_celebrated"
-        private const val KEY_GAME_INIT = "game_initialized"
+        private const val KEY_GAME_INIT = "game_initialized_v2"
+        private const val KEY_RATED_FEEDBACK = "rated_feedback"
+        private const val KEY_FRIENDS_COUNT = "friends_count"
+        private const val KEY_PREMIUM_SEEN = "premium_seen"
+        private const val KEY_AVATAR = "avatar"
         private const val KEY_GAME_BADGE = "game_badge"
         private const val KEY_FEEDBACK_SENT = "feedback_sent"
         private const val KEY_TESTER_POINTS = "tester_points"

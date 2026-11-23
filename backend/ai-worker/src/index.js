@@ -409,9 +409,10 @@ export class Usage extends DurableObject {
       CREATE TABLE IF NOT EXISTS friends (a TEXT NOT NULL, b TEXT NOT NULL, since INTEGER NOT NULL, PRIMARY KEY (a, b));
     `);
     // Spalte „best“ (längste Serie) kam nach dem ersten Deploy dazu.
-    if (!this.sql.exec("PRAGMA table_info(profiles)").toArray().some((c) => c.name === "best")) {
-      this.sql.exec("ALTER TABLE profiles ADD COLUMN best INTEGER NOT NULL DEFAULT 0");
-    }
+    const profileCols = this.sql.exec("PRAGMA table_info(profiles)").toArray().map((c) => c.name);
+    if (!profileCols.includes("best")) this.sql.exec("ALTER TABLE profiles ADD COLUMN best INTEGER NOT NULL DEFAULT 0");
+    // Avatar (feste Motive aus der App, kein Foto-Upload) – kam mit den Stufen-Erfolgen dazu.
+    if (!profileCols.includes("avatar")) this.sql.exec("ALTER TABLE profiles ADD COLUMN avatar TEXT");
   }
 
   config(d) {
@@ -468,6 +469,8 @@ export class Usage extends DurableObject {
       ...t,
       anonymous: person.anonymous,
       testerPoints: pts.total,
+      // Für den Erfolg „Mitgestalter“: nur von dir bewertetes Feedback mit Punkten zählt (kein Spam).
+      ratedFeedback: pts.rated,
       newRewards: pts.newCount,
       newPoints: pts.newPoints,
       usedToday: this.used(person.uid, day),
@@ -512,10 +515,11 @@ export class Usage extends DurableObject {
     const row = this.sql.exec(
       `SELECT COALESCE(SUM(points), 0) AS total,
               COALESCE(SUM(CASE WHEN rated IS NOT NULL AND notified = 0 AND points > 0 THEN 1 ELSE 0 END), 0) AS newCount,
-              COALESCE(SUM(CASE WHEN rated IS NOT NULL AND notified = 0 AND points > 0 THEN points ELSE 0 END), 0) AS newPoints
+              COALESCE(SUM(CASE WHEN rated IS NOT NULL AND notified = 0 AND points > 0 THEN points ELSE 0 END), 0) AS newPoints,
+              COALESCE(SUM(CASE WHEN rated IS NOT NULL AND points > 0 THEN 1 ELSE 0 END), 0) AS rated
        FROM feedback WHERE uid = ?`, uid,
     ).toArray()[0];
-    return { total: row.total, newCount: row.newCount, newPoints: row.newPoints };
+    return { total: row.total, newCount: row.newCount, newPoints: row.newPoints, rated: row.rated };
   }
 
   addFeedback(uid, f, day, now) {
@@ -546,7 +550,7 @@ export class Usage extends DurableObject {
     const p = this.sql.exec("SELECT * FROM profiles WHERE uid = ?", uid).toArray()[0];
     if (!p) return null;
     return {
-      uid: p.uid, code: p.code, name: p.name, badge: p.badge, streak: p.streak, best: p.best, achievements: JSON.parse(p.achievements || "[]"),
+      uid: p.uid, code: p.code, name: p.name, badge: p.badge, avatar: p.avatar, streak: p.streak, best: p.best, achievements: JSON.parse(p.achievements || "[]"),
       shareBadges: !!p.share_badges, shareAchievements: !!p.share_achievements, shareStreak: !!p.share_streak,
     };
   }
@@ -559,12 +563,12 @@ export class Usage extends DurableObject {
       while (this.sql.exec("SELECT 1 FROM profiles WHERE code = ?", code).toArray().length);
     }
     this.sql.exec(
-      `INSERT INTO profiles (uid, code, name, badge, streak, best, achievements, share_badges, share_achievements, share_streak, updated)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT (uid) DO UPDATE SET name = excluded.name, badge = excluded.badge, streak = excluded.streak, best = excluded.best,
+      `INSERT INTO profiles (uid, code, name, badge, avatar, streak, best, achievements, share_badges, share_achievements, share_streak, updated)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (uid) DO UPDATE SET name = excluded.name, badge = excluded.badge, avatar = excluded.avatar, streak = excluded.streak, best = excluded.best,
          achievements = excluded.achievements, share_badges = excluded.share_badges,
          share_achievements = excluded.share_achievements, share_streak = excluded.share_streak, updated = excluded.updated`,
-      uid, code, p.name || null, p.badge, p.streak, p.best, JSON.stringify(p.achievements),
+      uid, code, p.name || null, p.badge, p.avatar, p.streak, p.best, JSON.stringify(p.achievements),
       p.shareBadges ? 1 : 0, p.shareAchievements ? 1 : 0, p.shareStreak ? 1 : 0, now,
     );
     return this.socialState(uid);

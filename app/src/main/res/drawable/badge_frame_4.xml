@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erzeugt aus 4-episch.svg mit design/abzeichen/svg2vd_full.py -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:pathData="M60 1.5 L69.56 11.94 L82.39 5.95 L87.22 19.26 L101.37 18.63 L100.74 32.78 L114.05 37.61 L108.06 50.44 L118.5 60 L108.06 69.56 L114.05 82.39 L100.74 87.22 L101.37 101.37 L87.22 100.74 L82.39 114.05 L69.56 108.06 L60 118.5 L50.44 108.06 L37.61 114.05 L32.78 100.74 L18.63 101.37 L19.26 87.22 L5.95 82.39 L11.94 69.56 L1.5 60 L11.94 50.44 L5.95 37.61 L19.26 32.78 L18.63 18.63 L32.78 19.26 L37.61 5.95 L50.44 11.94 Z"
+        android:fillColor="#FFFF4D6D"
+        android:strokeColor="#FFFF4D6D"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M11.5,60a48.5,48.5 0 1,0 97,0a48.5,48.5 0 1,0 -97,0Z"
+        android:fillColor="#FF1A1A22" />
+    <path
+        android:pathData="M18,60a42,42 0 1,0 84,0a42,42 0 1,0 -84,0Z"
+        android:fillColor="#FF1A1A22" />
+    <path
+        android:pathData="M18,60a42,42 0 1,0 84,0a42,42 0 1,0 -84,0Z"
+        android:fillColor="#1AFF4D6D" />
+    <path
+        android:pathData="M16,60a44,44 0 1,0 88,0a44,44 0 1,0 -88,0Z"
+        android:strokeColor="#FFFF4D6D"
+        android:strokeWidth="5" />
+</vector>

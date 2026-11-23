@@ -34,6 +34,8 @@ data class AiStatus(
     /** Neu bewertete Feedbacks mit Punkten, für die noch keine Danke-Nachricht kam. */
     val newRewards: Int = 0,
     val newPoints: Int = 0,
+    /** Bewertete Feedbacks mit Punkten (Erfolg „Mitgestalter“). */
+    val ratedFeedback: Int = 0,
 ) {
     val premium get() = tier == AiTier.PREMIUM
 
@@ -68,6 +70,7 @@ data class AiStatus(
                 trialDays = o.number("trialDays")?.toInt() ?: 0,
                 id = o.string("id").orEmpty(),
                 testerPoints = o.number("testerPoints")?.toInt() ?: 0,
+                ratedFeedback = o.number("ratedFeedback")?.toInt() ?: 0,
                 newRewards = o.number("newRewards")?.toInt() ?: 0,
                 newPoints = o.number("newPoints")?.toInt() ?: 0,
             )

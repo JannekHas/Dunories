@@ -1,5 +1,6 @@
 package de.kalorienapp
 
+import kotlinx.coroutines.flow.map
 import android.content.Context
 import de.kalorienapp.backup.BackupManager
 import de.kalorienapp.capture.FoodAnalyzer
@@ -64,9 +65,12 @@ class AppContainer(context: Context) {
     val weightRepository = WeightRepository(database.weightEntryDao(), profileRepository)
 
     /** Social-Reiter: Level & Erfolge, live aus den vorhandenen Daten. */
-    val gameRepository = de.kalorienapp.data.repository.GameRepository(
-        database.foodEntryDao(), weightRepository, goalRepository, database.weeklyReportDao(), settings,
-    )
+    val gameRepository by lazy { // lazy: braucht `account`, das weiter unten entsteht
+        de.kalorienapp.data.repository.GameRepository(
+            database.foodEntryDao(), database.statsDao(), database.waterDao(), weightRepository, goalRepository,
+            database.weeklyReportDao(), settings, account.user.map { it != null },
+        )
+    }
 
     // KI über den eigenen Worker; Anmeldung per Konto oder still angelegtem Gast-Konto.
     private val gemini = GeminiClient(BuildConfig.AI_BASE_URL) { account.aiToken() }

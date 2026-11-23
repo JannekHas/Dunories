@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erzeugt aus 1-gewoehnlich.svg mit design/abzeichen/svg2vd_full.py -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:pathData="M18,60a42,42 0 1,0 84,0a42,42 0 1,0 -84,0Z"
+        android:fillColor="#FF1A1A22" />
+    <path
+        android:pathData="M18,60a42,42 0 1,0 84,0a42,42 0 1,0 -84,0Z"
+        android:fillColor="#1A9CA3AF" />
+    <path
+        android:pathData="M15,60a45,45 0 1,0 90,0a45,45 0 1,0 -90,0Z"
+        android:strokeColor="#FF9CA3AF"
+        android:strokeWidth="5" />
+</vector>

@@ -66,6 +66,7 @@ internal fun FriendsSection(
     signedIn: Boolean,
     myName: String,
     myStreak: Int,
+    myAvatar: String?,
     onPrivacy: () -> Unit,
 ) {
     val data by viewModel.friends.collectAsStateWithLifecycle()
@@ -114,7 +115,7 @@ internal fun FriendsSection(
                 Text(stringResource(R.string.friends_incoming), style = MaterialTheme.typography.labelLarge, color = Neon.Yellow)
                 d.incoming.forEach { r ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        SmallAvatar(r.name)
+                        AvatarImage(null, r.name, 34)
                         Text(r.name.ifBlank { r.code }, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(start = 10.dp))
                         TextButton(onClick = { viewModel.respond(r.code, false) }, enabled = !busy) {
                             Text(stringResource(R.string.friends_decline), color = Neon.TextSecondary)
@@ -130,8 +131,8 @@ internal fun FriendsSection(
             } else {
                 HorizontalDivider(color = Neon.Track)
                 Text(stringResource(R.string.friends_ranking), style = MaterialTheme.typography.labelLarge, color = Neon.TextSecondary)
-                val rows = (d.friends.map { RankRow(it.name.ifBlank { it.code }, it.streak, it.badge, it) } +
-                    RankRow(myName.ifBlank { stringResource(R.string.friends_you) }, myStreak, null, null, me = true))
+                val rows = (d.friends.map { RankRow(it.name.ifBlank { it.code }, it.streak, it.badge, it.avatar, it) } +
+                    RankRow(myName.ifBlank { stringResource(R.string.friends_you) }, myStreak, null, myAvatar, null, me = true))
                     .sortedWith(compareByDescending<RankRow> { it.streak ?: -1 }.thenBy { it.name.lowercase() })
                 rows.forEachIndexed { i, row ->
                     Row(
@@ -142,14 +143,14 @@ internal fun FriendsSection(
                             .padding(vertical = 4.dp),
                     ) {
                         Text("${i + 1}.", style = MaterialTheme.typography.labelLarge, color = Neon.TextSecondary, modifier = Modifier.width(28.dp))
-                        SmallAvatar(row.name)
+                        AvatarImage(row.avatar, row.name, 34)
                         Text(
                             if (row.me) stringResource(R.string.friends_you_named, row.name) else row.name,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = if (row.me) FontWeight.Bold else FontWeight.Normal,
                             modifier = Modifier.weight(1f).padding(start = 10.dp),
                         )
-                        row.badge?.let { BadgeIcon(it, size = 26) }
+                        row.badge?.let { SharedBadge(it, size = 26) }
                         Text(
                             row.streak?.let { pluralStringResource(R.plurals.friends_streak, it, it) } ?: stringResource(R.string.friends_private),
                             style = MaterialTheme.typography.labelLarge,
@@ -179,7 +180,7 @@ internal fun FriendsSection(
     openFriend?.let { f -> FriendDialog(f, onRemove = { viewModel.remove(f.code); openFriend = null }, onClose = { openFriend = null }) }
 }
 
-private data class RankRow(val name: String, val streak: Int?, val badge: String?, val friend: Friend?, val me: Boolean = false)
+private data class RankRow(val name: String, val streak: Int?, val badge: String?, val avatar: String?, val friend: Friend?, val me: Boolean = false)
 
 /** Was Freunde von dir sehen – jedes einzeln, standardmäßig privat. */
 @Composable
@@ -227,14 +228,6 @@ private fun SignInForFriends(onPrivacy: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) { Text(stringResource(R.string.account_google)) }
     AccountDialogs(account, onPrivacy)
-}
-
-@Composable
-private fun SmallAvatar(name: String) {
-    Box(
-        Modifier.size(34.dp).border(2.dp, Neon.Cyan, CircleShape).padding(3.dp).background(Neon.SurfaceHighest, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) { Text(name.trim().firstOrNull()?.uppercase() ?: "?", style = MaterialTheme.typography.labelLarge, color = Neon.Cyan) }
 }
 
 @Composable
@@ -317,10 +310,10 @@ private fun FriendDialog(friend: Friend, onRemove: () -> Unit, onClose: () -> Un
                     Text(stringResource(R.string.friends_no_achievements), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
                 } else {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        keys.sortedByDescending { rarityOf(it).ordinal }.forEach { key ->
+                        keys.sortedByDescending { sharedRarity(it).ordinal }.forEach { key ->
                             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(64.dp)) {
-                                BadgeIcon(key, size = 40)
-                                Text(badgeTitle(key), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2)
+                                SharedBadge(key, size = 40)
+                                Text(sharedTitle(key), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2)
                             }
                         }
                     }

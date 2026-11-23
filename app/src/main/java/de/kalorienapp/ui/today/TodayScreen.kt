@@ -573,7 +573,7 @@ private fun StreakBanner(days: Int) {
 /** Erfolg freigeschaltet (Social): kurz, ohne Vibration; antippen öffnet den Social-Reiter, ✕ schließt. */
 @Composable
 private fun AchievementBanner(
-    achievement: de.kalorienapp.domain.Gamification.Achievement,
+    achievement: de.kalorienapp.domain.Gamification.Progress,
     onOpen: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -583,11 +583,11 @@ private fun AchievementBanner(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            de.kalorienapp.ui.social.BadgeIcon(achievement.key, size = 40)
+            de.kalorienapp.ui.social.BadgeIcon(achievement.achievement.key, achievement.level, size = 40)
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.achievement_unlocked), style = MaterialTheme.typography.labelMedium, color = Neon.Yellow)
                 Text(
-                    de.kalorienapp.ui.social.badgeTitle(achievement.key) + " · " +
+                    de.kalorienapp.ui.social.badgeTitle(achievement.achievement.key) + " · " +
                         stringResource(de.kalorienapp.ui.social.rarityName(achievement.rarity)),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,

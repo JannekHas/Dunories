@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erzeugt aus ziel-erreicht.svg mit design/abzeichen/svg2vd_full.py -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:pathData="M10 44 V5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M11.5,7 h26 a1.5,1.5 0 0,1 1.5,1.5 v17 a1.5,1.5 0 0,1 -1.5,1.5 h-26 a1.5,1.5 0 0,1 -1.5,-1.5 v-17 a1.5,1.5 0 0,1 1.5,-1.5 Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M10 7 h7.25 v10 h-7.25 Z M24.5 7 h7.25 v10 h-7.25 Z M17.25 17 h7.25 v10 h-7.25 Z M31.75 17 h7.25 v10 h-7.25 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

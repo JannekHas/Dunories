@@ -14,6 +14,7 @@ import de.kalorienapp.data.AppSettings
 import de.kalorienapp.data.repository.GameRepository
 import de.kalorienapp.data.repository.GameState
 import de.kalorienapp.domain.Feedback
+import de.kalorienapp.domain.Gamification
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +42,8 @@ data class SocialUiState(
     val share: ShareSettings = ShareSettings(),
     /** Serie enthält eine aus YAZIO übernommene. */
     val importedStreak: Boolean = false,
+    /** Gewählter Avatar (null = Anfangsbuchstabe). */
+    val avatar: String? = null,
 )
 
 /** Social-Reiter: Profil, Erfolge & Abzeichen, Freunde (Konto), Tester-Bereich. */
@@ -55,8 +58,8 @@ class SocialViewModel(
     private val status = MutableStateFlow<AiStatus?>(null)
 
     private val profileFlags = combine(
-        settings.gamificationEnabled, settings.testerName, settings.testerCredits, settings.favoriteBadge,
-    ) { on, name, credits, badge -> Profile(on, name, credits, badge) }
+        settings.gamificationEnabled, settings.testerName, settings.testerCredits, settings.favoriteBadge, settings.avatar,
+    ) { on, name, credits, badge, avatar -> Profile(on, name, credits, Gamification.canonicalBadge(badge), avatar) }
 
     private val shareFlags = combine(settings.shareBadges, settings.shareAchievements, settings.shareStreak) { b, a, s ->
         ShareSettings(b, a, s)
@@ -81,10 +84,11 @@ class SocialViewModel(
             signedIn = user != null,
             share = share,
             importedStreak = imported,
+            avatar = p.avatar,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SocialUiState())
 
-    private data class Profile(val on: Boolean, val name: String, val credits: Boolean, val badge: String?)
+    private data class Profile(val on: Boolean, val name: String, val credits: Boolean, val badge: String?, val avatar: String?)
 
     // ---------------- Freunde ----------------
 
@@ -104,6 +108,8 @@ class SocialViewModel(
             premium.status()?.let {
                 status.value = it
                 settings.setTesterPoints(it.testerPoints)
+                settings.setRatedFeedback(it.ratedFeedback)
+                settings.setPremiumSeen(it.premium)
             }
         }
         if (account.user.value != null) viewModelScope.launch { pushProfile() }
@@ -112,19 +118,25 @@ class SocialViewModel(
     /** Eigenes Profil (nur Freigegebenes wird Freunden gezeigt) senden und Freunde laden. */
     private suspend fun pushProfile() {
         val g = game.state.first()
+        val favorite = Gamification.canonicalBadge(settings.favoriteBadge.value)?.takeIf { it in g.badges }
         val result = social.saveProfile(
             SocialProfile(
                 name = settings.feedbackName,
-                badge = settings.favoriteBadge.value?.takeIf { it in g.badges },
+                // Freunde bekommen „schlüssel_stufe“ (z. B. serie_3), damit sie Rahmen und Farbe sehen.
+                badge = favorite?.let { key -> Gamification.Achievement.byKey(key)?.let { Gamification.shareKey(it, levelOf(g.levels, key)) } ?: key },
+                avatar = settings.avatar.value,
                 streak = g.stats.currentStreak,
                 best = g.stats.longestStreak,
-                achievements = g.progress.filter { it.unlocked }.map { it.achievement.key },
+                achievements = g.progress.filter { it.unlocked }.map { Gamification.shareKey(it.achievement, it.level) },
                 shareBadges = settings.shareBadges.value,
                 shareAchievements = settings.shareAchievements.value,
                 shareStreak = settings.shareStreak.value,
             ),
         )
-        if (result != null) _friends.value = result
+        if (result != null) {
+            _friends.value = result
+            settings.setFriendsCount(result.friends.size)
+        }
     }
 
     fun sendRequest(code: String) = friendAction {
@@ -163,7 +175,12 @@ class SocialViewModel(
     // ---------------- Profil ----------------
 
     fun setFavoriteBadge(key: String) {
-        settings.setFavoriteBadge(if (settings.favoriteBadge.value == key) null else key)
+        settings.setFavoriteBadge(if (Gamification.canonicalBadge(settings.favoriteBadge.value) == key) null else key)
+        if (account.user.value != null) viewModelScope.launch { pushProfile() }
+    }
+
+    fun setAvatar(key: String?) {
+        settings.setAvatar(key)
         if (account.user.value != null) viewModelScope.launch { pushProfile() }
     }
 

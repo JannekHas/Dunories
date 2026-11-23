@@ -123,6 +123,7 @@ fun SocialScreen(
                     signedIn = state.signedIn,
                     myName = state.name,
                     myStreak = game?.stats?.currentStreak ?: 0,
+                    myAvatar = state.avatar,
                     onPrivacy = onPrivacy,
                 )
                 if (state.signedIn) ShareSettingsCard(viewModel, state.share)
@@ -140,10 +141,18 @@ fun SocialScreen(
 @Composable
 private fun MePage(state: SocialUiState, viewModel: SocialViewModel, onEditName: () -> Unit) {
     val game = state.game
+    var pickAvatar by rememberSaveable { mutableStateOf(false) }
     // ---------------- Profil-Kopf ----------------
     GlassCard(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Avatar(state.name)
+            val changeAvatar = stringResource(R.string.social_avatar_change)
+            AvatarImage(
+                state.avatar,
+                state.name,
+                72,
+                Modifier.clickable(role = Role.Button, onClickLabel = changeAvatar) { pickAvatar = true }
+                    .semantics { contentDescription = changeAvatar },
+            )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -152,7 +161,7 @@ private fun MePage(state: SocialUiState, viewModel: SocialViewModel, onEditName:
                         color = if (state.name.isBlank()) Neon.TextSecondary else Neon.TextPrimary,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    state.favoriteBadge?.takeIf { state.gamificationEnabled }?.let { BadgeIcon(it, size = 28) }
+                    if (state.gamificationEnabled && game != null) state.favoriteBadge?.let { BadgeIcon(it, levelOf(game.levels, it), size = 28) }
                     IconButton(onClick = onEditName) {
                         Icon(Icons.Filled.Edit, stringResource(R.string.social_edit_name), tint = Neon.Cyan)
                     }
@@ -184,7 +193,7 @@ private fun MePage(state: SocialUiState, viewModel: SocialViewModel, onEditName:
                 } else {
                     Text(stringResource(R.string.social_badges_hint), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        game.badges.sortedByDescending { rarityOf(it).ordinal }.forEach { key ->
+                        game.badges.sortedByDescending { badgeRarity(it, levelOf(game.levels, it)).ordinal }.forEach { key ->
                             val selected = key == state.favoriteBadge
                             val name = badgeTitle(key)
                             Column(
@@ -198,7 +207,7 @@ private fun MePage(state: SocialUiState, viewModel: SocialViewModel, onEditName:
                                     Modifier
                                         .border(BorderStroke(2.dp, if (selected) Neon.TextPrimary else Color.Transparent), CircleShape)
                                         .padding(3.dp),
-                                ) { BadgeIcon(key, size = 48) }
+                                ) { BadgeIcon(key, levelOf(game.levels, key), size = 48) }
                                 Spacer(Modifier.height(4.dp))
                                 Text(name, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2)
                             }
@@ -245,7 +254,9 @@ private fun MePage(state: SocialUiState, viewModel: SocialViewModel, onEditName:
         }
     }
 
-    Text(stringResource(R.string.social_more_soon), style = MaterialTheme.typography.bodySmall, color = Neon.TextSecondary)
+    if (pickAvatar) {
+        AvatarPicker(state.avatar, state.name, onPick = { viewModel.setAvatar(it); pickAvatar = false }, onClose = { pickAvatar = false })
+    }
 }
 
 /**
@@ -280,27 +291,14 @@ private fun StreakNumber(days: Int, label: String, color: Color, modifier: Modif
 }
 
 @Composable
-private fun Avatar(name: String) {
-    Box(
-        Modifier
-            .size(72.dp)
-            .border(3.dp, Neon.Cyan, CircleShape)
-            .padding(5.dp)
-            .background(Neon.SurfaceHighest, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(name.trim().firstOrNull()?.uppercase() ?: "?", style = MaterialTheme.typography.headlineMedium, color = Neon.Cyan)
-    }
-}
-
-@Composable
 private fun AchievementRow(p: Gamification.Progress) {
     val a = p.achievement
-    val hidden = a.secret && !p.unlocked
+    val hidden = a.kind == Gamification.Kind.SECRET && !p.unlocked
+    val tiered = a.kind == Gamification.Kind.TIERED && a.tiers.size > 1
+    // Noch nicht erreicht: Farbe der nächsten Stufe; erreicht: Farbe der aktuellen.
+    val rarity = if (p.unlocked) p.rarity else Gamification.rarityOf(a, 1)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Box(Modifier.alpha(if (p.unlocked) 1f else 0.35f)) {
-            if (hidden) SecretIcon(44) else BadgeIcon(a.key, size = 44, locked = !p.unlocked)
-        }
+        if (hidden) SecretIcon(44) else BadgeIcon(a.key, p.level, size = 44, locked = !p.unlocked)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -310,24 +308,32 @@ private fun AchievementRow(p: Gamification.Progress) {
                     modifier = Modifier.weight(1f),
                 )
                 if (!hidden) {
-                    Text(stringResource(rarityName(a.rarity)), style = MaterialTheme.typography.labelMedium, color = rarityColor(a.rarity))
+                    Text(stringResource(rarityName(rarity)), style = MaterialTheme.typography.labelMedium, color = rarityColor(rarity))
                 }
             }
             Text(
-                if (hidden) stringResource(R.string.social_secret) else stringResource(achievementText(a)),
+                if (hidden) stringResource(R.string.social_secret) else achievementText(p),
                 style = MaterialTheme.typography.bodySmall,
                 color = Neon.TextSecondary,
             )
-            if (!p.unlocked && !hidden && a.target > 1) {
+            if (tiered && p.unlocked) {
+                Text(
+                    if (p.maxed) stringResource(R.string.social_maxed) else stringResource(R.string.social_level, p.level, a.tiers.size),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = rarityColor(p.rarity),
+                )
+            }
+            if (!hidden && !p.maxed && p.target > 1 && a.kind != Gamification.Kind.EVENT) {
+                val next = Gamification.rarityOf(a, p.level + 1)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     LinearProgressIndicator(
-                        progress = { p.shown.toFloat() / a.target },
-                        color = rarityColor(a.rarity),
+                        progress = { p.shown.toFloat() / p.target },
+                        color = rarityColor(next),
                         trackColor = Neon.Track,
                         strokeCap = StrokeCap.Round,
                         modifier = Modifier.weight(1f).height(6.dp),
                     )
-                    Text("${p.shown} / ${a.target}", style = MaterialTheme.typography.labelSmall, color = Neon.TextSecondary)
+                    Text("${p.shown} / ${p.target}", style = MaterialTheme.typography.labelSmall, color = Neon.TextSecondary)
                 }
             }
         }
@@ -339,7 +345,7 @@ private fun AchievementRow(p: Gamification.Progress) {
 @Composable
 private fun RarityLegend() {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Rarity.entries.forEach { r ->
+        Rarity.entries.filter { it != Rarity.EVENT }.forEach { r ->
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Box(Modifier.size(10.dp).background(rarityBrush(r), CircleShape))
                 Text(stringResource(rarityName(r)), style = MaterialTheme.typography.labelSmall, color = Neon.TextSecondary)
@@ -370,148 +376,4 @@ private fun NameDialog(current: String, onSave: (String) -> Unit, onCancel: () -
         confirmButton = { TextButton(onClick = { onSave(name) }) { Text(stringResource(R.string.tester_name_save)) } },
         dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) } },
     )
-}
-
-// ---------------- Seltenheit & Abzeichen-Aussehen (Designs schaut sich der Nutzer später noch an) ----------------
-
-internal fun rarityColor(r: Rarity): Color = when (r) {
-    Rarity.COMMON -> Color(0xFF9CA3AF)
-    Rarity.UNCOMMON -> Neon.Green
-    Rarity.RARE -> Neon.Blue
-    Rarity.EPIC -> Neon.Red
-    Rarity.LEGENDARY -> Neon.Yellow
-    Rarity.GALAXY -> Neon.Violet
-}
-
-/** Galaxy = Farbverlauf, sonst einfarbig. */
-internal fun rarityBrush(r: Rarity): Brush =
-    if (r == Rarity.GALAXY) Brush.sweepGradient(listOf(Neon.Violet, Neon.Magenta, Neon.Cyan, Neon.Blue, Neon.Violet))
-    else Brush.linearGradient(listOf(rarityColor(r), rarityColor(r)))
-
-internal fun rarityName(r: Rarity): Int = when (r) {
-    Rarity.COMMON -> R.string.rarity_common
-    Rarity.UNCOMMON -> R.string.rarity_uncommon
-    Rarity.RARE -> R.string.rarity_rare
-    Rarity.EPIC -> R.string.rarity_epic
-    Rarity.LEGENDARY -> R.string.rarity_legendary
-    Rarity.GALAXY -> R.string.rarity_galaxy
-}
-
-/** Das Tester-Abzeichen zählt als legendär. */
-internal fun rarityOf(key: String): Rarity = Achievement.byKey(key)?.rarity ?: Rarity.LEGENDARY
-
-private data class BadgeStyle(val icon: ImageVector, val label: String?)
-
-private fun badgeStyle(key: String): BadgeStyle = when (Achievement.byKey(key)) {
-    Achievement.FIRST_ENTRY -> BadgeStyle(Icons.Filled.Edit, "1")
-    Achievement.ENTRIES_100 -> BadgeStyle(Icons.Filled.Edit, "100")
-    Achievement.DAYS_7 -> BadgeStyle(Icons.Filled.DateRange, "7")
-    Achievement.DAYS_30 -> BadgeStyle(Icons.Filled.DateRange, "30")
-    Achievement.DAYS_100 -> BadgeStyle(Icons.Filled.DateRange, "100")
-    Achievement.DAYS_365 -> BadgeStyle(Icons.Filled.DateRange, "365")
-    Achievement.STREAK_3 -> BadgeStyle(Icons.Filled.CheckCircle, "3")
-    Achievement.STREAK_7 -> BadgeStyle(Icons.Filled.CheckCircle, "7")
-    Achievement.STREAK_50 -> BadgeStyle(Icons.Filled.CheckCircle, "50")
-    Achievement.STREAK_30 -> BadgeStyle(Icons.Filled.CheckCircle, "30")
-    Achievement.STREAK_100 -> BadgeStyle(Icons.Filled.CheckCircle, "100")
-    Achievement.FIRST_WEIGHT -> BadgeStyle(Icons.Filled.Favorite, "1")
-    Achievement.WEIGHTS_30 -> BadgeStyle(Icons.Filled.Favorite, "30")
-    Achievement.GOAL_REACHED -> BadgeStyle(Icons.Filled.Star, null)
-    Achievement.FIRST_REPORT -> BadgeStyle(Icons.Filled.Refresh, null)
-    Achievement.FIRST_FEEDBACK -> BadgeStyle(Icons.Filled.ThumbUp, null)
-    Achievement.NIGHT_SNACK -> BadgeStyle(Icons.Filled.Face, null)
-    Achievement.BARCODE_50 -> BadgeStyle(Icons.Filled.Search, "50")
-    Achievement.PHOTO_50 -> BadgeStyle(Icons.Filled.Face, "50")
-    null -> BadgeStyle(Icons.Filled.ThumbUp, "T") // Tester
-}
-
-/** Rundes Abzeichen: Rand und Symbol in der Farbe der Seltenheit (galaxy als Verlauf), kleine Zahl unten. */
-@Composable
-internal fun BadgeIcon(key: String, size: Int, locked: Boolean = false) {
-    val style = badgeStyle(key)
-    val rarity = rarityOf(key)
-    val color = rarityColor(rarity)
-    Box(contentAlignment = Alignment.Center) {
-        Box(
-            Modifier
-                .size(size.dp)
-                .background(color.copy(alpha = 0.18f), CircleShape)
-                .border(if (rarity == Rarity.GALAXY) 3.dp else 2.dp, rarityBrush(rarity), CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(if (locked) Icons.Filled.Lock else style.icon, contentDescription = null, tint = color, modifier = Modifier.size((size * 0.5f).dp))
-        }
-        if (style.label != null && !locked && size >= 40) {
-            Text(
-                style.label,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = Neon.OnNeon,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .background(rarityBrush(rarity), RoundedCornerShape(50))
-                    .padding(horizontal = 5.dp),
-            )
-        }
-    }
-}
-
-/** Geheimer, noch nicht geschaffter Erfolg: grauer Kreis mit „?“. */
-@Composable
-private fun SecretIcon(size: Int) {
-    Box(
-        Modifier
-            .size(size.dp)
-            .background(Neon.SurfaceHighest, CircleShape)
-            .border(2.dp, Neon.TextSecondary, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) { Text("?", style = MaterialTheme.typography.titleLarge, color = Neon.TextSecondary) }
-}
-
-@Composable
-internal fun badgeTitle(key: String): String = stringResource(
-    when (Achievement.byKey(key)) {
-        Achievement.FIRST_ENTRY -> R.string.ach_first_entry
-        Achievement.ENTRIES_100 -> R.string.ach_entries_100
-        Achievement.DAYS_7 -> R.string.ach_days_7
-        Achievement.DAYS_30 -> R.string.ach_days_30
-        Achievement.DAYS_100 -> R.string.ach_days_100
-        Achievement.DAYS_365 -> R.string.ach_days_365
-        Achievement.STREAK_3 -> R.string.ach_streak_3
-        Achievement.STREAK_7 -> R.string.ach_streak_7
-        Achievement.STREAK_50 -> R.string.ach_streak_50
-        Achievement.STREAK_30 -> R.string.ach_streak_30
-        Achievement.STREAK_100 -> R.string.ach_streak_100
-        Achievement.FIRST_WEIGHT -> R.string.ach_first_weight
-        Achievement.WEIGHTS_30 -> R.string.ach_weights_30
-        Achievement.GOAL_REACHED -> R.string.ach_goal_reached
-        Achievement.FIRST_REPORT -> R.string.ach_first_report
-        Achievement.FIRST_FEEDBACK -> R.string.ach_first_feedback
-        Achievement.NIGHT_SNACK -> R.string.ach_night_snack
-        Achievement.BARCODE_50 -> R.string.ach_barcode_50
-        Achievement.PHOTO_50 -> R.string.ach_photo_50
-        null -> R.string.ach_tester
-    },
-)
-
-private fun achievementText(a: Achievement): Int = when (a) {
-    Achievement.FIRST_ENTRY -> R.string.ach_first_entry_text
-    Achievement.ENTRIES_100 -> R.string.ach_entries_100_text
-    Achievement.DAYS_7 -> R.string.ach_days_7_text
-    Achievement.DAYS_30 -> R.string.ach_days_30_text
-    Achievement.DAYS_100 -> R.string.ach_days_100_text
-    Achievement.DAYS_365 -> R.string.ach_days_365_text
-    Achievement.STREAK_3 -> R.string.ach_streak_3_text
-    Achievement.STREAK_7 -> R.string.ach_streak_7_text
-    Achievement.STREAK_50 -> R.string.ach_streak_50_text
-    Achievement.STREAK_30 -> R.string.ach_streak_30_text
-    Achievement.STREAK_100 -> R.string.ach_streak_100_text
-    Achievement.FIRST_WEIGHT -> R.string.ach_first_weight_text
-    Achievement.WEIGHTS_30 -> R.string.ach_weights_30_text
-    Achievement.GOAL_REACHED -> R.string.ach_goal_reached_text
-    Achievement.FIRST_REPORT -> R.string.ach_first_report_text
-    Achievement.FIRST_FEEDBACK -> R.string.ach_first_feedback_text
-    Achievement.NIGHT_SNACK -> R.string.ach_night_snack_text
-    Achievement.BARCODE_50 -> R.string.ach_barcode_50_text
-    Achievement.PHOTO_50 -> R.string.ach_photo_50_text
 }

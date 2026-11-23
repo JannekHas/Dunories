@@ -116,11 +116,13 @@ test("Freunde sehen nur Freigegebenes, standardmäßig privat", () => {
   const p = cleanSocialProfile({ name: "Tim", badge: "days_7", streak: 12, achievements: ["days_7", "<x>"] });
   assert.deepEqual(p.achievements, ["days_7"]);
   const view = friendView({ ...p, code: "ABCD-EFGH" });
-  assert.deepEqual(view, { code: "ABCD-EFGH", name: "Tim", badge: null, achievements: null, streak: null, best: null });
+  assert.deepEqual(view, { code: "ABCD-EFGH", name: "Tim", avatar: null, badge: null, achievements: null, streak: null, best: null });
   const shared = friendView({ ...cleanSocialProfile({ name: "Tim", badge: "days_7", streak: 12, share: { streak: true, badges: true } }), code: "X" });
   assert.equal(shared.streak, 12);
   assert.equal(shared.best, 12); // ohne Angabe = aktuelle Serie
   assert.equal(cleanSocialProfile({ streak: 5, best: 81 }).best, 81);
+  assert.equal(cleanSocialProfile({ avatar: "06_panda" }).avatar, "06_panda");
+  assert.equal(cleanSocialProfile({ avatar: "<img>" }).avatar, null);
   assert.equal(cleanSocialProfile({ streak: 9, best: 3 }).best, 9); // nie kleiner als aktuell
   assert.equal(shared.badge, "days_7");
   assert.equal(shared.achievements, null);

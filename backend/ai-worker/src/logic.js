@@ -134,6 +134,8 @@ export function cleanSocialProfile(body) {
   const name = String(body.name ?? "").trim().slice(0, 60);
   const keys = Array.isArray(body.achievements) ? body.achievements.filter((k) => typeof k === "string" && /^[a-z0-9_]{1,30}$/.test(k)).slice(0, 100) : [];
   const badge = typeof body.badge === "string" && /^[a-z0-9_]{1,30}$/.test(body.badge) ? body.badge : null;
+  // Avatar = Schlüssel eines festen Motivs aus der App (z. B. „06_panda“), nie ein Bild.
+  const avatar = typeof body.avatar === "string" && /^[a-z0-9_]{1,30}$/.test(body.avatar) ? body.avatar : null;
   const streak = Number.isInteger(body.streak) && body.streak >= 0 && body.streak < 100000 ? body.streak : 0;
   // Längste Serie (seit 0.7.0, auch aus YAZIO übernommen); nie kleiner als die aktuelle.
   const best = Number.isInteger(body.best) && body.best >= 0 && body.best < 100000 ? Math.max(body.best, streak) : streak;
@@ -141,6 +143,7 @@ export function cleanSocialProfile(body) {
   return {
     name,
     badge,
+    avatar,
     streak,
     best,
     achievements: keys,
@@ -155,6 +158,8 @@ export function friendView(p) {
   return {
     code: p.code,
     name: p.name || "",
+    // Avatar ist wie der Name immer sichtbar (nur ein Motiv aus der App).
+    avatar: p.avatar ?? null,
     badge: p.shareBadges ? p.badge : null,
     achievements: p.shareAchievements ? p.achievements : null,
     streak: p.shareStreak ? p.streak : null,

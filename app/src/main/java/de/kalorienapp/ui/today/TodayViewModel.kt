@@ -119,11 +119,11 @@ class TodayViewModel(
 ) : ViewModel() {
 
     /** Neu freigeschalteter Erfolg (Level & Erfolge an) → kurze Karte oben auf „Heute“. */
-    val newAchievement: StateFlow<de.kalorienapp.domain.Gamification.Achievement?> =
+    val newAchievement: StateFlow<de.kalorienapp.domain.Gamification.Progress?> =
         kotlinx.coroutines.flow.combine(game.state, settings.gamificationEnabled) { g, on -> if (on) g.newlyUnlocked.firstOrNull() else null }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun achievementSeen(achievement: de.kalorienapp.domain.Gamification.Achievement) = game.markCelebrated(listOf(achievement))
+    fun achievementSeen(achievement: de.kalorienapp.domain.Gamification.Progress) = game.markCelebrated(listOf(achievement))
 
     /** Tester-Belohnungsprogramm: neu bewertetes Feedback → einmal „Danke, du hast x Punkte bekommen“. */
     private val _reward = MutableStateFlow<de.kalorienapp.account.AiStatus?>(null)

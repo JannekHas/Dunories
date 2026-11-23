@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erzeugt aus event-silvester.svg mit design/abzeichen/svg2vd_full.py -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:pathData="M25.0 18.0 L32.0 18.0 M23.5 21.5 L28.5 26.5 M20.0 23.0 L20.0 30.0 M16.5 21.5 L11.5 26.5 M15.0 18.0 L8.0 18.0 M16.5 14.5 L11.5 9.5 M20.0 13.0 L20.0 6.0 M23.5 14.5 L28.5 9.5 "
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M38 44 V32"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M38 19.5 Q38 25 43.5 25 Q38 25 38 30.5 Q38 25 32.5 25 Q38 25 38 19.5 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M42 7 Q42 10 45 10 Q42 10 42 13 Q42 10 39 10 Q42 10 42 7 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

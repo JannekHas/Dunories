@@ -83,6 +83,8 @@ object BackupFormat {
         val shareStreak: Boolean? = null,
         /** Aus YAZIO übernommene Serie („laufend;längste;Tag“). */
         val importedStreak: String? = null,
+        /** Gewählter Avatar (Schlüssel). */
+        val avatar: String? = null,
     )
 
     enum class Problem { NOT_A_BACKUP, NEWER_APP }
