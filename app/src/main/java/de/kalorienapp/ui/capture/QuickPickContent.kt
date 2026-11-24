@@ -17,6 +17,9 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import de.kalorienapp.domain.model.Leftover
+import de.kalorienapp.ui.leftover.LeftoverInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -34,6 +37,8 @@ import de.kalorienapp.ui.food.trimDecimalZero
 /** Favoriten und häufig Gegessenes auswählen (Mehrfachauswahl) → bearbeitbarer Vorschlag. */
 @Composable
 fun QuickPickContent(
+    leftovers: List<Leftover>,
+    onTakeLeftover: (Leftover) -> Unit,
     combos: List<MealCombo>,
     onRemoveCombo: (Long) -> Unit,
     favorites: List<FavoriteFood>,
@@ -49,6 +54,20 @@ fun QuickPickContent(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(vertical = 8.dp),
         ) {
+            // Reste stehen ganz oben (nur wenn welche offen sind) – Antippen öffnet „Wie viel isst du davon?“.
+            if (leftovers.isNotEmpty()) {
+                item(key = "leftoverHeader") { SectionHeader(stringResource(R.string.quick_leftovers)) }
+                items(leftovers, key = { "leftover:${it.id}" }) { leftover ->
+                    ListItem(
+                        modifier = Modifier.clickable { onTakeLeftover(leftover) },
+                        headlineContent = { Text(leftover.name) },
+                        supportingContent = { LeftoverInfo(leftover) },
+                        trailingContent = {
+                            TextButton(onClick = { onTakeLeftover(leftover) }) { Text(stringResource(R.string.leftover_take)) }
+                        },
+                    )
+                }
+            }
             if (combos.isNotEmpty()) {
                 item(key = "comboHeader") { SectionHeader(stringResource(R.string.quick_combos)) }
                 items(combos, key = { CaptureViewModel.comboKey(it) }) { combo ->
@@ -71,7 +90,7 @@ fun QuickPickContent(
                     )
                 }
             }
-            if (favorites.isEmpty() && frequent.isEmpty() && combos.isEmpty()) {
+            if (favorites.isEmpty() && frequent.isEmpty() && combos.isEmpty() && leftovers.isEmpty()) {
                 item(key = "empty") {
                     Text(
                         stringResource(R.string.quick_empty),

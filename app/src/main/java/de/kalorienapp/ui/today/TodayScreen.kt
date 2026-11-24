@@ -90,6 +90,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.kalorienapp.R
+import de.kalorienapp.data.repository.LeftoverUndo
+import de.kalorienapp.domain.Leftovers
+import de.kalorienapp.domain.model.Leftover
+import de.kalorienapp.ui.leftover.GroupDishDialog
+import de.kalorienapp.ui.leftover.LeftoverSuggestionRow
+import de.kalorienapp.ui.leftover.PartialDialog
+import de.kalorienapp.ui.leftover.TakeLeftoverDialog
 import de.kalorienapp.ui.components.BehaviorTipSlot
 import de.kalorienapp.domain.BehaviorTip
 import de.kalorienapp.ui.components.LocalWeightEnabled
@@ -195,6 +202,76 @@ fun TodayScreen(
                 scope.launch { snackbarHostState.showSnackbar(comboSaved.format(name)) }
             },
             onDismiss = { comboToSave = null },
+        )
+    }
+    // Reste / offene Mengen: zusammenfassen, nicht alles gegessen, Rest eintragen/einfrieren/verwerfen – mit „Rückgängig“.
+    val leftoverSuggestion by viewModel.leftoverSuggestion.collectAsStateWithLifecycle()
+    var groupDialog by remember { mutableStateOf<MealGroup?>(null) }
+    var partialEntry by remember { mutableStateOf<FoodEntry?>(null) }
+    var takeLeftover by remember { mutableStateOf<Pair<Leftover, MealType>?>(null) }
+    val groupedMessage = stringResource(R.string.leftover_grouped)
+    val groupedRestMessage = stringResource(R.string.leftover_grouped_rest)
+    val keptMessage = stringResource(R.string.leftover_kept)
+    val takenMessage = stringResource(R.string.leftover_taken)
+    val discardedMessage = stringResource(R.string.leftover_discarded)
+    val frozenMessage = stringResource(R.string.leftover_frozen_done)
+    val leftoverUndoLabel = stringResource(R.string.undo)
+    fun leftoverSnackbar(message: String, undo: LeftoverUndo?) {
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            val result = snackbarHostState.showSnackbar(
+                message,
+                actionLabel = undo?.let { leftoverUndoLabel },
+                duration = SnackbarDuration.Long,
+            )
+            if (result == SnackbarResult.ActionPerformed && undo != null) viewModel.undoLeftover(undo)
+        }
+    }
+    fun discardLeftover(leftover: Leftover) {
+        viewModel.discardLeftover(leftover) { leftoverSnackbar(discardedMessage.format(leftover.name), it) }
+    }
+    fun freezeLeftover(leftover: Leftover) {
+        viewModel.freezeLeftover(leftover, true)
+        leftoverSnackbar(frozenMessage.format(leftover.name), null)
+    }
+    groupDialog?.let { group ->
+        GroupDishDialog(
+            entries = group.entries,
+            onConfirm = { entries, name, amount ->
+                groupDialog = null
+                viewModel.groupDish(entries, name, amount) { undo ->
+                    leftoverSnackbar((if (undo.restId != 0L) groupedRestMessage else groupedMessage).format(name), undo)
+                }
+            },
+            onDismiss = { groupDialog = null },
+        )
+    }
+    partialEntry?.let { entry ->
+        PartialDialog(
+            entry = entry,
+            onConfirm = { amount ->
+                partialEntry = null
+                viewModel.partial(entry, amount) { leftoverSnackbar(keptMessage.format(entry.name), it) }
+            },
+            onDismiss = { partialEntry = null },
+        )
+    }
+    takeLeftover?.let { (leftover, meal) ->
+        TakeLeftoverDialog(
+            leftover = leftover,
+            onTake = { amount ->
+                takeLeftover = null
+                viewModel.takeLeftover(leftover, amount, meal) { leftoverSnackbar(takenMessage.format(leftover.name), it) }
+            },
+            onFreeze = { frozen ->
+                viewModel.freezeLeftover(leftover, frozen)
+                takeLeftover = leftover.copy(frozen = frozen) to meal
+            },
+            onDiscard = {
+                takeLeftover = null
+                discardLeftover(leftover)
+            },
+            onDismiss = { takeLeftover = null },
         )
     }
     val deletedMessage = stringResource(R.string.entry_deleted)
@@ -513,6 +590,15 @@ fun TodayScreen(
                     onDelete = ::deleteWithUndo,
                     onToggleFavorite = ::toggleFavorite,
                     onSaveCombo = { comboToSave = group },
+                    onGroupDish = { groupDialog = group },
+                    onPartial = { partialEntry = it },
+                    leftovers = leftoverSuggestion?.takeIf { it.meal == group.mealType }?.items.orEmpty(),
+                    today = state.date,
+                    onTakeLeftover = { takeLeftover = it to group.mealType },
+                    onLeftoverNotToday = viewModel::leftoverNotToday,
+                    onLeftoverStillGood = viewModel::leftoverStillGood,
+                    onFreezeLeftover = ::freezeLeftover,
+                    onDiscardLeftover = ::discardLeftover,
                     planItems = plan?.byMeal?.get(group.mealType).orEmpty(),
                     onPlanApply = { applyPlan(listOf(group.mealType)) },
                     onPlanAdjust = { plan?.dayIndex?.let { onAdjustPlan(state.date, group.mealType, it) } },
@@ -918,6 +1004,15 @@ private fun MealCard(
     onDelete: (FoodEntry) -> Unit,
     onToggleFavorite: (FoodEntry) -> Unit,
     onSaveCombo: () -> Unit,
+    onGroupDish: () -> Unit,
+    onPartial: (FoodEntry) -> Unit,
+    leftovers: List<Leftover>,
+    today: LocalDate,
+    onTakeLeftover: (Leftover) -> Unit,
+    onLeftoverNotToday: (Leftover) -> Unit,
+    onLeftoverStillGood: (Leftover) -> Unit,
+    onFreezeLeftover: (Leftover) -> Unit,
+    onDiscardLeftover: (Leftover) -> Unit,
     planItems: List<MealPlanItem> = emptyList(),
     onPlanApply: () -> Unit = {},
     onPlanAdjust: () -> Unit = {},
@@ -975,6 +1070,12 @@ private fun MealCard(
                                 text = { Text(stringResource(R.string.combo_save)) },
                                 onClick = { menu = false; onSaveCombo() },
                             )
+                            if (Leftovers.groupable(group.entries).size >= 2) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.leftover_group)) },
+                                    onClick = { menu = false; onGroupDish() },
+                                )
+                            }
                         }
                     }
                 }
@@ -983,6 +1084,19 @@ private fun MealCard(
         // Ernährungsplan: leere Mahlzeit → „Laut Plan: …“ mit „Wie geplant“ / „Anpassen“.
         if (group.entries.isEmpty() && planItems.isNotEmpty() && dragState.entry == null) {
             PlanSuggestionRow(planItems, group.mealType.neonColor, onPlanApply, onPlanAdjust)
+        }
+        // Reste: „Rest da: Chili“ in der nächsten leeren Mittag-/Abend-Mahlzeit von heute.
+        if (group.entries.isEmpty() && leftovers.isNotEmpty() && dragState.entry == null) {
+            LeftoverSuggestionRow(
+                leftovers = leftovers,
+                today = today,
+                color = group.mealType.neonColor,
+                onTake = onTakeLeftover,
+                onNotToday = onLeftoverNotToday,
+                onStillGood = onLeftoverStillGood,
+                onFreeze = onFreezeLeftover,
+                onDiscard = onDiscardLeftover,
+            )
         }
         // Gezogene Zeile zieht sich zusammen; an der Landestelle geht eine Lücke in der Farbe der Mahlzeit auf.
         val dragged = dragState.entry
@@ -997,6 +1111,7 @@ private fun MealCard(
                 onClick = { onEdit(entry) },
                 onDelete = { onDelete(entry) },
                 onToggleFavorite = { onToggleFavorite(entry) },
+                onPartial = { onPartial(entry) },
             )
         }
         if (slotIndex >= visible.size) DropSlot(dragState, group.mealType.neonColor)
@@ -1011,6 +1126,7 @@ private fun EntryRow(
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onPartial: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val n = entry.nutrients
@@ -1042,6 +1158,14 @@ private fun EntryRow(
                             },
                             onClick = { menuOpen = false; onToggleFavorite() },
                         )
+                        if ((entry.amount ?: 0.0) > 0) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.leftover_partial)) },
+                                // Kein passendes Symbol in den Kern-Icons → Platzhalter, damit der Text bündig bleibt
+                                leadingIcon = { Box(Modifier.size(24.dp)) },
+                                onClick = { menuOpen = false; onPartial() },
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.delete)) },
                             leadingIcon = { Icon(Icons.Filled.Delete, null) },

@@ -94,6 +94,8 @@ class CaptureViewModel(
     private val ownBarcodes: de.kalorienapp.data.db.dao.OwnBarcodeDao? = null,
     /** Gemeinsame Barcode-Sammlung: Etikett-Werte unbekannter Produkte teilen. */
     private val community: de.kalorienapp.data.remote.BarcodeCommunityClient? = null,
+    /** Reste / offene Mengen – in der Schnellauswahl oben (nicht im Ernährungsplan). */
+    private val leftoverRepository: de.kalorienapp.data.repository.LeftoverRepository? = null,
 ) : ViewModel() {
 
     /** Im Vorschlag selbst angelegte (abgetippte) Lebensmittel – zählen für den Tipp „Barcode statt Abtippen“. */
@@ -114,6 +116,30 @@ class CaptureViewModel(
         CaptureUiState(mealType = MealType.fromRouteArg(route.mealType) ?: MealType.forHour(LocalTime.now().hour)),
     )
     val state: StateFlow<CaptureUiState> = _state.asStateFlow()
+
+    /** Offene Reste (auch eingefrorene) – nur beim normalen Erfassen, nicht im Ernährungsplan. */
+    val leftovers: StateFlow<List<de.kalorienapp.domain.model.Leftover>> =
+        (leftoverRepository?.open?.takeIf { !planMode } ?: kotlinx.coroutines.flow.flowOf(emptyList()))
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Rest (ganz oder teilweise) direkt in den Tag/die Mahlzeit dieses Erfassens eintragen. */
+    fun takeLeftover(leftover: de.kalorienapp.domain.model.Leftover, amount: Double, onDone: () -> Unit) {
+        val repository = leftoverRepository ?: return
+        if (saving) return
+        saving = true
+        viewModelScope.launch {
+            repository.take(leftover, amount, LocalDate.ofEpochDay(route.epochDay), _state.value.mealType)
+            onDone()
+        }
+    }
+
+    fun freezeLeftover(leftover: de.kalorienapp.domain.model.Leftover, frozen: Boolean) {
+        viewModelScope.launch { leftoverRepository?.update(leftover.copy(frozen = frozen)) }
+    }
+
+    fun discardLeftover(leftover: de.kalorienapp.domain.model.Leftover) {
+        viewModelScope.launch { leftoverRepository?.discard(leftover) }
+    }
 
     val combos: StateFlow<List<MealCombo>> =
         library.combos.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

@@ -1359,4 +1359,44 @@
     <string name="account_delete_text">Dein Konto und alle Sicherungen in der Cloud werden endgültig gelöscht. Die Daten auf diesem Handy bleiben. Zum Bestätigen tippe diesen Code ab:</string>
     <string name="account_delete_code">Code</string>
     <string name="account_delete_confirm">Endgültig löschen</string>
+
+    <!-- Reste / offene Mengen (Nov. 2026) -->
+    <string name="leftover_group">Als Gericht zusammenfassen</string>
+    <string name="leftover_group_hint">Wähle die Zutaten. Was du nicht isst, bleibt als Rest offen und zählt erst, wenn du es einträgst.</string>
+    <string name="leftover_name">Name des Gerichts</string>
+    <string name="leftover_name_placeholder">z. B. Chili</string>
+    <string name="leftover_ingredients">Zutaten</string>
+    <string name="leftover_eaten_title">Wie viel hast du gegessen?</string>
+    <string name="leftover_take_amount">Wie viel isst du davon?</string>
+    <string name="leftover_all">Alles</string>
+    <string name="leftover_amount">Menge</string>
+    <string name="leftover_of_total">von %1$s %2$s</string>
+    <string name="leftover_preview">Du: %1$s · Rest: %2$s</string>
+    <string name="leftover_preview_all">Du: %1$s · kein Rest</string>
+    <string name="leftover_preview_take">%1$s · danach noch %2$s %3$s übrig</string>
+    <string name="leftover_preview_take_all">%1$s · danach ist der Rest aufgebraucht</string>
+    <string name="leftover_confirm_group">Zusammenfassen</string>
+    <string name="leftover_partial">Nicht alles gegessen</string>
+    <string name="leftover_partial_hint">Nur der gegessene Teil zählt für den Tag. Der Rest bleibt offen, auch eingefroren, so lange du willst.</string>
+    <string name="leftover_keep_rest">Rest aufheben</string>
+    <string name="leftover_grouped">Zu „%1$s“ zusammengefasst</string>
+    <string name="leftover_grouped_rest">Zu „%1$s“ zusammengefasst, der Rest bleibt offen</string>
+    <string name="leftover_kept">Rest von „%1$s“ bleibt offen</string>
+    <string name="leftover_suggestion">Rest da: %1$s</string>
+    <string name="leftover_info">%1$s %2$s · %3$s · von %4$s</string>
+    <string name="leftover_take">Eintragen</string>
+    <string name="leftover_take_title">Rest: %1$s</string>
+    <string name="leftover_not_today">Heute nicht vorschlagen</string>
+    <string name="leftover_still_there">Seit %1$d Tagen offen. Noch gut?</string>
+    <string name="leftover_still_good">Noch gut</string>
+    <string name="leftover_freeze">Eingefroren</string>
+    <string name="leftover_freeze_hint">Wird nicht mehr auf „Heute“ vorgeschlagen, bleibt aber beim Eintragen unter „Reste“.</string>
+    <string name="leftover_frozen_label">❄ eingefroren</string>
+    <string name="leftover_discard">Verwerfen</string>
+    <string name="leftover_taken">„%1$s“ eingetragen</string>
+    <string name="leftover_discarded">Rest „%1$s“ verworfen</string>
+    <string name="leftover_frozen_done">„%1$s“ als eingefroren gemerkt</string>
+    <string name="quick_leftovers">Reste</string>
+    <string name="leftover_day_today">heute</string>
+    <string name="leftover_day_yesterday">gestern</string>
 </resources>

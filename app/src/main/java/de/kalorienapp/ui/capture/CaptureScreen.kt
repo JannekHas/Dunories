@@ -150,7 +150,29 @@ fun CaptureScreen(
                 val combos by viewModel.combos.collectAsStateWithLifecycle()
                 val favorites by viewModel.favorites.collectAsStateWithLifecycle()
                 val frequent by viewModel.frequent.collectAsStateWithLifecycle()
+                val leftovers by viewModel.leftovers.collectAsStateWithLifecycle()
+                var takeLeftover by remember { mutableStateOf<de.kalorienapp.domain.model.Leftover?>(null) }
+                takeLeftover?.let { leftover ->
+                    de.kalorienapp.ui.leftover.TakeLeftoverDialog(
+                        leftover = leftover,
+                        onTake = { amount ->
+                            takeLeftover = null
+                            viewModel.takeLeftover(leftover, amount, onClose)
+                        },
+                        onFreeze = { frozen ->
+                            viewModel.freezeLeftover(leftover, frozen)
+                            takeLeftover = leftover.copy(frozen = frozen)
+                        },
+                        onDiscard = {
+                            takeLeftover = null
+                            viewModel.discardLeftover(leftover)
+                        },
+                        onDismiss = { takeLeftover = null },
+                    )
+                }
                 QuickPickContent(
+                    leftovers = leftovers,
+                    onTakeLeftover = { takeLeftover = it },
                     combos = combos,
                     onRemoveCombo = viewModel::removeCombo,
                     favorites = favorites,

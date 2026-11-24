@@ -90,6 +90,9 @@ sealed interface TodayBehaviorTip {
     data class Move(override val meal: MealType) : TodayBehaviorTip
 }
 
+/** Offene Reste, die in der leeren Mahlzeit [meal] vorgeschlagen werden (nur heute). */
+data class LeftoverSuggestion(val meal: MealType, val items: List<de.kalorienapp.domain.model.Leftover>)
+
 /** Ernährungsplan für den angezeigten Tag (null = Plan aus). */
 data class TodayPlan(
     /** Plan-Tag (0-basiert) oder null, wenn der Tag außerhalb des Durchlaufs liegt. */
@@ -116,6 +119,7 @@ class TodayViewModel(
     private val account: de.kalorienapp.account.AccountManager,
     private val premium: de.kalorienapp.account.PremiumClient,
     private val game: de.kalorienapp.data.repository.GameRepository,
+    private val leftovers: de.kalorienapp.data.repository.LeftoverRepository,
 ) : ViewModel() {
 
     /** Neu freigeschalteter Erfolg (Level & Erfolge an) → kurze Karte oben auf „Heute“. */
@@ -414,6 +418,59 @@ class TodayViewModel(
     fun restoreActivity(entry: ActivityEntry) {
         viewModelScope.launch { activityRepository.save(entry) }
     }
+
+    // --- Reste / offene Mengen ---
+
+    /** Vorschlag in der nächsten leeren Mittag-/Abend-Mahlzeit von heute (höchstens zwei Reste). */
+    val leftoverSuggestion: StateFlow<LeftoverSuggestion?> = combine(uiState, leftovers.open) { state, open ->
+        if (!state.loaded || !state.isToday || open.isEmpty()) return@combine null
+        val empty = state.meals.filter { it.entries.isEmpty() }.map { it.mealType }.toSet()
+        val meal = de.kalorienapp.domain.Leftovers.suggestionMeal(java.time.LocalTime.now().hour, empty) ?: return@combine null
+        open.filter { de.kalorienapp.domain.Leftovers.suggestOn(it, state.date, meal) }
+            .take(MAX_LEFTOVER_SUGGESTIONS)
+            .takeIf { it.isNotEmpty() }
+            ?.let { LeftoverSuggestion(meal, it) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun groupDish(entries: List<FoodEntry>, name: String, eatenAmount: Double, onDone: (de.kalorienapp.data.repository.LeftoverUndo.Grouped) -> Unit) {
+        viewModelScope.launch { leftovers.group(entries, name, eatenAmount)?.let(onDone) }
+    }
+
+    fun partial(entry: FoodEntry, eatenAmount: Double, onDone: (de.kalorienapp.data.repository.LeftoverUndo.Partial) -> Unit) {
+        viewModelScope.launch { leftovers.partial(entry, eatenAmount)?.let(onDone) }
+    }
+
+    fun takeLeftover(
+        leftover: de.kalorienapp.domain.model.Leftover,
+        amount: Double,
+        meal: MealType,
+        onDone: (de.kalorienapp.data.repository.LeftoverUndo) -> Unit,
+    ) {
+        viewModelScope.launch { onDone(leftovers.take(leftover, amount, date.value, meal)) }
+    }
+
+    fun discardLeftover(leftover: de.kalorienapp.domain.model.Leftover, onDone: (de.kalorienapp.data.repository.LeftoverUndo) -> Unit) {
+        viewModelScope.launch { onDone(leftovers.discard(leftover)) }
+    }
+
+    fun freezeLeftover(leftover: de.kalorienapp.domain.model.Leftover, frozen: Boolean) {
+        viewModelScope.launch { leftovers.update(leftover.copy(frozen = frozen)) }
+    }
+
+    /** ✕: heute nicht mehr vorschlagen. */
+    fun leftoverNotToday(leftover: de.kalorienapp.domain.model.Leftover) {
+        viewModelScope.launch { leftovers.update(leftover.copy(dismissedDay = LocalDate.now())) }
+    }
+
+    /** „Noch gut“ → in ein paar Tagen wieder fragen. */
+    fun leftoverStillGood(leftover: de.kalorienapp.domain.model.Leftover) {
+        viewModelScope.launch { leftovers.update(leftover.copy(checkedDay = LocalDate.now())) }
+    }
+
+    fun undoLeftover(undo: de.kalorienapp.data.repository.LeftoverUndo) {
+        viewModelScope.launch { leftovers.undo(undo) }
+    }
 }
 
 private const val STREAK_LOOKBACK_DAYS = 90L
+private const val MAX_LEFTOVER_SUGGESTIONS = 2
