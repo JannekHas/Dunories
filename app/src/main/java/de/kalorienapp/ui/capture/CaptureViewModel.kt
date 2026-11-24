@@ -50,6 +50,8 @@ data class ProposalItem(
     val dish: DishForm? = null,
     /** Beim Speichern als eigener Barcode merken (Open Food Facts kennt ihn nicht bzw. schon eigener). */
     val barcode: String? = null,
+    /** Aus der gemeinsamen Sammlung (von anderen Nutzern) → Hinweis „kurz prüfen“. */
+    val community: Boolean = false,
 ) {
     val isValid: Boolean get() = dish?.isValid ?: form.isValid
 
@@ -90,6 +92,8 @@ class CaptureViewModel(
     private val settings: AppSettings? = null,
     /** Eigene Barcodes (Produkte, die Open Food Facts nicht kennt) – gemerkt beim Speichern. */
     private val ownBarcodes: de.kalorienapp.data.db.dao.OwnBarcodeDao? = null,
+    /** Gemeinsame Barcode-Sammlung: Etikett-Werte unbekannter Produkte teilen. */
+    private val community: de.kalorienapp.data.remote.BarcodeCommunityClient? = null,
 ) : ViewModel() {
 
     /** Im Vorschlag selbst angelegte (abgetippte) Lebensmittel – zählen für den Tipp „Barcode statt Abtippen“. */
@@ -387,9 +391,10 @@ class CaptureViewModel(
         val dao = ownBarcodes ?: return
         items.filter { it.barcode != null && it.dish == null && it.form.isValid }.forEach { item ->
             val f = item.form
-            dao.upsert(
-                de.kalorienapp.data.db.entity.OwnBarcodeEntity.of(item.barcode!!, f.name.trim(), f.amountValue, f.unit, f.per100Nutrients()),
-            )
+            val per100 = f.per100Nutrients()
+            dao.upsert(de.kalorienapp.data.db.entity.OwnBarcodeEntity.of(item.barcode!!, f.name.trim(), f.amountValue, f.unit, per100))
+            // Nur abgelesene Nährwerttabellen gehen in die gemeinsame Sammlung (keine Schätzungen, nichts Getipptes).
+            if (item.source == EntrySource.LABEL) community?.submit(item.barcode, f.name.trim(), f.unit, per100)
         }
     }
 
@@ -410,7 +415,7 @@ class CaptureViewModel(
                         proposalOf(analyzer.analyzePhotoWithAi(input.uri, onStage, input.hint), pendingBarcode)
                     } else {
                         when (val result = analyzer.analyzePhoto(input.uri, onStage)) {
-                            is AnalysisResult.Drafts -> proposalOf(result.drafts, result.ownBarcode)
+                            is AnalysisResult.Drafts -> proposalOf(result.drafts, result.ownBarcode, result.community)
                             is AnalysisResult.UnknownBarcode -> {
                                 pendingBarcode = result.barcode
                                 CaptureStep.UnknownBarcode(result.barcode)
@@ -427,18 +432,19 @@ class CaptureViewModel(
         }
     }
 
-    private fun proposalOf(drafts: List<FoodDraft>, barcode: String? = null): CaptureStep.Proposal {
-        val items = itemsOf(drafts, barcode)
+    private fun proposalOf(drafts: List<FoodDraft>, barcode: String? = null, community: Boolean = false): CaptureStep.Proposal {
+        val items = itemsOf(drafts, barcode, community)
         // Einzelne Komponente (z. B. Barcode) direkt aufgeklappt, damit die Menge sofort eingetragen werden kann.
         return CaptureStep.Proposal(items, expandedId = items.singleOrNull()?.id)
     }
 
     /** Erkanntes → Vorschlag; ein einzelnes Lebensmittel bekommt den Barcode zum Merken. */
-    private fun itemsOf(drafts: List<FoodDraft>, barcode: String?): List<ProposalItem> {
+    private fun itemsOf(drafts: List<FoodDraft>, barcode: String?, community: Boolean = false): List<ProposalItem> {
         val single = drafts.singleOrNull()?.takeIf { it.components.size < 2 }
         return drafts.map { d ->
             val dish = d.takeIf { it.components.size >= 2 }?.let { DishForm.ofDraft(it) { nextItemId++ } }
-            ProposalItem(nextItemId++, FoodForm.of(d.name, d.amount, d.unit, d.per100), d.source, dish, barcode.takeIf { d === single })
+            val mine = d === single
+            ProposalItem(nextItemId++, FoodForm.of(d.name, d.amount, d.unit, d.per100), d.source, dish, barcode.takeIf { mine }, community && mine)
         }
     }
 

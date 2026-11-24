@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { invitePage, storeLink } from "../src/invite.js";
+import { cleanBarcode, cleanBarcodeSubmission, pickBarcodeEntry } from "../src/barcodes.js";
 import { referralError, referralQualifies, cleanSocialProfile, friendView, makeFriendCode, normalizeFriendCode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays, modelFromPath, normalizeCode, safeEqual, tierOf } from "../src/logic.js";
 
 test("Tag nach deutscher Zeit: 23:30 UTC im Winter ist schon der nächste Tag", () => {
@@ -156,4 +157,23 @@ test("Einladungsseite: Vorschau, Code, Name maskiert, Store-Link mit Referrer", 
   assert.equal(storeLink("https://play.google.com/store/apps/details?id=de.dunories", "ABCD-2345"),
     "https://play.google.com/store/apps/details?id=de.dunories&referrer=code%3DABCD-2345");
   assert.ok(invitePage({ code: "ABCD-2345", name: "", base: "b", storeUrl: "https://s?id=1" }).includes("Im Play Store laden"));
+});
+
+test("Barcode-Sammlung: nur saubere Meldungen, Mehrheit gewinnt", () => {
+  assert.equal(cleanBarcode("4260999170016"), "4260999170016");
+  assert.equal(cleanBarcode("12ab"), null);
+  const ok = { barcode: "4260999170016", name: " Dinkel-Toast ", unit: "g", per100: { kcal: 248, proteinG: 10.5, carbsG: 42, fatG: 3.1, saltG: 1.1 } };
+  const clean = cleanBarcodeSubmission(ok);
+  assert.equal(clean.name, "Dinkel-Toast");
+  assert.equal(clean.per100.sugarG, null);
+  assert.equal(cleanBarcodeSubmission({ ...ok, per100: { ...ok.per100, kcal: 2000 } }), null);
+  assert.equal(cleanBarcodeSubmission({ ...ok, per100: { kcal: 300, proteinG: 60, carbsG: 60, fatG: 10 } }), null);
+  assert.equal(cleanBarcodeSubmission({ ...ok, unit: "stk" }), null);
+  const a = { name: "Toast", unit: "g", per100: { kcal: 248, proteinG: 10.5, carbsG: 42, fatG: 3.1 }, ts: 1 };
+  const b = { name: "Toast falsch", unit: "g", per100: { kcal: 900, proteinG: 1, carbsG: 1, fatG: 99 }, ts: 2 };
+  const c = { name: "Dinkeltoast", unit: "g", per100: { kcal: 249, proteinG: 10.4, carbsG: 42.2, fatG: 3 }, ts: 3 };
+  const picked = pickBarcodeEntry([a, b, c]);
+  assert.equal(picked.count, 2);
+  assert.equal(picked.name, "Dinkeltoast");
+  assert.equal(pickBarcodeEntry([]), null);
 });

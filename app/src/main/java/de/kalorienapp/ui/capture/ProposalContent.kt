@@ -262,6 +262,9 @@ private fun ProposalItemCard(
                 Text(
                     if (dish != null) {
                         stringResource(R.string.dish_source_line, stringResource(item.source.proposalLabelRes), dish.parts.size)
+                    } else if (item.community) {
+                        // Aus der gemeinsamen Sammlung – von anderen per Etikett erfasst
+                        stringResource(R.string.proposal_source_community)
                     } else if (item.source == EntrySource.BARCODE && item.barcode != null) {
                         // Aus den eigenen Barcodes, nicht aus Open Food Facts
                         stringResource(R.string.proposal_source_own_barcode)

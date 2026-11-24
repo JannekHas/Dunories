@@ -4,6 +4,7 @@
 import { DurableObject } from "cloudflare:workers";
 import inviteCard from "./invite-card.png";
 import { invitePage } from "./invite.js";
+import { MAX_BARCODE_SUBMISSIONS_PER_DAY, cleanBarcode, cleanBarcodeSubmission, pickBarcodeEntry } from "./barcodes.js";
 import {
   FEEDBACK_POINTS, KINDS, MAX_FRIENDS, REFERRAL_POINTS, referralError, referralQualifies, cleanSocialProfile, friendView, makeFriendCode, normalizeFriendCode, MAX_BODY, MAX_FEEDBACK_PER_MINUTE, base64UrlDecode, cleanFeedback, berlinDay, checkClaims, decide, extend, fileFromPath, isoWeek, makeCode, minusDays,
   modelFromPath, normalizeCode, safeEqual, tierOf,
@@ -77,6 +78,21 @@ async function app(request, env, url) {
   if (url.pathname === "/v1/rewards/seen" && request.method === "POST") {
     await usage.rewardsSeen(person.uid);
     return json({ ok: true });
+  }
+
+  // ---------- Gemeinsame Barcode-Sammlung (jede Anmeldung, auch Gast; zählt nicht als KI-Aufruf) ----------
+  if (url.pathname.startsWith("/v1/barcode/") && request.method === "GET") {
+    const code = cleanBarcode(url.pathname.slice("/v1/barcode/".length));
+    if (!code) return json({ error: "bad_request" }, 400);
+    const entry = await usage.barcodeLookup(code);
+    return json(entry ? { found: true, ...entry } : { found: false });
+  }
+  if (url.pathname === "/v1/barcode" && request.method === "POST") {
+    const sub = cleanBarcodeSubmission(await request.json().catch(() => null));
+    if (!sub) return json({ error: "bad_request" }, 400);
+    // Nur eine pseudonyme Kennung (Hash) – damit jede Person pro Barcode nur einmal zählt.
+    const submitter = (await sha256(`barcode:${person.uid}`)).slice(0, 24);
+    return json({ result: await usage.barcodeSubmit(submitter, sub, now) });
   }
 
   // ---------- Freunde (nur mit Konto) ----------
@@ -432,6 +448,8 @@ export class Usage extends DurableObject {
         share_achievements INTEGER NOT NULL DEFAULT 0, share_streak INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS friend_requests (from_uid TEXT NOT NULL, to_uid TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (from_uid, to_uid));
       CREATE TABLE IF NOT EXISTS friends (a TEXT NOT NULL, b TEXT NOT NULL, since INTEGER NOT NULL, PRIMARY KEY (a, b));
+      CREATE TABLE IF NOT EXISTS barcode_submissions (barcode TEXT NOT NULL, submitter TEXT NOT NULL, name TEXT NOT NULL,
+        unit TEXT NOT NULL, per100 TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (barcode, submitter));
       CREATE TABLE IF NOT EXISTS referrals (invitee TEXT PRIMARY KEY, inviter TEXT NOT NULL, ts INTEGER NOT NULL, rewarded INTEGER);
     `);
     // Spalte „best“ (längste Serie) kam nach dem ersten Deploy dazu.
@@ -599,6 +617,23 @@ export class Usage extends DurableObject {
       p.shareBadges ? 1 : 0, p.shareAchievements ? 1 : 0, p.shareStreak ? 1 : 0, now,
     );
     return this.socialState(uid);
+  }
+
+  barcodeLookup(code) {
+    const rows = this.sql.exec("SELECT name, unit, per100, ts FROM barcode_submissions WHERE barcode = ?", code).toArray()
+      .map((r) => ({ name: r.name, unit: r.unit, per100: JSON.parse(r.per100), ts: r.ts }));
+    return pickBarcodeEntry(rows);
+  }
+
+  barcodeSubmit(submitter, sub, now) {
+    const today = this.sql.exec("SELECT COUNT(*) AS n FROM barcode_submissions WHERE submitter = ? AND ts > ?", submitter, now - 86400000).toArray()[0].n;
+    if (today >= MAX_BARCODE_SUBMISSIONS_PER_DAY) return "too_many";
+    this.sql.exec(
+      `INSERT INTO barcode_submissions (barcode, submitter, name, unit, per100, ts) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT (barcode, submitter) DO UPDATE SET name = excluded.name, unit = excluded.unit, per100 = excluded.per100, ts = excluded.ts`,
+      sub.barcode, submitter, sub.name, sub.unit, JSON.stringify(sub.per100), now,
+    );
+    return "ok";
   }
 
   /** Nur der Name zum Freundescode (Einladungsseite) – sonst nichts. */

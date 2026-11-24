@@ -11,8 +11,11 @@ import de.kalorienapp.domain.model.FoodDraft
 enum class AnalysisStage { BARCODE, PRODUCT_LOOKUP, AI }
 
 sealed interface AnalysisResult {
-    /** [ownBarcode] = aus den eigenen Barcodes gefunden (Korrekturen beim Speichern aktualisieren ihn). */
-    data class Drafts(val drafts: List<FoodDraft>, val ownBarcode: String? = null) : AnalysisResult
+    /**
+     * [ownBarcode] = aus den eigenen Barcodes oder der gemeinsamen Sammlung (beim Speichern lokal gemerkt);
+     * [community] = von anderen Nutzern → „kurz prüfen“.
+     */
+    data class Drafts(val drafts: List<FoodDraft>, val ownBarcode: String? = null, val community: Boolean = false) : AnalysisResult
 
     /** Barcode erkannt, aber nicht in Open Food Facts → Nutzer kann KI-Analyse oder manuelle Eingabe wählen. */
     data class UnknownBarcode(val barcode: String) : AnalysisResult
@@ -28,6 +31,8 @@ class FoodAnalyzer(
     private val gemini: GeminiClient,
     /** Eigene Barcodes: zuerst lokal nachsehen (Produkte, die Open Food Facts nicht kennt). */
     private val ownBarcodes: de.kalorienapp.data.db.dao.OwnBarcodeDao? = null,
+    /** Gemeinsame Sammlung: Produkte, die andere per Etikett erfasst haben (wenn Open Food Facts sie nicht kennt). */
+    private val community: de.kalorienapp.data.remote.BarcodeCommunityClient? = null,
 ) {
     private val barcodeScanner = BarcodeScanner()
 
@@ -38,8 +43,9 @@ class FoodAnalyzer(
         if (barcode != null) {
             onStage(AnalysisStage.PRODUCT_LOOKUP)
             ownBarcodes?.find(barcode)?.let { return AnalysisResult.Drafts(listOf(it.toDraft()), ownBarcode = barcode) }
-            val draft = openFoodFacts.lookup(barcode) ?: return AnalysisResult.UnknownBarcode(barcode)
-            return AnalysisResult.Drafts(listOf(draft))
+            openFoodFacts.lookup(barcode)?.let { return AnalysisResult.Drafts(listOf(it)) }
+            community?.lookup(barcode)?.let { return AnalysisResult.Drafts(listOf(it), ownBarcode = barcode, community = true) }
+            return AnalysisResult.UnknownBarcode(barcode)
         }
         return AnalysisResult.Drafts(analyzeWithAi(bitmap, onStage))
     }

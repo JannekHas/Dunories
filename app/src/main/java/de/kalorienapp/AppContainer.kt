@@ -85,11 +85,17 @@ class AppContainer(context: Context) {
     /** KI-Stufe (Gast/Konto/Premium) und Code-Einlösen beim Worker. */
     val premium = de.kalorienapp.account.PremiumClient(BuildConfig.AI_BASE_URL) { account.aiToken() }
 
+    /** Gemeinsame Barcode-Sammlung (unbekannte Produkte, per Etikett von anderen erfasst). */
+    val barcodeCommunity by lazy {
+        de.kalorienapp.data.remote.BarcodeCommunityClient(BuildConfig.AI_BASE_URL, { account.aiToken() }, appScope)
+    }
+
     val foodAnalyzer = FoodAnalyzer(
         context = context,
         openFoodFacts = OpenFoodFactsClient(context.cacheDir),
         gemini = gemini,
         ownBarcodes = database.ownBarcodeDao(),
+        community = barcodeCommunity,
     )
 
     val mealPlanImporter = MealPlanImporter(context, GeminiMealPlanAnalyzer(gemini))
