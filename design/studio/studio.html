@@ -53,12 +53,18 @@
   /* =================== Folie (Originalgröße, Vorschau wird skaliert) =================== */
   .slide { width: 1080px; height: 1350px; position: relative; overflow: hidden; background: #14141B; color: #F2F2F7;
     font-family: "Bricolage", sans-serif; padding: 92px 88px; display: flex; flex-direction: column; }
-  .slide.story { height: 1920px; padding-top: 220px; padding-bottom: 260px; }
+  .slide.story { height: 1920px; padding: 270px 150px 520px 80px; }
+  /* Sicherheitsrahmen (nur Editor): Bereiche, die TikTok mit Bedienelementen überdeckt */
+  .safe { position: absolute; inset: 0; z-index: 9; pointer-events: none; display: none; }
+  .show-safe .safe { display: block; }
+  .safe div { position: absolute; background: rgba(255,77,109,.28); outline: 2px dashed rgba(255,77,109,.9); }
+  .safe span { position: absolute; font: 700 28px system-ui; color: #fff; background: rgba(255,77,109,.9); padding: 4px 10px; border-radius: 8px; }
+  .exporting .safe, body.render .safe { display: none !important; }
   .slide .bg { position: absolute; inset: 0; z-index: 0;
     background: radial-gradient(900px 700px at 0% 0%, rgba(124,58,237,.38), transparent 70%),
                 radial-gradient(900px 800px at 100% 100%, rgba(14,116,144,.38), transparent 70%),
                 radial-gradient(700px 600px at 85% 15%, var(--glow), transparent 70%); }
-  .slide > *:not(.bg):not(.deco) { position: relative; z-index: 1; }
+  .slide > *:not(.bg):not(.deco):not(.safe) { position: relative; z-index: 1; }
   .slide .top { display: flex; align-items: center; gap: 18px; font-weight: 700; font-size: 38px; min-height: 72px; }
   .slide .top img { width: 72px; height: 72px; border-radius: 18px; }
   .slide .top .count { margin-left: auto; font-size: 30px; color: #A3A3B8; font-weight: 600; }
@@ -100,7 +106,7 @@
   .slide .phone .empty { color: #A3A3B8; font-size: 34px; padding: 60px; text-align: center; }
   .slide .inset { position: absolute; left: 70px; bottom: 120px; width: 330px; height: 330px; border-radius: 40px; overflow: hidden;
     border: 8px solid var(--accent); box-shadow: 0 20px 60px rgba(0,0,0,.6); transform: rotate(-6deg); z-index: 2; }
-  .slide.story .inset { bottom: 330px; }
+  .slide.story .inset { bottom: 560px; }
   .slide .inset img { width: 100%; height: 100%; object-fit: cover; }
   .slide.t-abschluss h2 { font-size: 132px; margin-top: auto; }
   .slide .cta { margin-top: 60px; align-self: flex-start; background: var(--accent); color: #0A0A0A; font-weight: 800; font-size: 50px;
@@ -186,6 +192,8 @@
     <button id="newProject">Leere Slideshow</button>
     <button id="dupProject">Kopie</button>
     <button id="delProject" class="danger">Slideshow löschen</button>
+    <label class="check" style="margin:0"><input type="checkbox" id="safeToggle"> TikTok-Sicherheitsrahmen</label>
+    <label class="check" style="margin:0"><input type="checkbox" id="hideTopToggle"> Kopfzeile aus</label>
     <span style="flex:1"></span>
     <button id="exportOne">Folie als Bild</button>
     <button id="exportAll" class="primary">Alle Folien als Bilder</button>
@@ -198,7 +206,7 @@
     <div class="stage"><div id="preview"></div></div>
     <div class="editor" id="editor"></div>
   </div>
-  <p class="hint">Tipp: *Wort* färbt ein Wort in der Akzentfarbe. Looks abwechseln, damit kein Beitrag wie der letzte aussieht – und das Logo eher klein oder erst am Ende.</p>
+  <p class="hint">TikTok überdeckt oben, rechts und unten Teile des Bildes – „TikTok-Sicherheitsrahmen“ zeigt die Bereiche (wird nicht exportiert); „Kopfzeile aus“ für TikTok-Versionen von 4:5-Beiträgen. Tipp: *Wort* färbt ein Wort in der Akzentfarbe. Looks abwechseln, damit kein Beitrag wie der letzte aussieht – und das Logo eher klein oder erst am Ende.</p>
 </section>
 
 <section class="page" id="hooks">
@@ -335,6 +343,7 @@ const HOOKS = [
 ];
 
 // ---------------- Speicher ----------------
+const hash = new URLSearchParams(location.hash.slice(1));
 const KEY = "dunories-studio-v1";
 function load() {
   let s = null;
@@ -370,6 +379,7 @@ function slideEl(s, i, n, format) {
   el.style.setProperty("--accent", accent);
   el.style.setProperty("--glow", accent + (look === "hell" ? "55" : "40"));
   const showBrand = s.brand !== false && look !== "notiz" && s.layout !== "abschluss";
+  const hideTop = state && project && project().hideTop && !hash.has("render");
   const bars = `<div class="bars"><span style="width:240px;background:${accent}"></span><span style="width:90px;background:#FFD400"></span><span style="width:50px;background:#3DDC84"></span></div>`;
   const big = s.big ? `<div class="big${isEmoji(s.big) ? " emoji" : ""}">${esc(s.big)}</div>` : "";
   let body = "";
@@ -388,7 +398,14 @@ function slideEl(s, i, n, format) {
     body = `${look === "foto" ? "" : `<img class="bigicon" src="${ASSETS.logo}">`}${big}<h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}
       ${s.cta ? `<div class="cta">${esc(s.cta)}</div>` : ""}`;
   }
-  const top = look === "notiz"
+  const safe = format === "story"
+    ? `<div class="safe"><div style="left:0;right:0;top:0;height:250px"></div><span style="left:20px;top:200px">TikTok: Reiter/Suche</span>
+        <div style="right:0;top:250px;width:140px;bottom:480px"></div><span style="right:10px;top:900px">Knöpfe</span>
+        <div style="left:0;right:0;bottom:0;height:480px"></div><span style="left:20px;bottom:420px">Name · Titel · Beschreibung</span></div>`
+    : `<div class="safe"><div style="left:0;right:0;top:0;height:130px"></div><span style="left:20px;top:84px">TikTok: Suchleiste</span>
+        <div style="right:0;top:130px;width:130px;bottom:80px"></div><span style="right:10px;top:700px">Knöpfe</span>
+        <div style="left:0;right:0;bottom:0;height:80px"></div></div>`;
+  const top = hideTop ? "" : look === "notiz"
     ? `<div class="notehead"><span>‹ Notizen</span><span>Fertig</span></div><div class="notedate">${NOTE_DATE()}</div>`
     : `<div class="top">${showBrand ? `<img src="${ASSETS.logo}">Dunories` : ""}<span class="count">${i + 1}/${n}</span></div>`;
   const photo = img(s.bg);
@@ -397,7 +414,7 @@ function slideEl(s, i, n, format) {
     : `<div class="bg"></div>`;
   // Titel im Neon-Look ohne Riesen-Zahl: große Ringe angeschnitten als Blickfang (wirkt sonst leer)
   const deco = s.layout === "titel" && look === "neon" && !s.big ? `<img class="deco" src="${ASSETS.logo}">` : "";
-  el.innerHTML = `${bg}${deco}${top}${body}`;
+  el.innerHTML = `${bg}${deco}${top}${body}${safe}`;
   return el;
 }
 
@@ -414,6 +431,7 @@ function scaled(el, width) {
 function renderAll() {
   const p = project();
   document.getElementById("format").value = p.format;
+  document.getElementById("hideTopToggle").checked = !!p.hideTop;
   const ps = document.getElementById("projectSel");
   ps.innerHTML = state.projects.map((x, i) => `<option value="${i}">${esc(x.name)}</option>`).join("");
   ps.value = state.current;
@@ -530,6 +548,9 @@ async function exportSlide(i) {
 document.getElementById("exportOne").onclick = () => exportSlide(sel);
 document.getElementById("exportAll").onclick = async () => { for (let i = 0; i < project().slides.length; i++) await exportSlide(i); };
 document.getElementById("format").onchange = (e) => { project().format = e.target.value; save(); renderAll(); };
+// Sicherheitsrahmen: nur Anzeige im Editor (wird nie exportiert)
+document.getElementById("safeToggle").onchange = (e) => document.getElementById("folien").classList.toggle("show-safe", e.target.checked);
+document.getElementById("hideTopToggle").onchange = (e) => { project().hideTop = e.target.checked; save(); renderAll(); };
 document.getElementById("projectSel").onchange = (e) => { state.current = +e.target.value; sel = 0; save(); renderAll(); };
 const presetSel = document.getElementById("presetSel");
 presetSel.innerHTML += Object.entries(PRESETS).map(([k, v]) => `<option value="${k}">${esc(v.name)}</option>`).join("");
@@ -655,7 +676,6 @@ document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => tab(b.
 
 // Render-Modus: …/Dunories-Studio.html#render=1&preset=anfang&format=post – nur eine Folie in Originalgröße
 // (für Bild-Export per Kommandozeile).
-const hash = new URLSearchParams(location.hash.slice(1));
 if (hash.has("render")) {
   document.body.classList.add("render");
   const p = structuredClone(PRESETS[hash.get("preset") || "anfang"]);
