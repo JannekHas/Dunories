@@ -1,6 +1,8 @@
 package de.kalorienapp.ui.capture
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.size
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -62,6 +64,10 @@ fun ProposalContent(
     modifier: Modifier,
 ) {
     val isAi = proposal.items.any { it.source == EntrySource.AI_PHOTO || it.source == EntrySource.AI_TEXT }
+    val ui by viewModel.state.collectAsStateWithLifecycle()
+    // Weiteres Foto: für den Vorschlag (null) oder als Zutat eines Gerichts (dessen id).
+    var photoTarget by rememberSaveable { mutableStateOf<Long?>(null) }
+    val launcher = rememberAddPhotoLauncher { uri, label -> viewModel.addPhoto(uri, photoTarget, label) }
     Column(modifier.imePadding()) {
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -88,14 +94,47 @@ fun ProposalContent(
                     onChange = { viewModel.updateItem(item.id, it) },
                     onDishChange = { viewModel.updateDish(item.id, it) },
                     onAddDishPart = { viewModel.addDishPart(item.id) },
+                    addPartButton = {
+                        AddWithPhotoButton(
+                            text = stringResource(R.string.dish_add_component),
+                            enabled = !ui.adding,
+                            launcher = AddPhotoLauncher(
+                                camera = { photoTarget = item.id; launcher.camera(it) },
+                                gallery = { photoTarget = item.id; launcher.gallery() },
+                            ),
+                            onType = { viewModel.addDishPart(item.id) },
+                        )
+                    },
                     onSplitDish = { viewModel.splitDish(item.id) },
                     onRemove = { viewModel.removeItem(item.id) },
                 )
             }
             item(key = "add") {
-                OutlinedButton(onClick = viewModel::addItem, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.Add, contentDescription = null)
-                    Text(stringResource(R.string.proposal_add_item), modifier = Modifier.padding(start = 8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (ui.adding) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            androidx.compose.material3.CircularProgressIndicator(
+                                Modifier.size(18.dp), strokeWidth = 2.dp, color = Neon.Cyan,
+                            )
+                            Text(stringResource(R.string.add_photo_running), style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                    ui.addError?.let { error ->
+                        Text(
+                            stringResource(if (error == CaptureError.NO_FOOD) R.string.add_photo_nothing else error.messageRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    AddWithPhotoButton(
+                        text = stringResource(R.string.proposal_add_item),
+                        enabled = !ui.adding,
+                        launcher = AddPhotoLauncher(
+                            camera = { photoTarget = null; viewModel.clearAddError(); launcher.camera(it) },
+                            gallery = { photoTarget = null; viewModel.clearAddError(); launcher.gallery() },
+                        ),
+                        onType = viewModel::addItem,
+                    )
                 }
             }
         }
@@ -179,6 +218,7 @@ private fun ProposalItemCard(
     onChange: (FoodForm) -> Unit,
     onDishChange: (DishForm) -> Unit,
     onAddDishPart: () -> Unit,
+    addPartButton: @Composable () -> Unit,
     onSplitDish: () -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -222,6 +262,9 @@ private fun ProposalItemCard(
                 Text(
                     if (dish != null) {
                         stringResource(R.string.dish_source_line, stringResource(item.source.proposalLabelRes), dish.parts.size)
+                    } else if (item.source == EntrySource.BARCODE && item.barcode != null) {
+                        // Aus den eigenen Barcodes, nicht aus Open Food Facts
+                        stringResource(R.string.proposal_source_own_barcode)
                     } else {
                         stringResource(item.source.proposalLabelRes)
                     },
@@ -246,6 +289,7 @@ private fun ProposalItemCard(
                     onChange = onDishChange,
                     onAddPart = onAddDishPart,
                     modifier = Modifier.padding(16.dp),
+                    addPartButton = addPartButton,
                 )
                 TextButton(onClick = onSplitDish, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                     Text(stringResource(R.string.dish_split))

@@ -60,13 +60,15 @@ import de.kalorienapp.data.db.entity.WeightGoalEntity
         MealComboEntity::class,
         MealComboItemEntity::class,
         MealPlanItemEntity::class,
+        de.kalorienapp.data.db.entity.OwnBarcodeEntity::class,
     ],
-    version = 21,
+    version = 22,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun foodEntryDao(): FoodEntryDao
+    abstract fun ownBarcodeDao(): de.kalorienapp.data.db.dao.OwnBarcodeDao
     abstract fun favoriteFoodDao(): FavoriteFoodDao
     abstract fun activityEntryDao(): ActivityEntryDao
     abstract fun weightEntryDao(): WeightEntryDao
@@ -454,6 +456,18 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Eigene Barcodes (Produkte, die Open Food Facts nicht kennt). */
+        val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `own_barcode` (`barcode` TEXT NOT NULL, `name` TEXT NOT NULL, `amount` REAL, " +
+                        "`unit` TEXT NOT NULL, `kcal` REAL NOT NULL, `proteinG` REAL NOT NULL, `carbsG` REAL NOT NULL, " +
+                        "`fatG` REAL NOT NULL, `saturatedFatG` REAL, `sugarG` REAL, `fiberG` REAL, `saltG` REAL, `micros` TEXT, " +
+                        "`updatedAt` INTEGER NOT NULL, PRIMARY KEY(`barcode`))",
+                )
+            }
+        }
+
         private val COMBO_TABLES_SQL = listOf(
             "CREATE TABLE IF NOT EXISTS `meal_combo` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)",
             "CREATE TABLE IF NOT EXISTS `meal_combo_item` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `comboId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `name` TEXT NOT NULL, `amount` REAL NOT NULL, `unit` TEXT NOT NULL, `kcal` REAL NOT NULL, `proteinG` REAL NOT NULL, `carbsG` REAL NOT NULL, `fatG` REAL NOT NULL, `saturatedFatG` REAL, `sugarG` REAL, `fiberG` REAL, `saltG` REAL, FOREIGN KEY(`comboId`) REFERENCES `meal_combo`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
@@ -479,7 +493,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) = insertDefaultCategories(db)
                 })
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22)
                 .build()
     }
 }

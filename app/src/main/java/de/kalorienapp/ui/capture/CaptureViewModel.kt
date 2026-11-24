@@ -24,6 +24,7 @@ import de.kalorienapp.domain.model.FoodEntry
 import de.kalorienapp.domain.model.MealType
 import de.kalorienapp.domain.model.Nutrients
 import de.kalorienapp.ui.food.DishForm
+import de.kalorienapp.ui.food.DishPart
 import de.kalorienapp.ui.food.FoodForm
 import de.kalorienapp.ui.navigation.CaptureRoute
 import kotlinx.coroutines.CancellationException
@@ -47,6 +48,8 @@ data class ProposalItem(
     val source: EntrySource,
     /** Gericht mit Zutaten (z. B. Spaghetti Bolognese); null = einzelnes Lebensmittel in [form]. */
     val dish: DishForm? = null,
+    /** Beim Speichern als eigener Barcode merken (Open Food Facts kennt ihn nicht bzw. schon eigener). */
+    val barcode: String? = null,
 ) {
     val isValid: Boolean get() = dish?.isValid ?: form.isValid
 
@@ -73,6 +76,9 @@ data class CaptureUiState(
     val description: String = "",
     /** Kamera/Galerie lesen eine Nährwerttabelle ab statt Essen zu schätzen. */
     val labelMode: Boolean = false,
+    /** Im Vorschlag wird gerade ein weiteres Foto erkannt. */
+    val adding: Boolean = false,
+    val addError: CaptureError? = null,
 )
 
 class CaptureViewModel(
@@ -82,6 +88,8 @@ class CaptureViewModel(
     private val library: FoodLibraryRepository,
     private val mealPlan: MealPlanRepository,
     private val settings: AppSettings? = null,
+    /** Eigene Barcodes (Produkte, die Open Food Facts nicht kennt) – gemerkt beim Speichern. */
+    private val ownBarcodes: de.kalorienapp.data.db.dao.OwnBarcodeDao? = null,
 ) : ViewModel() {
 
     /** Im Vorschlag selbst angelegte (abgetippte) Lebensmittel – zählen für den Tipp „Barcode statt Abtippen“. */
@@ -124,6 +132,9 @@ class CaptureViewModel(
     }
 
     private var lastInput: Input? = null
+
+    /** Zuletzt unbekannter Barcode: Was danach per Etikett/KI erkannt wird, merkt sich Dunories dafür. */
+    private var pendingBarcode: String? = null
     private var analysisJob: Job? = null
     private var nextItemId = 1L
 
@@ -305,11 +316,13 @@ class CaptureViewModel(
         }
         viewModelScope.launch {
             if (planMode) {
+                rememberBarcodes(proposal.items)
                 if (route.planItemId != 0L) mealPlan.delete(route.planItemId)
                 mealPlan.addFromEntries(route.planDay, entries)
                 onDone()
                 return@launch
             }
+            rememberBarcodes(proposal.items)
             // Gleiches von eben (z. B. zweiter Salami-Stick) fließt in den vorhandenen Eintrag ein.
             entries.forEach { repository.add(it) }
             de.kalorienapp.ui.entry.countTyped(settings, proposal.items.count { it.id in typedItemIds && it.dish == null })
@@ -317,23 +330,91 @@ class CaptureViewModel(
         }
     }
 
+    /**
+     * Weiteres Foto im Vorschlag (Tester-Wunsch: nicht alles eintippen): Essen, Barcode oder – mit [label] – eine
+     * Nährwerttabelle. Das Ergebnis wird angehängt; mit [dishId] als weitere Zutaten dieses Gerichts.
+     * Unbekannter Barcode → Etikett auf demselben Foto lesen, sonst schätzen; der Barcode wird dafür gemerkt.
+     */
+    fun addPhoto(uri: Uri, dishId: Long?, label: Boolean) {
+        if (_state.value.adding) return
+        _state.update { it.copy(adding = true, addError = null) }
+        viewModelScope.launch {
+            try {
+                val noStage: (AnalysisStage) -> Unit = {}
+                val (drafts, barcode) = if (label) {
+                    analyzer.analyzeLabel(uri, noStage) to null
+                } else {
+                    when (val result = analyzer.analyzePhoto(uri, noStage)) {
+                        is AnalysisResult.Drafts -> result.drafts to result.ownBarcode
+                        is AnalysisResult.UnknownBarcode -> {
+                            val read = try {
+                                analyzer.analyzeLabel(uri, noStage)
+                            } catch (e: de.kalorienapp.data.remote.gemini.GeminiException) {
+                                if (e.error != de.kalorienapp.data.remote.gemini.GeminiError.NO_FOOD) throw e
+                                emptyList()
+                            }
+                            read.ifEmpty { analyzer.analyzePhotoWithAi(uri, noStage) } to result.barcode
+                        }
+                    }
+                }
+                appendDrafts(drafts, barcode, dishId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update { it.copy(addError = e.toCaptureError()) }
+            } finally {
+                _state.update { it.copy(adding = false) }
+            }
+        }
+    }
+
+    fun clearAddError() = _state.update { it.copy(addError = null) }
+
+    private fun appendDrafts(drafts: List<FoodDraft>, barcode: String?, dishId: Long?) = updateProposal { p ->
+        if (dishId != null) {
+            // Als Zutaten: ein erkanntes Gericht wird in seine Zutaten aufgelöst (nur eine Ebene).
+            val parts = drafts.flatMap { d -> d.components.ifEmpty { listOf(d) } }
+                .map { DishPart(nextItemId++, FoodForm.of(it.name, it.amount, it.unit, it.per100)) }
+            p.copy(items = p.items.map { if (it.id == dishId && it.dish != null) it.copy(dish = it.dish.withAddedParts(parts)) else it })
+        } else {
+            val added = itemsOf(drafts, barcode)
+            p.copy(items = p.items + added, expandedId = added.lastOrNull()?.id ?: p.expandedId)
+        }
+    }
+
+    /** Eigene Barcodes merken bzw. aktualisieren (nur einzelne Lebensmittel, keine Gerichte). */
+    private suspend fun rememberBarcodes(items: List<ProposalItem>) {
+        val dao = ownBarcodes ?: return
+        items.filter { it.barcode != null && it.dish == null && it.form.isValid }.forEach { item ->
+            val f = item.form
+            dao.upsert(
+                de.kalorienapp.data.db.entity.OwnBarcodeEntity.of(item.barcode!!, f.name.trim(), f.amountValue, f.unit, f.per100Nutrients()),
+            )
+        }
+    }
+
     // --- intern ---
 
     private fun analyze(input: Input) {
         lastInput = input
+        // Neues Foto/neue Beschreibung: ein früher unbekannter Barcode gilt nicht mehr (Etikett/KI danach schon).
+        if ((input is Input.Photo && !input.skipBarcode) || input is Input.Text) pendingBarcode = null
         analysisJob?.cancel()
         analysisJob = viewModelScope.launch {
             val onStage: (AnalysisStage) -> Unit = { stage -> setStep(CaptureStep.Analyzing(stage)) }
             try {
                 val step = when (input) {
                     is Input.Text -> proposalOf(analyzer.analyzeText(input.description, onStage))
-                    is Input.Label -> proposalOf(analyzer.analyzeLabel(input.uri, onStage))
+                    is Input.Label -> proposalOf(analyzer.analyzeLabel(input.uri, onStage), pendingBarcode)
                     is Input.Photo -> if (input.skipBarcode) {
-                        proposalOf(analyzer.analyzePhotoWithAi(input.uri, onStage, input.hint))
+                        proposalOf(analyzer.analyzePhotoWithAi(input.uri, onStage, input.hint), pendingBarcode)
                     } else {
                         when (val result = analyzer.analyzePhoto(input.uri, onStage)) {
-                            is AnalysisResult.Drafts -> proposalOf(result.drafts)
-                            is AnalysisResult.UnknownBarcode -> CaptureStep.UnknownBarcode(result.barcode)
+                            is AnalysisResult.Drafts -> proposalOf(result.drafts, result.ownBarcode)
+                            is AnalysisResult.UnknownBarcode -> {
+                                pendingBarcode = result.barcode
+                                CaptureStep.UnknownBarcode(result.barcode)
+                            }
                         }
                     }
                 }
@@ -346,13 +427,19 @@ class CaptureViewModel(
         }
     }
 
-    private fun proposalOf(drafts: List<FoodDraft>): CaptureStep.Proposal {
-        val items = drafts.map { d ->
-            val dish = d.takeIf { it.components.size >= 2 }?.let { DishForm.ofDraft(it) { nextItemId++ } }
-            ProposalItem(nextItemId++, FoodForm.of(d.name, d.amount, d.unit, d.per100), d.source, dish)
-        }
+    private fun proposalOf(drafts: List<FoodDraft>, barcode: String? = null): CaptureStep.Proposal {
+        val items = itemsOf(drafts, barcode)
         // Einzelne Komponente (z. B. Barcode) direkt aufgeklappt, damit die Menge sofort eingetragen werden kann.
         return CaptureStep.Proposal(items, expandedId = items.singleOrNull()?.id)
+    }
+
+    /** Erkanntes → Vorschlag; ein einzelnes Lebensmittel bekommt den Barcode zum Merken. */
+    private fun itemsOf(drafts: List<FoodDraft>, barcode: String?): List<ProposalItem> {
+        val single = drafts.singleOrNull()?.takeIf { it.components.size < 2 }
+        return drafts.map { d ->
+            val dish = d.takeIf { it.components.size >= 2 }?.let { DishForm.ofDraft(it) { nextItemId++ } }
+            ProposalItem(nextItemId++, FoodForm.of(d.name, d.amount, d.unit, d.per100), d.source, dish, barcode.takeIf { d === single })
+        }
     }
 
     companion object {

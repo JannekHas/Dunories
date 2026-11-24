@@ -44,7 +44,7 @@ import kotlinx.coroutines.SupervisorJob
 
 /** Manuelle Dependency Injection: alle app-weiten Abhängigkeiten an einer Stelle. */
 class AppContainer(context: Context) {
-    private val database = AppDatabase.create(context)
+    val database = AppDatabase.create(context)
 
     /** Lebt so lange wie der App-Prozess (Benachrichtigung aktualisieren, Receiver). */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -89,6 +89,7 @@ class AppContainer(context: Context) {
         context = context,
         openFoodFacts = OpenFoodFactsClient(context.cacheDir),
         gemini = gemini,
+        ownBarcodes = database.ownBarcodeDao(),
     )
 
     val mealPlanImporter = MealPlanImporter(context, GeminiMealPlanAnalyzer(gemini))

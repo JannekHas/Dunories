@@ -167,6 +167,7 @@ object AppViewModelProvider {
                 container().foodLibraryRepository,
                 container().mealPlanRepository,
                 container().settings,
+                container().database.ownBarcodeDao(),
             )
         }
     }

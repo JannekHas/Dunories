@@ -195,6 +195,13 @@
     <string name="proposal_title">Vorschlag prüfen</string>
     <string name="proposal_ai_hint">KI-Schätzung – bitte Mengen und Werte prüfen und bei Bedarf anpassen.</string>
     <string name="proposal_add_item">Komponente hinzufügen</string>
+    <string name="proposal_source_own_barcode">Barcode · von dir gespeichert</string>
+    <string name="add_photo_food">Foto: Essen oder Barcode</string>
+    <string name="add_photo_label">Foto: Nährwerttabelle</string>
+    <string name="add_photo_gallery">Aus der Galerie</string>
+    <string name="add_type">Eintippen</string>
+    <string name="add_photo_running">Wird erkannt …</string>
+    <string name="add_photo_nothing">Darauf war nichts zu erkennen. Versuch ein schärferes Foto – oder tipp es ein.</string>
     <string name="proposal_remove_item">Komponente entfernen</string>
     <string name="proposal_unnamed">Ohne Namen</string>
     <string name="proposal_item_summary">%1$s %2$s · %3$s kcal</string>

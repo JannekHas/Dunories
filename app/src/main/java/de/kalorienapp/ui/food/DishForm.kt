@@ -61,6 +61,9 @@ data class DishForm(
 
     fun withNewPart(id: Long) = copy(parts = parts + DishPart(id, FoodForm()), amountInput = null, scaleBase = null)
 
+    /** Weitere Zutaten per Foto/Barcode/Etikett angehängt. */
+    fun withAddedParts(added: List<DishPart>) = copy(parts = parts + added, amountInput = null, scaleBase = null)
+
     /** Zutaten mit gültiger Menge (zum Speichern). */
     fun components(): List<DishComponent> = parts.mapNotNull { part ->
         val amount = part.form.amountValue ?: return@mapNotNull null

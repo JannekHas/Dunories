@@ -11,20 +11,23 @@ import de.kalorienapp.domain.model.FoodDraft
 enum class AnalysisStage { BARCODE, PRODUCT_LOOKUP, AI }
 
 sealed interface AnalysisResult {
-    data class Drafts(val drafts: List<FoodDraft>) : AnalysisResult
+    /** [ownBarcode] = aus den eigenen Barcodes gefunden (Korrekturen beim Speichern aktualisieren ihn). */
+    data class Drafts(val drafts: List<FoodDraft>, val ownBarcode: String? = null) : AnalysisResult
 
     /** Barcode erkannt, aber nicht in Open Food Facts → Nutzer kann KI-Analyse oder manuelle Eingabe wählen. */
     data class UnknownBarcode(val barcode: String) : AnalysisResult
 }
 
 /**
- * Ein-Foto-Erfassung: erst lokal nach Barcode suchen (ML Kit), bei Treffer Open Food Facts,
+ * Ein-Foto-Erfassung: erst lokal nach Barcode suchen (ML Kit), bei Treffer eigene Barcodes, dann Open Food Facts,
  * sonst das Foto an Gemini. Fehler werden als Exceptions weitergereicht (z. B. [de.kalorienapp.data.remote.gemini.GeminiException]).
  */
 class FoodAnalyzer(
     private val context: Context,
     private val openFoodFacts: OpenFoodFactsClient,
     private val gemini: GeminiClient,
+    /** Eigene Barcodes: zuerst lokal nachsehen (Produkte, die Open Food Facts nicht kennt). */
+    private val ownBarcodes: de.kalorienapp.data.db.dao.OwnBarcodeDao? = null,
 ) {
     private val barcodeScanner = BarcodeScanner()
 
@@ -34,6 +37,7 @@ class FoodAnalyzer(
         val barcode = barcodeScanner.scan(bitmap)
         if (barcode != null) {
             onStage(AnalysisStage.PRODUCT_LOOKUP)
+            ownBarcodes?.find(barcode)?.let { return AnalysisResult.Drafts(listOf(it.toDraft()), ownBarcode = barcode) }
             val draft = openFoodFacts.lookup(barcode) ?: return AnalysisResult.UnknownBarcode(barcode)
             return AnalysisResult.Drafts(listOf(draft))
         }

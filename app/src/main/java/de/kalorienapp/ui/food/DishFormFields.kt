@@ -49,6 +49,8 @@ fun DishFormFields(
     modifier: Modifier = Modifier,
     /** Wird zwischen Name und Menge eingefügt (z. B. Mahlzeit-Auswahl). */
     afterName: @Composable () -> Unit = {},
+    /** Eigener Knopf „Zutat hinzufügen“ (im Vorschlag mit Foto/Barcode/Etikett); null = nur eintippen. */
+    addPartButton: (@Composable () -> Unit)? = null,
 ) {
     val unitLabel = stringResource(dish.unit.labelRes)
     var expanded by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -91,9 +93,13 @@ fun DishFormFields(
                 onRemove = { onChange(dish.withoutPart(part.id)) },
             )
         }
-        OutlinedButton(onClick = onAddPart, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Filled.Add, contentDescription = null)
-            Text(stringResource(R.string.dish_add_component), modifier = Modifier.padding(start = 8.dp))
+        if (addPartButton != null) {
+            addPartButton()
+        } else {
+            OutlinedButton(onClick = onAddPart, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Filled.Add, contentDescription = null)
+                Text(stringResource(R.string.dish_add_component), modifier = Modifier.padding(start = 8.dp))
+            }
         }
         DishTotalCard(dish)
     }
