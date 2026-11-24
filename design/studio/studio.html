@@ -218,13 +218,14 @@
       <select id="pPlat" style="max-width:140px"><option>TikTok</option><option>Instagram</option></select>
       <input id="pTitle" placeholder="Hook / Titel des Beitrags" style="max-width:420px">
       <input id="pViews" type="number" min="0" placeholder="Aufrufe" style="max-width:120px">
+      <input id="pLink" placeholder="Link zum Beitrag (Teilen → Link kopieren)" style="max-width:340px">
       <button id="addPost" class="primary">Beitrag eintragen</button>
     </div>
     <table>
-      <thead><tr><th>Datum</th><th>Plattform</th><th>Hook / Titel</th><th>Aufrufe</th><th></th><th>Likes</th><th>Kommentare</th><th>Notiz</th><th></th></tr></thead>
+      <thead><tr><th>Datum</th><th>Plattform</th><th>Hook / Titel</th><th>Aufrufe</th><th>Verlauf</th><th>Likes</th><th>Kommentare</th><th>Notiz</th><th>Stand</th><th></th></tr></thead>
       <tbody id="postRows"></tbody>
     </table>
-    <p class="hint">Zahlen einfach überschreiben, wenn du später nachschaust. Unter ~200 Aufrufen: meist liegt es am Hook (erste Folie) – nur den tauschen.</p>
+    <p class="hint">„Öffnen“ zeigt den Beitrag in Instagram/TikTok – Zahlen dort ablesen und hier überschreiben; der Verlauf merkt sich jeden Tag einen Stand („Stand“ antippen/überfahren zeigt ihn). Automatisch abrufen geht nur über die Business-Schnittstellen der Plattformen. Unter ~200 Aufrufen: meist liegt es am Hook (erste Folie) – nur den tauschen.</p>
   </div>
   <div class="toolbar" style="margin-top:16px">
     <button id="saveJson">JSON speichern (alles)</button>
@@ -584,19 +585,35 @@ function renderPosts() {
   body.innerHTML = "";
   rows.forEach((r) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${esc(r.date)}</td><td>${esc(r.plat)}</td><td>${esc(r.title)}</td>
+    const hist = r.history || [];
+    const growth = hist.length > 1 ? (r.views || 0) - hist[hist.length - 2].views : null;
+    tr.innerHTML = `<td>${esc(r.date)}</td><td>${esc(r.plat)}</td>
+      <td>${esc(r.title)}<div class="row" style="margin-top:4px;gap:6px">
+        <input class="link" value="${esc(r.link)}" placeholder="Link einfügen" style="font-size:12px">
+        ${r.link ? `<button class="open" style="flex:0 0 auto;padding:4px 10px">Öffnen</button>` : ""}</div></td>
       <td><input type="number" min="0" value="${r.views || 0}" style="width:90px"></td>
-      <td style="width:160px"><div class="bar" style="width:${Math.round(((r.views || 0) / max) * 150)}px;background:${(r.views || 0) < 200 ? "var(--red)" : "var(--cyan)"}"></div></td>
+      <td style="width:170px"><div class="bar" style="width:${Math.round(((r.views || 0) / max) * 150)}px;background:${(r.views || 0) < 200 ? "var(--red)" : "var(--cyan)"}"></div>
+        <span class="hint">${growth != null ? `${growth >= 0 ? "+" : ""}${growth.toLocaleString("de-DE")} seit letztem Mal` : ""}</span></td>
       <td><input type="number" min="0" value="${r.likes || 0}" style="width:70px"></td>
       <td><input type="number" min="0" value="${r.comments || 0}" style="width:70px"></td>
-      <td><input value="${esc(r.note)}" placeholder="z. B. anderer Hook"></td>
+      <td><input class="note" value="${esc(r.note)}" placeholder="z. B. anderer Hook"></td>
+      <td class="hint" title="${hist.map((h) => `${h.date}: ${h.views}`).join("\n")}">${esc(r.updated || r.date)}</td>
       <td><button class="danger">✕</button></td>`;
-    const ins = tr.querySelectorAll("input");
-    ins[0].onchange = () => { r.views = +ins[0].value; save(); renderPosts(); };
-    ins[1].onchange = () => { r.likes = +ins[1].value; save(); renderPosts(); };
-    ins[2].onchange = () => { r.comments = +ins[2].value; save(); renderPosts(); };
-    ins[3].onchange = () => { r.note = ins[3].value; save(); };
-    tr.querySelector("button").onclick = () => { state.posts.splice(state.posts.indexOf(r), 1); save(); renderPosts(); };
+    const ins = tr.querySelectorAll("input[type=number]");
+    const today = () => new Date().toISOString().slice(0, 10);
+    // Aufrufe neu eingetragen → Stand + Verlauf (ein Eintrag pro Tag)
+    ins[0].onchange = () => {
+      r.views = +ins[0].value; r.updated = today(); r.history = r.history || [];
+      const last = r.history[r.history.length - 1];
+      if (last && last.date === r.updated) last.views = r.views; else r.history.push({ date: r.updated, views: r.views });
+      save(); renderPosts();
+    };
+    ins[1].onchange = () => { r.likes = +ins[1].value; r.updated = today(); save(); renderPosts(); };
+    ins[2].onchange = () => { r.comments = +ins[2].value; r.updated = today(); save(); renderPosts(); };
+    tr.querySelector("input.note").onchange = (e) => { r.note = e.target.value; save(); };
+    tr.querySelector("input.link").onchange = (e) => { r.link = e.target.value.trim(); save(); renderPosts(); };
+    const open = tr.querySelector("button.open"); if (open) open.onclick = () => window.open(r.link, "_blank", "noopener");
+    tr.querySelector("button.danger").onclick = () => { state.posts.splice(state.posts.indexOf(r), 1); save(); renderPosts(); };
     body.appendChild(tr);
   });
   const total = rows.reduce((a, r) => a + (r.views || 0), 0);
@@ -612,10 +629,12 @@ function renderPosts() {
 }
 document.getElementById("pDate").valueAsDate = new Date();
 document.getElementById("addPost").onclick = () => {
-  const t = document.getElementById("pTitle"), v = document.getElementById("pViews");
+  const t = document.getElementById("pTitle"), v = document.getElementById("pViews"), l = document.getElementById("pLink");
   if (!t.value.trim()) return;
-  state.posts.push({ date: document.getElementById("pDate").value, plat: document.getElementById("pPlat").value, title: t.value.trim(), views: +v.value || 0, likes: 0, comments: 0, note: "" });
-  t.value = ""; v.value = ""; save(); renderPosts();
+  const today = new Date().toISOString().slice(0, 10);
+  state.posts.push({ date: document.getElementById("pDate").value, plat: document.getElementById("pPlat").value, title: t.value.trim(),
+    link: l.value.trim(), views: +v.value || 0, likes: 0, comments: 0, note: "", updated: today, history: [{ date: today, views: +v.value || 0 }] });
+  t.value = ""; v.value = ""; l.value = ""; save(); renderPosts();
 };
 document.getElementById("saveJson").onclick = () => {
   const a = document.createElement("a");
