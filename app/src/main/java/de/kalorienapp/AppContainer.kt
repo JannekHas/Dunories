@@ -147,6 +147,8 @@ class AppContainer(context: Context) {
 
     /** Ziele aus Benachrichtigungen (Wiegen, Wochenauswertung). */
     val navRequests = NavRequests()
+    /** Fotos/Beschreibungen, die die KI später im Hintergrund erkennt (bei Überlastung/ohne Netz). */
+    val aiQueue = de.kalorienapp.capture.AiQueue(context)
 
     init {
         // Einladung (Testphase): Wer eingeladen wurde, meldet seine Tage mit Einträgen, bis die 7 geschafft sind –

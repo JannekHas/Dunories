@@ -156,6 +156,8 @@ fun TodayScreen(
     onOpenPlan: () -> Unit = {},
     /** Plan-Mahlzeit als bearbeitbaren Vorschlag öffnen („Anpassen“). */
     onAdjustPlan: (date: LocalDate, mealType: MealType, dayIndex: Int) -> Unit = { _, _, _ -> },
+    /** Im Hintergrund erkanntes (oder noch wartendes) Foto öffnen. */
+    onOpenQueued: (de.kalorienapp.capture.QueuedJob) -> Unit = {},
     viewModel: TodayViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -206,6 +208,7 @@ fun TodayScreen(
     }
     // Reste / offene Mengen: zusammenfassen, nicht alles gegessen, Rest eintragen/einfrieren/verwerfen – mit „Rückgängig“.
     val leftoverSuggestion by viewModel.leftoverSuggestion.collectAsStateWithLifecycle()
+    val queued by viewModel.queued.collectAsStateWithLifecycle()
     var groupDialog by remember { mutableStateOf<MealGroup?>(null) }
     var partialEntry by remember { mutableStateOf<FoodEntry?>(null) }
     var takeLeftover by remember { mutableStateOf<Pair<Leftover, MealType>?>(null) }
@@ -602,6 +605,9 @@ fun TodayScreen(
                     planItems = plan?.byMeal?.get(group.mealType).orEmpty(),
                     onPlanApply = { applyPlan(listOf(group.mealType)) },
                     onPlanAdjust = { plan?.dayIndex?.let { onAdjustPlan(state.date, group.mealType, it) } },
+                    queued = queued.filter { it.mealType == group.mealType },
+                    onOpenQueued = onOpenQueued,
+                    onDiscardQueued = { viewModel.discardQueued(it.id) },
                 )
             }
             }
@@ -1016,6 +1022,9 @@ private fun MealCard(
     planItems: List<MealPlanItem> = emptyList(),
     onPlanApply: () -> Unit = {},
     onPlanAdjust: () -> Unit = {},
+    queued: List<de.kalorienapp.capture.QueuedJob> = emptyList(),
+    onOpenQueued: (de.kalorienapp.capture.QueuedJob) -> Unit = {},
+    onDiscardQueued: (de.kalorienapp.capture.QueuedJob) -> Unit = {},
 ) {
     var menu by remember { mutableStateOf(false) }
     // Karte wächst/schrumpft weich, wenn beim Ziehen die Lücke auf- oder zugeht.
@@ -1080,6 +1089,10 @@ private fun MealCard(
                     }
                 }
             }
+        }
+        // KI-Warteschlange: Foto wird im Hintergrund erkannt bzw. ist fertig zum Prüfen.
+        if (queued.isNotEmpty() && dragState.entry == null) {
+            QueuedRows(queued, group.mealType.neonColor, onOpenQueued, onDiscardQueued)
         }
         // Ernährungsplan: leere Mahlzeit → „Laut Plan: …“ mit „Wie geplant“ / „Anpassen“.
         if (group.entries.isEmpty() && planItems.isNotEmpty() && dragState.entry == null) {

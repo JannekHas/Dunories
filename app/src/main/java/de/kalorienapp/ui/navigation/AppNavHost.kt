@@ -209,6 +209,10 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                 is NavRequest.Capture -> navController.navigate(
                     CaptureRoute(epochDay = java.time.LocalDate.now().toEpochDay(), mealType = request.mealType),
                 )
+                // Im Hintergrund erkanntes Foto → Erfassen mit dem fertigen Vorschlag (Tag/Mahlzeit des Fotos).
+                is NavRequest.AiResult -> container.aiQueue.get(request.queueId)?.let { job ->
+                    navController.navigate(CaptureRoute(epochDay = job.date.toEpochDay(), mealType = job.mealType.name, queueId = job.id))
+                }
                 null -> Unit
             }
         }
@@ -271,6 +275,9 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onFeedback = { navController.navigate(FeedbackRoute) },
                             onOpenSocial = { navController.navigateTopLevel(SocialRoute) },
                             onGoalEnded = { navController.navigate(GoalCelebrationRoute(it)) },
+                            onOpenQueued = { job ->
+                                navController.navigate(CaptureRoute(epochDay = job.date.toEpochDay(), mealType = job.mealType.name, queueId = job.id))
+                            },
                             requestedDay = container.navRequests.showDay.collectAsStateWithLifecycle().value,
                             onDayShown = container.navRequests::dayShown,
                             onSetGoal = { navController.navigate(GoalRoute) },
@@ -368,6 +375,9 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                                 navController.navigate(
                                     CaptureRoute(epochDay = date.toEpochDay(), mealType = meal.name, planDay = day, fromPlan = true),
                                 )
+                            },
+                            onOpenQueued = { job ->
+                                navController.navigate(CaptureRoute(epochDay = job.date.toEpochDay(), mealType = job.mealType.name, queueId = job.id))
                             },
                             onBack = { navController.popBackStack() },
                         )

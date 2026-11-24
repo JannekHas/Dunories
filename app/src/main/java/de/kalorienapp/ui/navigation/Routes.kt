@@ -109,6 +109,8 @@ data class CaptureRoute(
     val planItemId: Long = 0,
     /** true = „Anpassen“ auf „Heute“: Plan-Mahlzeit als Vorschlag, gespeichert wird ein normaler Eintrag. */
     val fromPlan: Boolean = false,
+    /** Foto/Beschreibung aus der KI-Warteschlange ([de.kalorienapp.capture.AiQueue]) öffnen. */
+    val queueId: String? = null,
 )
 
 /** entryId = 0 → neuer Eintrag für [epochDay]; mealType = Name eines [de.kalorienapp.domain.model.MealType] oder null. */

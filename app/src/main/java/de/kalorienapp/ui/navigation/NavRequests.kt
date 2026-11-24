@@ -16,6 +16,9 @@ sealed interface NavRequest {
 
     /** Erfassen für eine Mahlzeit (aus der Eintrage-Erinnerung). */
     data class Capture(val mealType: String?) : NavRequest
+
+    /** Im Hintergrund erkanntes Foto prüfen (KI-Warteschlange). */
+    data class AiResult(val queueId: String) : NavRequest
 }
 
 class NavRequests {
@@ -42,6 +45,7 @@ class NavRequests {
         _pending.value = when (intent?.getStringExtra(Notifications.EXTRA_OPEN)) {
             Notifications.OPEN_WEIGH -> NavRequest.Weigh
             Notifications.OPEN_CAPTURE -> NavRequest.Capture(intent.getStringExtra(Notifications.EXTRA_MEAL))
+            Notifications.OPEN_AI_RESULT -> intent.getStringExtra(Notifications.EXTRA_QUEUE_ID)?.let { NavRequest.AiResult(it) }
             Notifications.OPEN_REPORT -> intent.getLongExtra(Notifications.EXTRA_REPORT_ID, 0L)
                 .takeIf { it > 0 }?.let { NavRequest.Report(it) }
             else -> return

@@ -18,6 +18,8 @@ object Notifications {
     const val CHANNEL_CALORIES = "calories"
     const val CHANNEL_REMINDERS = "reminders"
     const val CHANNEL_REPORTS = "reports"
+    /** Im Hintergrund erkanntes Essen (KI-Warteschlange). */
+    const val CHANNEL_AI = "ai_results"
 
     /** Eigene Gruppen: die dauerhafte Kalorien-Anzeige wird nie mit Erinnerungen zusammengefasst. */
     const val GROUP_CALORIES = "de.kalorienapp.calories"
@@ -37,6 +39,9 @@ object Notifications {
     const val OPEN_WEIGH = "weigh"
     const val OPEN_REPORT = "report"
     const val OPEN_CAPTURE = "capture"
+    /** Im Hintergrund erkanntes Foto prüfen ([EXTRA_QUEUE_ID]). */
+    const val OPEN_AI_RESULT = "ai_result"
+    const val EXTRA_QUEUE_ID = "de.kalorienapp.QUEUE_ID"
     const val EXTRA_MEAL = "de.kalorienapp.MEAL"
 
     fun createChannels(context: Context) {
@@ -49,6 +54,7 @@ object Notifications {
                 },
                 NotificationChannel(CHANNEL_REMINDERS, context.getString(R.string.channel_reminders), NotificationManager.IMPORTANCE_DEFAULT),
                 NotificationChannel(CHANNEL_REPORTS, context.getString(R.string.channel_reports), NotificationManager.IMPORTANCE_DEFAULT),
+                NotificationChannel(CHANNEL_AI, context.getString(R.string.channel_ai), NotificationManager.IMPORTANCE_DEFAULT),
             ),
         )
     }
@@ -66,12 +72,14 @@ object Notifications {
         open: String? = null,
         reportId: Long? = null,
         meal: String? = null,
+        queueId: String? = null,
     ): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             open?.let { putExtra(EXTRA_OPEN, it) }
             reportId?.let { putExtra(EXTRA_REPORT_ID, it) }
             meal?.let { putExtra(EXTRA_MEAL, it) }
+            queueId?.let { putExtra(EXTRA_QUEUE_ID, it) }
             putExtra(EXTRA_POSTED_AT, System.currentTimeMillis())
         }
         return PendingIntent.getActivity(

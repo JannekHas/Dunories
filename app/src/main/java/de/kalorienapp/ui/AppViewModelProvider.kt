@@ -46,6 +46,7 @@ object AppViewModelProvider {
                 container().premium,
                 container().gameRepository,
                 container().leftoverRepository,
+                container().aiQueue,
             )
         }
         initializer {
@@ -171,6 +172,7 @@ object AppViewModelProvider {
                 container().database.ownBarcodeDao(),
                 container().barcodeCommunity,
                 container().leftoverRepository,
+                container().aiQueue,
             )
         }
     }

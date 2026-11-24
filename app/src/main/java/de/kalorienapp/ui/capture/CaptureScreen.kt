@@ -196,7 +196,9 @@ fun CaptureScreen(
                 onNewPhoto = viewModel::backToCamera,
                 modifier = contentModifier,
             )
-            is CaptureStep.Failed -> MessageContent(
+            is CaptureStep.Failed -> {
+                val queueable = viewModel.canQueue && step.error.temporary
+                MessageContent(
                 title = stringResource(
                     when (step.error) {
                         CaptureError.NEEDS_ACCOUNT -> R.string.capture_free_used_title
@@ -205,17 +207,27 @@ fun CaptureScreen(
                         else -> R.string.capture_failed_title
                     },
                 ),
-                message = stringResource(step.error.messageRes),
-                primaryLabel = when (step.error) {
-                    CaptureError.NEEDS_ACCOUNT -> stringResource(R.string.paywall_create_account)
-                    CaptureError.NEEDS_PREMIUM -> stringResource(R.string.paywall_show)
+                message = stringResource(step.error.messageRes) +
+                    (if (queueable) "\n\n" + stringResource(R.string.ai_queue_hint) else ""),
+                // KI überlastet/kein Netz: lieber im Hintergrund weiter versuchen als sofort wieder scheitern.
+                primaryLabel = when {
+                    step.error == CaptureError.NEEDS_ACCOUNT -> stringResource(R.string.paywall_create_account)
+                    step.error == CaptureError.NEEDS_PREMIUM -> stringResource(R.string.paywall_show)
+                    queueable -> stringResource(R.string.ai_queue_button)
                     else -> stringResource(R.string.capture_retry).takeIf { step.error.retryable }
                 },
-                onPrimary = if (step.error.paywall) onPaywall else viewModel::retry,
+                onPrimary = when {
+                    step.error.paywall -> onPaywall
+                    queueable -> ({ viewModel.queueInBackground(onClose) })
+                    else -> viewModel::retry
+                },
+                secondaryLabel = stringResource(R.string.capture_retry_now).takeIf { queueable },
+                onSecondary = viewModel::retry,
                 onManual = { manual(state.mealType) },
                 onNewPhoto = viewModel::backToCamera,
                 modifier = contentModifier,
             )
+            }
             is CaptureStep.Proposal -> ProposalContent(
                 proposal = step,
                 mealType = state.mealType,
@@ -559,6 +571,10 @@ private val CaptureStep.titleRes: Int
         is CaptureStep.UnknownBarcode, is CaptureStep.Failed -> R.string.capture_title
         is CaptureStep.Proposal -> R.string.proposal_title
     }
+
+/** Vorübergehend (KI überlastet, Kontingent, kein Netz) → später im Hintergrund erneut versuchen lohnt. */
+private val CaptureError.temporary: Boolean
+    get() = this == CaptureError.OVERLOADED || this == CaptureError.QUOTA || this == CaptureError.NETWORK
 
 private val CaptureError.paywall: Boolean
     get() = this == CaptureError.NEEDS_ACCOUNT || this == CaptureError.NEEDS_PREMIUM

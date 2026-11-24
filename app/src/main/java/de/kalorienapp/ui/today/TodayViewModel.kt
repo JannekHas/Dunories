@@ -120,7 +120,21 @@ class TodayViewModel(
     private val premium: de.kalorienapp.account.PremiumClient,
     private val game: de.kalorienapp.data.repository.GameRepository,
     private val leftovers: de.kalorienapp.data.repository.LeftoverRepository,
+    private val aiQueue: de.kalorienapp.capture.AiQueue? = null,
 ) : ViewModel() {
+
+    /** Fotos/Beschreibungen, die die KI im Hintergrund erkennt (oder schon erkannt hat) – für den angezeigten Tag. */
+    // lazy: [date] wird weiter unten angelegt (Reihenfolge der Initialisierung).
+    val queued: StateFlow<List<de.kalorienapp.capture.QueuedJob>> by lazy {
+        (aiQueue?.jobs ?: kotlinx.coroutines.flow.flowOf(emptyList()))
+            .combine(date) { jobs, day -> jobs.filter { it.date == day } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }
+
+    /** Wartendes Foto verwerfen (Foto, Hintergrund-Versuch und Benachrichtigung weg). */
+    fun discardQueued(id: String) {
+        viewModelScope.launch { aiQueue?.remove(id) }
+    }
 
     /** Neu freigeschalteter Erfolg (Level & Erfolge an) → kurze Karte oben auf „Heute“. */
     val newAchievement: StateFlow<de.kalorienapp.domain.Gamification.Progress?> =

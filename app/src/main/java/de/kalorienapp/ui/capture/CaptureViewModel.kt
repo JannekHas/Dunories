@@ -96,6 +96,8 @@ class CaptureViewModel(
     private val community: de.kalorienapp.data.remote.BarcodeCommunityClient? = null,
     /** Reste / offene Mengen – in der Schnellauswahl oben (nicht im Ernährungsplan). */
     private val leftoverRepository: de.kalorienapp.data.repository.LeftoverRepository? = null,
+    /** KI-Warteschlange: bei Überlastung/ohne Netz im Hintergrund weiter versuchen. */
+    private val aiQueue: de.kalorienapp.capture.AiQueue? = null,
 ) : ViewModel() {
 
     /** Im Vorschlag selbst angelegte (abgetippte) Lebensmittel – zählen für den Tipp „Barcode statt Abtippen“. */
@@ -163,6 +165,69 @@ class CaptureViewModel(
 
     private var lastInput: Input? = null
 
+    /** Aus der KI-Warteschlange geöffnet → beim Speichern dort entfernen. */
+    private var queuedId: String? = null
+
+    /** Gerade nicht erkannt → „Im Hintergrund erkennen lassen“ möglich (nicht im Ernährungsplan). */
+    val canQueue: Boolean get() = aiQueue != null && !planMode && lastInput != null
+
+    /**
+     * Foto/Beschreibung ablegen und im Hintergrund weiter versuchen (KI überlastet, kein Netz). Fertig →
+     * Benachrichtigung und Zeile in der Mahlzeit auf „Heute“; gespeichert wird erst nach dem Prüfen.
+     */
+    fun queueInBackground(onDone: () -> Unit) {
+        val queue = aiQueue ?: return
+        val input = lastInput ?: return
+        if (saving) return
+        saving = true
+        viewModelScope.launch {
+            try {
+                val id = queuedId
+                if (id != null && queue.get(id) != null) {
+                    queue.requeue(id)
+                } else {
+                    val date = LocalDate.ofEpochDay(route.epochDay)
+                    val meal = _state.value.mealType
+                    when (input) {
+                        is Input.Photo -> queue.enqueue(de.kalorienapp.capture.QueuedKind.PHOTO, input.uri, null, input.hint, date, meal)
+                        is Input.Label -> queue.enqueue(de.kalorienapp.capture.QueuedKind.LABEL, input.uri, null, null, date, meal)
+                        is Input.Text -> queue.enqueue(de.kalorienapp.capture.QueuedKind.TEXT, null, input.description, null, date, meal)
+                    }
+                }
+                onDone()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                saving = false
+                setStep(CaptureStep.Failed(CaptureError.IMAGE))
+            }
+        }
+    }
+
+    /** Eintrag aus der Warteschlange: fertigen Vorschlag zeigen, Fehler anzeigen bzw. gleich nochmal versuchen. */
+    private fun openQueued(id: String) {
+        val queue = aiQueue ?: return
+        val job = queue.get(id) ?: return
+        queuedId = id
+        _state.update { it.copy(mealType = job.mealType, description = job.text.orEmpty()) }
+        val uri = queue.photoUri(job)
+        val input = when (job.kind) {
+            de.kalorienapp.capture.QueuedKind.TEXT -> Input.Text(job.text.orEmpty())
+            de.kalorienapp.capture.QueuedKind.LABEL -> Input.Label(uri)
+            de.kalorienapp.capture.QueuedKind.PHOTO -> Input.Photo(uri, skipBarcode = true, hint = job.hint)
+        }
+        lastInput = input
+        when (job.status) {
+            de.kalorienapp.capture.QueuedStatus.DONE -> setStep(proposalOf(job.drafts))
+            de.kalorienapp.capture.QueuedStatus.FAILED -> setStep(
+                CaptureStep.Failed(
+                    GeminiException(GeminiError.entries.find { it.name == job.error } ?: GeminiError.INVALID_RESPONSE).toCaptureError(),
+                ),
+            )
+            de.kalorienapp.capture.QueuedStatus.WAITING -> analyze(input)
+        }
+    }
+
     /** Zuletzt unbekannter Barcode: Was danach per Etikett/KI erkannt wird, merkt sich Dunories dafür. */
     private var pendingBarcode: String? = null
     private var analysisJob: Job? = null
@@ -180,6 +245,7 @@ class CaptureViewModel(
                 if (items.isNotEmpty()) setStep(proposalOf(items.map { it.toDraft() }))
             }
         }
+        route.queueId?.let(::openQueued)
     }
 
     fun onPhoto(uri: Uri) = analyze(if (_state.value.labelMode) Input.Label(uri) else Input.Photo(uri))
@@ -356,6 +422,7 @@ class CaptureViewModel(
             // Gleiches von eben (z. B. zweiter Salami-Stick) fließt in den vorhandenen Eintrag ein.
             entries.forEach { repository.add(it) }
             de.kalorienapp.ui.entry.countTyped(settings, proposal.items.count { it.id in typedItemIds && it.dish == null })
+            queuedId?.let { aiQueue?.remove(it) }
             onDone()
         }
     }
