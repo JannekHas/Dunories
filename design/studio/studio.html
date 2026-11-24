@@ -20,6 +20,7 @@
   button.primary { background: var(--cyan); color: #0A0A0A; border: 0; font-weight: 700; }
   button.danger { color: var(--red); }
   input, select, textarea { background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; width: 100%; }
+  input[type=checkbox] { width: auto; }
   textarea { resize: vertical; min-height: 64px; }
   label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
   header { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); z-index: 5; }
@@ -46,9 +47,10 @@
   .swatch.sel { border-color: #fff; }
   .row { display: flex; gap: 8px; }
   .row > * { flex: 1; }
+  .check { display: flex; gap: 8px; align-items: center; margin-top: 12px; color: var(--muted); font-size: 14px; }
   @media (max-width: 1250px) { .studio { grid-template-columns: 200px 1fr; } .editor { grid-column: 1 / -1; position: static; } }
 
-  /* ---------- Folie (Originalgröße, Vorschau wird skaliert) ---------- */
+  /* =================== Folie (Originalgröße, Vorschau wird skaliert) =================== */
   .slide { width: 1080px; height: 1350px; position: relative; overflow: hidden; background: #14141B; color: #F2F2F7;
     font-family: "Bricolage", sans-serif; padding: 92px 88px; display: flex; flex-direction: column; }
   .slide.story { height: 1920px; padding-top: 220px; padding-bottom: 260px; }
@@ -56,8 +58,8 @@
     background: radial-gradient(900px 700px at 0% 0%, rgba(124,58,237,.38), transparent 70%),
                 radial-gradient(900px 800px at 100% 100%, rgba(14,116,144,.38), transparent 70%),
                 radial-gradient(700px 600px at 85% 15%, var(--glow), transparent 70%); }
-  .slide > *:not(.bg) { position: relative; z-index: 1; }
-  .slide .top { display: flex; align-items: center; gap: 18px; font-weight: 700; font-size: 38px; }
+  .slide > *:not(.bg):not(.deco) { position: relative; z-index: 1; }
+  .slide .top { display: flex; align-items: center; gap: 18px; font-weight: 700; font-size: 38px; min-height: 72px; }
   .slide .top img { width: 72px; height: 72px; border-radius: 18px; }
   .slide .top .count { margin-left: auto; font-size: 30px; color: #A3A3B8; font-weight: 600; }
   .slide h2 { font-weight: 800; letter-spacing: -2px; line-height: 1.02; margin: 0; }
@@ -65,19 +67,36 @@
   .slide .sub { font-size: 46px; color: #C9C9D6; line-height: 1.25; margin-top: 30px; font-weight: 500; }
   .slide .bars { display: flex; gap: 14px; margin-top: auto; }
   .slide .bars span { height: 16px; border-radius: 8px; }
+  .slide .big { font-size: 300px; font-weight: 800; line-height: .95; letter-spacing: -8px; color: var(--accent);
+    text-shadow: 0 0 80px var(--glow); margin-top: auto; }
+  .slide .big.emoji { letter-spacing: 0; text-shadow: none; }
+  /* große, angeschnittene Ringe als Blickfang (Titel im Neon-Look) */
+  .slide .deco { position: absolute; z-index: 0; right: -260px; top: 120px; width: 900px; height: 900px; opacity: .22;
+    border-radius: 50%; filter: saturate(1.2); }
+
   .slide.t-titel h2 { font-size: 124px; margin-top: auto; }
+  .slide.t-titel .big + h2 { margin-top: 40px; font-size: 104px; }
   .slide.t-titel .bars { margin-top: 90px; }
-  .slide.t-text h2 { font-size: 96px; margin-top: 120px; }
+  .slide.t-text h2 { font-size: 96px; }
+  .slide .center { margin: auto 0; }
+  .slide.t-text .bars { margin-top: 0; }
+  .slide.story.t-text h2 { font-size: 112px; }
+  .slide.story .lines div { font-size: 60px; }
+  .slide.story .sub { font-size: 52px; }
+  .slide.story.t-screenshot .phone { width: 660px; }
+  .slide.story.t-screenshot .phone.right { width: 620px; }
+  /* Platzhalter nur im Editor, nie im fertigen Bild */
+  .exporting .ph-hint, body.render .ph-hint { display: none !important; }
   .slide .lines { margin-top: 70px; display: flex; flex-direction: column; gap: 26px; }
   .slide .lines div { font-size: 50px; font-weight: 600; padding: 30px 36px; border-radius: 32px;
     background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); }
+  .slide .outro { margin-top: 50px; color: var(--accent); font-weight: 700; }
   .slide.t-screenshot h2 { font-size: 84px; margin-top: 56px; }
   .slide.t-screenshot .sub { font-size: 40px; margin-top: 20px; }
   .slide .phone { margin: 56px auto 0; width: 560px; flex: 0 1 auto; min-height: 0; border-radius: 64px; border: 10px solid #2C2C38;
     overflow: hidden; background: #000; box-shadow: 0 0 120px var(--glow), 0 30px 80px rgba(0,0,0,.6); position: relative; }
   .slide .phone img { width: 100%; display: block; }
   .slide .phone.right { margin-right: 0; margin-left: auto; width: 540px; }
-  .slide .outro { margin-top: 50px; color: var(--accent); font-weight: 700; }
   .slide .phone .empty { color: #A3A3B8; font-size: 34px; padding: 60px; text-align: center; }
   .slide .inset { position: absolute; left: 70px; bottom: 120px; width: 330px; height: 330px; border-radius: 40px; overflow: hidden;
     border: 8px solid var(--accent); box-shadow: 0 20px 60px rgba(0,0,0,.6); transform: rotate(-6deg); z-index: 2; }
@@ -88,13 +107,47 @@
     padding: 28px 46px; border-radius: 999px; }
   .slide .bigicon { width: 260px; height: 260px; border-radius: 64px; margin-top: 40px; box-shadow: 0 0 140px var(--glow); }
 
-  /* ---------- Hooks & Beiträge ---------- */
+  /* ---------- Look „Foto“: eigenes Bild randlos, weißer Text mit Schatten (wie typische TikTok-Slideshows) ---------- */
+  .slide.l-foto .bg { background: #222 center / cover no-repeat; }
+  .slide.l-foto .bg::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,.15) 55%, rgba(0,0,0,.75) 100%); }
+  .slide.l-foto h2, .slide.l-foto .sub { text-shadow: 0 4px 24px rgba(0,0,0,.7), 0 2px 4px rgba(0,0,0,.8); color: #fff; }
+  .slide.l-foto h2 em { color: var(--accent); }
+  .slide.l-foto .sub { color: #fff; }
+  .slide.l-foto .lines div { background: rgba(0,0,0,.45); border-color: rgba(255,255,255,.2); }
+  .slide.l-foto .top .count { color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.7); }
+  .slide.l-foto .nophoto { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.35); font-size: 40px; z-index: 0; }
+
+  /* ---------- Look „Notiz“: wie eine Handy-Notiz ---------- */
+  .slide.l-notiz { background: #FBF6E9; color: #1C1C1E; }
+  .slide.l-notiz .bg { background: repeating-linear-gradient(180deg, transparent 0 79px, rgba(0,0,0,.06) 79px 80px); }
+  .slide.l-notiz .notehead { display: flex; justify-content: space-between; color: #C99A2E; font-size: 36px; font-weight: 700; font-family: system-ui, sans-serif; }
+  .slide.l-notiz .notedate { color: #8E8E93; font-size: 30px; margin-top: 50px; font-family: system-ui, sans-serif; text-align: center; }
+  .slide.l-notiz h2 { color: #1C1C1E; font-family: system-ui, "Segoe UI", sans-serif; letter-spacing: -1px; }
+  .slide.l-notiz h2 em { color: #C99A2E; }
+  .slide.l-notiz .sub, .slide.l-notiz .outro { color: #3A3A3C; font-family: system-ui, sans-serif; }
+  .slide.l-notiz .outro { color: #C99A2E; }
+  .slide.l-notiz .lines { gap: 10px; }
+  .slide.l-notiz .lines div { background: none; border: 0; padding: 6px 0; font-family: system-ui, "Segoe UI", sans-serif; font-weight: 500; color: #1C1C1E; }
+  .slide.l-notiz .bars, .slide.l-notiz .deco { display: none; }
+
+  /* ---------- Look „Hell“: heller Grund, große schwarze Schrift ---------- */
+  .slide.l-hell { background: #F4F2EC; color: #111114; }
+  .slide.l-hell .bg { background: radial-gradient(800px 700px at 100% 0%, var(--glow), transparent 70%); }
+  .slide.l-hell h2 { color: #111114; }
+  .slide.l-hell .sub { color: #4A4A55; }
+  .slide.l-hell .top .count { color: #6B6B78; }
+  .slide.l-hell .lines div { background: #fff; border-color: rgba(0,0,0,.08); color: #111114; }
+  .slide.l-hell .phone { border-color: #111114; box-shadow: 0 30px 80px rgba(0,0,0,.25); }
+  .slide.l-hell h2 em { color: #111114; background: var(--accent); padding: 0 14px; border-radius: 18px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+
+  /* ---------- Editor/Hooks/Beiträge ---------- */
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
   .hooks { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
   .hook { display: flex; gap: 10px; align-items: center; }
   .hook.used span { text-decoration: line-through; color: var(--muted); }
   .hook span { flex: 1; }
-  .hook input[type=checkbox] { width: auto; }
   table { width: 100%; border-collapse: collapse; }
   th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: middle; }
   td input { padding: 4px 6px; }
@@ -129,7 +182,8 @@
       <option value="story">TikTok / Reel / Story 9:16 (1080 × 1920)</option>
     </select>
     <select id="projectSel"></select>
-    <button id="newProject">Neue Slideshow</button>
+    <select id="presetSel"><option value="">+ Aus Vorlage …</option></select>
+    <button id="newProject">Leere Slideshow</button>
     <button id="dupProject">Kopie</button>
     <button id="delProject" class="danger">Slideshow löschen</button>
     <span style="flex:1"></span>
@@ -144,7 +198,7 @@
     <div class="stage"><div id="preview"></div></div>
     <div class="editor" id="editor"></div>
   </div>
-  <p class="hint">Tipp: *Wort* in der Überschrift färbt das Wort in der Akzentfarbe. Bilder (Screenshots) per Datei wählen – am besten echte Screenshots vom Handy.</p>
+  <p class="hint">Tipp: *Wort* färbt ein Wort in der Akzentfarbe. Looks abwechseln, damit kein Beitrag wie der letzte aussieht – und das Logo eher klein oder erst am Ende.</p>
 </section>
 
 <section class="page" id="hooks">
@@ -189,17 +243,61 @@ const ASSETS = {
 };
 const ACCENTS = { cyan: "#22D3EE", green: "#3DDC84", yellow: "#FFD400", orange: "#FF8A1F", red: "#FF4D6D", violet: "#A855F7", magenta: "#F43FBF" };
 const LAYOUTS = { titel: "Titel", text: "Text mit Punkten", screenshot: "Screenshot", abschluss: "Abschluss (Aufruf)" };
+const LOOKS = { neon: "Neon (dunkel)", foto: "Foto-Hintergrund", notiz: "Notiz", hell: "Hell" };
 
-const INTRO = {
-  name: "Vorstellung",
-  format: "post",
-  slides: [
-    { layout: "titel", accent: "cyan", title: "Ich bau mir meine *eigene* Kalorien-App.", sub: "Hi, ich bin Jannek 👋" },
-    { layout: "text", accent: "red", title: "Weil mich die anderen *genervt* haben.", lines: "🎰 Glücksrad statt fairer Preis\n📢 Werbung und Pop-ups\n🧩 Zu viel Kram, den ich nie nutze", sub: "Also hab ich meine eigene gebaut." },
-    { layout: "screenshot", accent: "green", title: "Nur das, was *du* brauchst.", sub: "Alles andere schaltest du einfach aus.", image: "asset:heute" },
-    { layout: "screenshot", accent: "yellow", title: "Foto rein. *Nährwerte* raus.", sub: "In Sekunden erkannt – du prüfst nur noch.", image: "asset:vorschlag", inset: "asset:spaghetti" },
-    { layout: "abschluss", accent: "magenta", title: "Bald im *Play Store*.", sub: "Willst du zu den Ersten gehören?", cta: "Kommentier 🧪 zum Testen" },
-  ],
+// ---------------- Vorlagen ----------------
+const PRESETS = {
+  anfang: {
+    name: "Der Anfang (erster Beitrag)", format: "post",
+    slides: [
+      { layout: "titel", look: "foto", accent: "cyan", brand: false, title: "Ich hab angefangen, meine eigene *Kalorien-App* zu bauen.", sub: "" },
+      { layout: "text", look: "notiz", accent: "yellow", brand: false, title: "Warum?", lines: "Weil mich jede App genervt hat:\n– zu voll\n– zu teuer\n– zu viel Druck", sub: "Also mach ich's selbst." },
+      { layout: "screenshot", look: "neon", accent: "green", brand: true, title: "Das ist sie: *Dunories*.", sub: "Nur das, was du brauchst.", image: "asset:heute" },
+      { layout: "screenshot", look: "hell", accent: "yellow", brand: false, title: "Mein Lieblingsteil: *Foto rein*, fertig.", sub: "", image: "asset:vorschlag", inset: "asset:spaghetti" },
+      { layout: "abschluss", look: "hell", accent: "magenta", brand: true, title: "Ab Dezember suche ich *Tester*.", sub: "Willst du dabei sein?", cta: "Kommentier 🧪" },
+    ],
+  },
+  vorstellung: {
+    name: "Vorstellung", format: "post",
+    slides: [
+      { layout: "titel", look: "neon", accent: "cyan", title: "Ich bau mir meine *eigene* Kalorien-App.", sub: "Hi, ich bin Jannek 👋" },
+      { layout: "text", look: "neon", accent: "red", title: "Weil mich die anderen *genervt* haben.", lines: "🎰 Glücksrad statt fairer Preis\n📢 Werbung und Pop-ups\n🧩 Zu viel Kram, den ich nie nutze", sub: "Also hab ich meine eigene gebaut." },
+      { layout: "screenshot", look: "neon", accent: "green", title: "Nur das, was *du* brauchst.", sub: "Alles andere schaltest du einfach aus.", image: "asset:heute" },
+      { layout: "screenshot", look: "neon", accent: "yellow", title: "Foto rein. *Nährwerte* raus.", sub: "In Sekunden erkannt – du prüfst nur noch.", image: "asset:vorschlag", inset: "asset:spaghetti" },
+      { layout: "abschluss", look: "neon", accent: "magenta", title: "Bald im *Play Store*.", sub: "Willst du zu den Ersten gehören?", cta: "Kommentier 🧪 zum Testen" },
+    ],
+  },
+  yazio: {
+    name: "YAZIO-Wechsler", format: "story",
+    slides: [
+      { layout: "titel", look: "neon", accent: "red", big: "🔥", title: "Du verlierst deine *YAZIO*-Serie nicht.", sub: "Wechseln dauert 30 Sekunden 👇" },
+      { layout: "screenshot", look: "hell", accent: "orange", title: "1. Screenshot von deiner *Serie*", sub: "In YAZIO oben rechts auf die Flamme", image: "" },
+      { layout: "screenshot", look: "neon", accent: "yellow", title: "2. In Dunories *übernehmen*", sub: "Die KI liest Tage in Folge und Rekord ab", image: "" },
+      { layout: "screenshot", look: "neon", accent: "green", title: "Deine Serie läuft *weiter*", sub: "Und zählt für deine Erfolge", image: "" },
+      { layout: "text", look: "notiz", accent: "cyan", title: "Und obendrauf:", lines: "📸 Essen per Foto\n🧾 Barcode & Etikett\n🎯 Nur, was du brauchst" },
+      { layout: "abschluss", look: "hell", accent: "magenta", title: "Bald im *Play Store*.", sub: "Sei beim Start dabei", cta: "Folg für den Start 🔔" },
+    ],
+  },
+  foto: {
+    name: "Foto rein, Nährwerte raus", format: "story",
+    slides: [
+      { layout: "titel", look: "neon", accent: "yellow", big: "3 Sek.", title: "So schnell tracke ich mein *Essen*.", sub: "Ohne Abtippen. Ohne Waage." },
+      { layout: "titel", look: "foto", accent: "cyan", brand: false, bg: "asset:spaghetti", title: "Schritt 1: *Foto* machen.", sub: "" },
+      { layout: "screenshot", look: "hell", accent: "green", title: "Schritt 2: Die KI erkennt die *Zutaten*.", sub: "Du prüfst nur noch.", image: "asset:vorschlag", inset: "asset:spaghetti" },
+      { layout: "text", look: "notiz", accent: "violet", title: "Und wenn's mal danebenliegt?", lines: "✏️ Alles bleibt ein Vorschlag\n🗣️ Sag einfach, was es ist\n📦 Barcode & Etikett sind exakt" },
+      { layout: "abschluss", look: "neon", accent: "magenta", title: "Willst du's *testen*?", sub: "Bald im Play Store", cta: "Kommentier 🧪" },
+    ],
+  },
+  fehler: {
+    name: "3 Fehler beim Kalorienzählen", format: "story",
+    slides: [
+      { layout: "titel", look: "hell", accent: "yellow", big: "3", title: "Fehler, die beim *Kalorienzählen* fast alle machen.", sub: "Nr. 2 hat mich auch erwischt." },
+      { layout: "text", look: "neon", accent: "red", title: "1. Getränke *vergessen*", lines: "☕ Latte macchiato: ~150 kcal\n🥤 Saft 0,3 l: ~140 kcal\n🍺 Bier 0,5 l: ~210 kcal" },
+      { layout: "text", look: "notiz", accent: "orange", title: "2. Öl nicht mitzählen", lines: "🥄 1 EL Öl ≈ 90 kcal\n🍳 Beim Braten meist 1–2 EL\n💡 Einmal abwiegen reicht" },
+      { layout: "text", look: "neon", accent: "violet", title: "3. Nur *Kalorien*, kein Protein", lines: "💪 Protein macht satt\n🎯 Viele zielen auf ca. 1,6 g pro kg\n📊 Dunories zeigt beides" },
+      { layout: "abschluss", look: "hell", accent: "cyan", title: "Mehr Tipps? *Folg* mir.", sub: "Ich bau gerade meine eigene Kalorien-App.", cta: "Folgen 🔔" },
+    ],
+  },
 };
 
 const HOOKS = [
@@ -238,8 +336,15 @@ const HOOKS = [
 // ---------------- Speicher ----------------
 const KEY = "dunories-studio-v1";
 function load() {
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.projects) return s; } catch (e) {}
-  return { projects: [structuredClone(INTRO)], current: 0, hooks: HOOKS.map((t) => ({ t, used: false })), posts: [] };
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  if (!s || !s.projects) {
+    s = { projects: [structuredClone(PRESETS.anfang), structuredClone(PRESETS.vorstellung)], current: 0,
+      hooks: HOOKS.map((t) => ({ t, used: false })), posts: [], v: 2 };
+  }
+  // Ältere Studio-Version: „Der Anfang“ einmal dazulegen.
+  if (!s.v) { s.projects.unshift(structuredClone(PRESETS.anfang)); s.current = 0; s.v = 2; }
+  return s;
 }
 let state = load();
 let sel = 0;
@@ -253,34 +358,45 @@ const project = () => state.projects[state.current];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const rich = (s) => esc(s).replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/\n/g, "<br>");
 const img = (ref) => (ref && ref.startsWith("asset:") ? ASSETS[ref.slice(6)] : ref) || "";
+const isEmoji = (t) => /\p{Extended_Pictographic}/u.test(t || "") && !/[0-9A-Za-zÄÖÜäöü]/.test(t || "");
+const NOTE_DATE = () => new Date().toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
 
 function slideEl(s, i, n, format) {
   const el = document.createElement("div");
+  const look = s.look || "neon";
   const accent = ACCENTS[s.accent] || ACCENTS.cyan;
-  el.className = `slide t-${s.layout}${format === "story" ? " story" : ""}`;
+  el.className = `slide t-${s.layout} l-${look}${format === "story" ? " story" : ""}`;
   el.style.setProperty("--accent", accent);
-  el.style.setProperty("--glow", accent + "40");
+  el.style.setProperty("--glow", accent + (look === "hell" ? "55" : "40"));
+  const showBrand = s.brand !== false && look !== "notiz" && s.layout !== "abschluss";
+  const bars = `<div class="bars"><span style="width:240px;background:${accent}"></span><span style="width:90px;background:#FFD400"></span><span style="width:50px;background:#3DDC84"></span></div>`;
+  const big = s.big ? `<div class="big${isEmoji(s.big) ? " emoji" : ""}">${esc(s.big)}</div>` : "";
   let body = "";
   if (s.layout === "titel") {
-    body = `<h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}
-      <div class="bars"><span style="width:240px;background:${accent}"></span><span style="width:90px;background:#FFD400"></span><span style="width:50px;background:#3DDC84"></span></div>`;
+    body = `${big}<h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}${look === "neon" ? bars : ""}`;
   } else if (s.layout === "text") {
     const lines = String(s.lines || "").split("\n").filter((l) => l.trim());
-    body = `<h2>${rich(s.title)}</h2>
+    body = `<div class="center">${big}<h2>${rich(s.title)}</h2>
       <div class="lines">${lines.map((l) => `<div>${esc(l)}</div>`).join("")}</div>
-      ${s.sub ? `<div class="sub outro">${rich(s.sub)}</div>` : ""}
-      <div class="bars"><span style="width:240px;background:${accent}"></span><span style="width:90px;background:#FFD400"></span><span style="width:50px;background:#3DDC84"></span></div>`;
+      ${s.sub ? `<div class="sub outro">${rich(s.sub)}</div>` : ""}</div>${look === "neon" ? bars : ""}`;
   } else if (s.layout === "screenshot") {
     body = `<h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}
-      <div class="phone${img(s.inset) ? " right" : ""}">${img(s.image) ? `<img src="${img(s.image)}">` : `<div class="empty">Screenshot im Editor rechts wählen</div>`}</div>
+      <div class="phone${img(s.inset) ? " right" : ""}">${img(s.image) ? `<img src="${img(s.image)}">` : `<div class="empty ph-hint">Screenshot im Editor rechts wählen</div>`}</div>
       ${img(s.inset) ? `<div class="inset"><img src="${img(s.inset)}"></div>` : ""}`;
   } else {
-    body = `<img class="bigicon" src="${ASSETS.logo}"><h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}
+    body = `${look === "foto" ? "" : `<img class="bigicon" src="${ASSETS.logo}">`}${big}<h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}
       ${s.cta ? `<div class="cta">${esc(s.cta)}</div>` : ""}`;
   }
-  // Abschluss zeigt das große Logo – oben dann nur die Seitenzahl (sonst doppelt).
-  const brand = s.layout === "abschluss" ? "" : `<img src="${ASSETS.logo}">Dunories`;
-  el.innerHTML = `<div class="bg"></div><div class="top">${brand}<span class="count">${i + 1}/${n}</span></div>${body}`;
+  const top = look === "notiz"
+    ? `<div class="notehead"><span>‹ Notizen</span><span>Fertig</span></div><div class="notedate">${NOTE_DATE()}</div>`
+    : `<div class="top">${showBrand ? `<img src="${ASSETS.logo}">Dunories` : ""}<span class="count">${i + 1}/${n}</span></div>`;
+  const photo = img(s.bg);
+  const bg = look === "foto"
+    ? `<div class="bg" style="${photo ? `background-image:url('${photo}')` : ""}">${photo ? "" : `<div class="nophoto ph-hint">📷 Foto im Editor wählen</div>`}</div>`
+    : `<div class="bg"></div>`;
+  // Titel im Neon-Look ohne Riesen-Zahl: große Ringe angeschnitten als Blickfang (wirkt sonst leer)
+  const deco = s.layout === "titel" && look === "neon" && !s.big ? `<img class="deco" src="${ASSETS.logo}">` : "";
+  el.innerHTML = `${bg}${deco}${top}${body}`;
   return el;
 }
 
@@ -300,7 +416,7 @@ function renderAll() {
   const ps = document.getElementById("projectSel");
   ps.innerHTML = state.projects.map((x, i) => `<option value="${i}">${esc(x.name)}</option>`).join("");
   ps.value = state.current;
-  sel = Math.min(sel, p.slides.length - 1);
+  sel = Math.max(0, Math.min(sel, p.slides.length - 1));
   const thumbs = document.getElementById("thumbs");
   thumbs.innerHTML = "";
   p.slides.forEach((s, i) => {
@@ -311,9 +427,7 @@ function renderAll() {
     t.onclick = () => { sel = i; renderAll(); };
     thumbs.appendChild(t);
   });
-  const prev = document.getElementById("preview");
-  prev.innerHTML = "";
-  if (p.slides[sel]) prev.appendChild(scaled(slideEl(p.slides[sel], sel, p.slides.length, p.format), p.format === "story" ? 390 : 520));
+  refreshPreview(false);
   renderEditor();
 }
 
@@ -322,41 +436,52 @@ function field(label, html) { return `<label>${label}</label>${html}`; }
 function renderEditor() {
   const p = project(), s = p.slides[sel], ed = document.getElementById("editor");
   if (!s) { ed.innerHTML = "<p class='hint'>Keine Folie – „+ Folie“ antippen.</p>"; return; }
+  const look = s.look || "neon";
   ed.innerHTML = `
     ${field("Name der Slideshow", `<input id="eName" value="${esc(p.name)}">`)}
-    ${field("Art der Folie", `<select id="eLayout">${Object.entries(LAYOUTS).map(([k, v]) => `<option value="${k}" ${k === s.layout ? "selected" : ""}>${v}</option>`).join("")}</select>`)}
+    <div class="row">
+      <div>${field("Art der Folie", `<select id="eLayout">${Object.entries(LAYOUTS).map(([k, v]) => `<option value="${k}" ${k === s.layout ? "selected" : ""}>${v}</option>`).join("")}</select>`)}</div>
+      <div>${field("Look", `<select id="eLook">${Object.entries(LOOKS).map(([k, v]) => `<option value="${k}" ${k === look ? "selected" : ""}>${v}</option>`).join("")}</select>`)}</div>
+    </div>
+    ${look === "foto" ? field("Hintergrund-Foto (z. B. du mit Handy)", `<input type="file" id="eBg" accept="image/*">`) : ""}
+    ${s.layout !== "screenshot" ? field("Riesen-Zahl oder Emoji (optional, z. B. 3 Sek. · 81 · 🔥)", `<input id="eBig" value="${esc(s.big)}">`) : ""}
     ${field("Überschrift (*Wort* = farbig)", `<textarea id="eTitle">${esc(s.title)}</textarea>`)}
-    ${field("Untertitel", `<textarea id="eSub">${esc(s.sub)}</textarea>`)}
+    ${field(s.layout === "text" ? "Schlusssatz (optional)" : "Untertitel", `<textarea id="eSub">${esc(s.sub)}</textarea>`)}
     ${s.layout === "text" ? field("Punkte (eine Zeile pro Punkt)", `<textarea id="eLines" style="min-height:110px">${esc(s.lines)}</textarea>`) : ""}
     ${s.layout === "abschluss" ? field("Aufruf (Knopf)", `<input id="eCta" value="${esc(s.cta)}">`) : ""}
     ${field("Akzentfarbe", `<div class="swatches">${Object.entries(ACCENTS).map(([k, c]) => `<button class="swatch ${k === s.accent ? "sel" : ""}" data-acc="${k}" style="background:${c}" title="${k}"></button>`).join("")}</div>`)}
     ${s.layout === "screenshot" ? field("Screenshot", `<input type="file" id="eImg" accept="image/*">`) + field("Kleines Bild unten links (optional, z. B. Essensfoto)", `<div class="row"><input type="file" id="eInset" accept="image/*"><button id="eInsetDel">weg</button></div>`) : ""}
+    ${look !== "notiz" && s.layout !== "abschluss" ? `<label class="check"><input type="checkbox" id="eBrand" ${s.brand !== false ? "checked" : ""}> Logo oben zeigen</label>` : ""}
     <div class="row" style="margin-top:16px">
       <button id="eUp">↑</button><button id="eDown">↓</button><button id="eDup">Kopie</button><button id="eDel" class="danger">Löschen</button>
     </div>`;
   const upd = (fn) => { fn(s); save(); renderAll(); };
-  const live = (id, key) => { const n = document.getElementById(id); if (n) n.oninput = () => { s[key] = n.value; save(); refreshPreview(); }; };
+  const live = (id, key) => { const n = document.getElementById(id); if (n) n.oninput = () => { s[key] = n.value; save(); refreshPreview(true); }; };
   document.getElementById("eName").oninput = (e) => { p.name = e.target.value; save(); document.getElementById("projectSel").options[state.current].text = p.name; };
   document.getElementById("eLayout").onchange = (e) => upd((x) => (x.layout = e.target.value));
-  live("eTitle", "title"); live("eSub", "sub"); live("eLines", "lines"); live("eCta", "cta");
+  document.getElementById("eLook").onchange = (e) => upd((x) => (x.look = e.target.value));
+  live("eTitle", "title"); live("eSub", "sub"); live("eLines", "lines"); live("eCta", "cta"); live("eBig", "big");
   ed.querySelectorAll(".swatch").forEach((b) => (b.onclick = () => upd((x) => (x.accent = b.dataset.acc))));
   const file = (id, key) => { const n = document.getElementById(id); if (n) n.onchange = () => readImage(n.files[0], (d) => upd((x) => (x[key] = d))); };
-  file("eImg", "image"); file("eInset", "inset");
+  file("eImg", "image"); file("eInset", "inset"); file("eBg", "bg");
   const del = document.getElementById("eInsetDel"); if (del) del.onclick = () => upd((x) => delete x.inset);
+  const brand = document.getElementById("eBrand"); if (brand) brand.onchange = () => upd((x) => (x.brand = brand.checked));
   document.getElementById("eUp").onclick = () => move(-1);
   document.getElementById("eDown").onclick = () => move(1);
   document.getElementById("eDup").onclick = () => { p.slides.splice(sel + 1, 0, structuredClone(s)); sel++; save(); renderAll(); };
   document.getElementById("eDel").onclick = () => { p.slides.splice(sel, 1); sel = Math.max(0, sel - 1); save(); renderAll(); };
 }
 
-function refreshPreview() {
-  // Beim Tippen nur Vorschau + Miniatur neu zeichnen (Editor-Fokus bleibt).
+function refreshPreview(withThumb) {
   const p = project();
   const prev = document.getElementById("preview");
   prev.innerHTML = "";
+  if (!p.slides[sel]) return;
   prev.appendChild(scaled(slideEl(p.slides[sel], sel, p.slides.length, p.format), p.format === "story" ? 390 : 520));
-  const t = document.querySelectorAll(".thumb")[sel];
-  if (t) { t.firstChild.replaceWith(scaled(slideEl(p.slides[sel], sel, p.slides.length, p.format), 196)); }
+  if (withThumb) {
+    const t = document.querySelectorAll(".thumb")[sel];
+    if (t) t.firstChild.replaceWith(scaled(slideEl(p.slides[sel], sel, p.slides.length, p.format), 196));
+  }
 }
 
 function move(d) {
@@ -365,14 +490,14 @@ function move(d) {
   [sl[sel], sl[j]] = [sl[j], sl[sel]]; sel = j; save(); renderAll();
 }
 
-/** Bild verkleinern (max. 1200 px, JPEG) – spart Speicher im Browser. */
+/** Bild verkleinern (max. 1400 px, JPEG) – spart Speicher im Browser. */
 function readImage(f, cb) {
   if (!f) return;
   const r = new FileReader();
   r.onload = () => {
     const im = new Image();
     im.onload = () => {
-      const k = Math.min(1, 1200 / Math.max(im.width, im.height));
+      const k = Math.min(1, 1400 / Math.max(im.width, im.height));
       const c = document.createElement("canvas");
       c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
       c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
@@ -388,6 +513,7 @@ async function exportSlide(i) {
   const p = project();
   const holder = document.createElement("div");
   holder.style.cssText = "position:fixed;left:-99999px;top:0";
+  holder.className = "exporting";
   const el = slideEl(p.slides[i], i, p.slides.length, p.format);
   holder.appendChild(el); document.body.appendChild(holder);
   await document.fonts.ready;
@@ -404,8 +530,15 @@ document.getElementById("exportOne").onclick = () => exportSlide(sel);
 document.getElementById("exportAll").onclick = async () => { for (let i = 0; i < project().slides.length; i++) await exportSlide(i); };
 document.getElementById("format").onchange = (e) => { project().format = e.target.value; save(); renderAll(); };
 document.getElementById("projectSel").onchange = (e) => { state.current = +e.target.value; sel = 0; save(); renderAll(); };
+const presetSel = document.getElementById("presetSel");
+presetSel.innerHTML += Object.entries(PRESETS).map(([k, v]) => `<option value="${k}">${esc(v.name)}</option>`).join("");
+presetSel.onchange = () => {
+  if (!presetSel.value) return;
+  state.projects.push(structuredClone(PRESETS[presetSel.value]));
+  state.current = state.projects.length - 1; sel = 0; presetSel.value = ""; save(); renderAll();
+};
 document.getElementById("newProject").onclick = () => {
-  state.projects.push({ name: "Neue Slideshow", format: project().format, slides: [{ layout: "titel", accent: "cyan", title: "Dein *Hook* hier", sub: "" }] });
+  state.projects.push({ name: "Neue Slideshow", format: project().format, slides: [{ layout: "titel", look: "neon", accent: "cyan", title: "Dein *Hook* hier", sub: "" }] });
   state.current = state.projects.length - 1; sel = 0; save(); renderAll();
 };
 document.getElementById("dupProject").onclick = () => {
@@ -417,7 +550,7 @@ document.getElementById("delProject").onclick = () => {
   state.projects.splice(state.current, 1); state.current = 0; sel = 0; save(); renderAll();
 };
 document.getElementById("addSlide").onclick = () => {
-  const sl = project().slides; sl.splice(sel + 1, 0, { layout: "text", accent: "cyan", title: "Überschrift", lines: "Punkt 1\nPunkt 2" }); sel++; save(); renderAll();
+  const sl = project().slides; sl.splice(sel + 1, 0, { layout: "text", look: "neon", accent: "cyan", title: "Überschrift", lines: "Punkt 1\nPunkt 2" }); sel++; save(); renderAll();
 };
 
 // ---------------- Hooks ----------------
@@ -431,7 +564,7 @@ function renderHooks() {
     const [cb, , toSlide, del] = d.children;
     cb.onchange = () => { h.used = cb.checked; save(); renderHooks(); };
     toSlide.onclick = () => {
-      state.projects.push({ name: h.t.slice(0, 40), format: project().format, slides: [{ layout: "titel", accent: "cyan", title: h.t, sub: "" }] });
+      state.projects.push({ name: h.t.slice(0, 40), format: project().format, slides: [{ layout: "titel", look: "neon", accent: "cyan", title: h.t, sub: "" }] });
       state.current = state.projects.length - 1; sel = 0; save(); renderAll(); tab("folien");
     };
     del.onclick = () => { state.hooks.splice(i, 1); save(); renderHooks(); };
@@ -501,11 +634,13 @@ function tab(name) {
 }
 document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => tab(b.dataset.tab)));
 
-// Render-Modus: …/Dunories-Studio.html#render=1&format=post – nur Folie 1 in Originalgröße (für Bild-Export per Kommandozeile).
+// Render-Modus: …/Dunories-Studio.html#render=1&preset=anfang&format=post – nur eine Folie in Originalgröße
+// (für Bild-Export per Kommandozeile).
 const hash = new URLSearchParams(location.hash.slice(1));
 if (hash.has("render")) {
   document.body.classList.add("render");
-  const p = structuredClone(INTRO); p.format = hash.get("format") || p.format;
+  const p = structuredClone(PRESETS[hash.get("preset") || "anfang"]);
+  p.format = hash.get("format") || p.format;
   const i = +hash.get("render") - 1;
   document.getElementById("renderTarget").appendChild(slideEl(p.slides[i], i, p.slides.length, p.format));
 } else {
