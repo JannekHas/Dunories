@@ -113,9 +113,11 @@ class GeminiClient(
      *
      * Die Antwortzeit im kostenlosen Kontingent schwankt stark (1 s bis über eine Minute, ab und
      * zu „überlastet“). Deshalb zwei Spuren im Rennen, die erste gültige Antwort gewinnt:
-     * - Spur 1 sofort: wechselt bei Fehlern zwischen den schnellen Modellen ([FAST_MODELS]).
-     * - Spur 2 nach [HEDGE_DELAY_MS] (oder wenn Spur 1 aufgibt): neue schnelle Anfrage – eine
-     *   hängende Anfrage läuft beim zweiten Versuch meist sofort durch –, zuletzt [FALLBACK_MODEL].
+     * - Spur 1 sofort: wechselt bei Fehlern zwischen den Modellen ([MODELS], je eigenes Kontingent).
+     * - Spur 2 nach [HEDGE_DELAY_MS] (oder wenn Spur 1 aufgibt): neue Anfrage, beginnt beim anderen
+     *   Modell – eine hängende Anfrage läuft beim zweiten Versuch meist sofort durch.
+     * Zwischen den Versuchen wachsende Pausen ([RETRY_DELAYS_MS]): Bei „überlastet“ (Google, 24.11.2026)
+     * hilft kurz warten, und so reißen wir nicht selbst das Minutenlimit (15/min je Modell).
      * Die unterlegene Anfrage wird abgebrochen.
      */
     internal suspend fun generateJson(
@@ -137,7 +139,7 @@ class GeminiClient(
             }
         }.toString()
         return coroutineScope {
-            val first = async { runCatching { callModels(FAST_MODELS + FAST_MODELS, request, headers, timeoutMs) } }
+            val first = async { runCatching { callModels(MODELS + MODELS, request, headers, timeoutMs) } }
             withTimeoutOrNull(HEDGE_DELAY_MS) { first.join() }
             if (first.isCompleted) {
                 val result = first.await()
@@ -145,7 +147,7 @@ class GeminiClient(
                 // Ungültiger Key gilt für alle Modelle.
                 (result.exceptionOrNull() as? GeminiException)?.takeIf { !it.retryable }?.let { throw it }
             }
-            val second = async { runCatching { callModels(FAST_MODELS.reversed() + FALLBACK_MODEL, request, headers, timeoutMs) } }
+            val second = async { runCatching { callModels(MODELS.reversed() + MODELS.reversed().first(), request, headers, timeoutMs) } }
             val pending = listOf(first, second).filter { !it.isCompleted }.toMutableList()
             var lastError = first.takeIf { it.isCompleted }?.await()?.exceptionOrNull()
             while (pending.isNotEmpty()) {
@@ -169,12 +171,12 @@ class GeminiClient(
 
     /**
      * Modelle der Reihe nach versuchen; weiter nur bei Überlastung (5xx), unbekanntem Modell (404)
-     * oder Netzwerkfehler. Kurze Pause dazwischen, damit ein kurzer Engpass vorbeigeht.
+     * oder Netzwerkfehler. Wachsende Pause dazwischen, damit ein kurzer Engpass vorbeigeht.
      */
     private suspend fun callModels(models: List<String>, request: String, headers: Map<String, String>, timeoutMs: Int): String {
         var lastError: GeminiException? = null
         for ((index, model) in models.withIndex()) {
-            if (index > 0) delay(RETRY_DELAY_MS)
+            if (index > 0) delay(RETRY_DELAYS_MS.getOrElse(index - 1) { RETRY_DELAYS_MS.last() })
             val started = System.currentTimeMillis()
             fun log(result: String) {
                 if (BuildConfig.DEBUG) Log.d("Gemini", "$model: $result nach ${System.currentTimeMillis() - started} ms")
@@ -237,17 +239,17 @@ class GeminiClient(
             else -> GeminiError.NETWORK
         }
 
-        private const val RETRY_DELAY_MS = 600L
+        /** Pause vor dem 2., 3., 4. … Versuch einer Spur. */
+        private val RETRY_DELAYS_MS = listOf(600L, 2_500L, 5_000L)
 
         /**
-         * Im kostenlosen Kontingent gemessen (Okt. 2026): 3.1-Flash-Lite meist 2–13 s,
-         * „flash-lite-latest“ (3.5) 30–60 s, große Flash-Modelle oft überlastet oder 90–160 s.
+         * Im kostenlosen Kontingent gemessen (Okt. 2026): 3.1-Flash-Lite meist 2–13 s, 3.5 damals 30–60 s.
+         * Nov. 2026: 3.5-Flash-Lite mit Foto ~1,5 s. „-preview“ und „flash-lite-latest“ teilen sich das
+         * Kontingent mit 3.1 bzw. 3.5 (AI Studio zeigt nur diese zwei) → bringen beim Ausweichen nichts.
          */
         const val MODEL = "gemini-3.1-flash-lite"
-        /** Gleich schnell, eigenes Kontingent – springt ein, wenn [MODEL] überlastet ist. */
-        private val FAST_MODELS = listOf(MODEL, "gemini-3.1-flash-lite-preview")
-        /** Langsam (30–60 s), aber verlässlich – nur als letzter Versuch. */
-        const val FALLBACK_MODEL = "gemini-flash-lite-latest"
+        /** Zwei Modelle mit je eigenem Kontingent (15/min, 500/Tag) – springen füreinander ein. */
+        private val MODELS = listOf(MODEL, "gemini-3.5-flash-lite")
         private const val HEDGE_DELAY_MS = 8_000L
 
         /** Gerichte als EIN Element mit Zutaten (Wunsch des Nutzers: „Heute“ soll nicht volllaufen). */

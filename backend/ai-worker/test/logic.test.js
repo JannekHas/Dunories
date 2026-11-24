@@ -25,6 +25,7 @@ test("minusDays über Monatsgrenze", () => {
 
 test("nur erlaubte Modelle und Dateinamen", () => {
   assert.equal(modelFromPath("/v1/models/gemini-3.1-flash-lite:generateContent"), "gemini-3.1-flash-lite");
+  assert.equal(modelFromPath("/v1/models/gemini-3.5-flash-lite:generateContent"), "gemini-3.5-flash-lite");
   assert.equal(modelFromPath("/v1/models/gemini-3-pro:generateContent"), null);
   assert.equal(modelFromPath("/v1/models/gemini-3.1-flash-lite:streamGenerateContent"), null);
   assert.equal(fileFromPath("/v1/files/abc-123"), "files/abc-123");

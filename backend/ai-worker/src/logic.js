@@ -1,7 +1,7 @@
 // Reine Hilfsfunktionen (ohne Cloudflare-Abhängigkeiten) – getestet mit `node --test`.
 
 /** Erlaubte Gemini-Modelle (die App nutzt nur Flash Lite). */
-export const MODELS = new Set(["gemini-3.1-flash-lite", "gemini-3.1-flash-lite-preview", "gemini-flash-lite-latest"]);
+export const MODELS = new Set(["gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite-preview", "gemini-flash-lite-latest"]);
 
 /** Art des KI-Aufrufs (Header X-Ai-Kind). weekly-auto = automatische Wochenauswertung, zählt nicht mit. */
 export const KINDS = new Set(["food", "body", "plan", "recipe", "weekly", "weekly-auto", "streak"]);

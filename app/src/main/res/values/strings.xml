@@ -177,14 +177,14 @@
     <string name="capture_back_to_camera">Neues Foto / zurück</string>
     <string name="error_ai_no_key">Die KI ist in dieser Version nicht eingerichtet. Trag dein Essen per Barcode oder von Hand ein.</string>
     <string name="error_ai_rejected">Die KI hat die Anfrage abgelehnt. Versuch es später noch einmal oder trag es von Hand ein.</string>
-    <string name="error_ai_overloaded">Gemini ist gerade überlastet. Versuch es in ein paar Sekunden noch einmal.</string>
+    <string name="error_ai_overloaded">Die KI ist gerade sehr gefragt und kommt nicht hinterher. Versuch es gleich noch einmal – oder trag es per Barcode oder von Hand ein.</string>
     <string name="capture_free_used_title">Gratis-Aufrufe aufgebraucht</string>
     <string name="capture_premium_title">Die KI gehört zu Premium</string>
     <string name="capture_daily_limit_title">Genug KI für heute</string>
     <string name="error_ai_needs_account">Deine Gratis-KI-Aufrufe sind aufgebraucht. Mit einem kostenlosen Konto testest du Premium eine Woche lang gratis.</string>
     <string name="error_ai_needs_premium">Die KI gehört zu Dunories Premium. Barcode und Eintragen von Hand gehen weiterhin kostenlos.</string>
     <string name="error_ai_daily_limit">Du hast heute alle KI-Aufrufe genutzt. Ab Mitternacht geht es weiter – bis dahin per Barcode oder von Hand.</string>
-    <string name="error_ai_quota">Das kostenlose Gemini-Kontingent ist gerade aufgebraucht. Versuch es später noch einmal.</string>
+    <string name="error_ai_quota">Die KI ist gerade ausgelastet. Versuch es in ein paar Minuten noch einmal – oder trag es per Barcode oder von Hand ein.</string>
     <string name="error_ai_invalid">Die KI-Antwort war unbrauchbar.</string>
     <string name="error_ai_no_food">Auf dem Foto wurde kein Essen erkannt.</string>
     <string name="error_network">Keine Verbindung zum Server. Bitte prüfe deine Internetverbindung.</string>
