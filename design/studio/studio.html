@@ -161,6 +161,11 @@
   .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
   .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; min-width: 160px; }
   .stat b { display: block; font-size: 26px; }
+  .ptext { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .ptext pre { white-space: pre-wrap; background: var(--surface2); border-radius: 12px; padding: 12px; margin: 4px 0 0; font: inherit; font-size: 14px; }
+  .alts li { margin-bottom: 8px; font-size: 14px; }
+  .alts { padding-left: 20px; }
+  @media (max-width: 1100px) { .ptext { grid-template-columns: 1fr; } }
 
   /* Render-Modus (für Bild-Export per Kommandozeile): nur die Folie */
   body.render header, body.render .page { display: none !important; }
@@ -196,7 +201,8 @@
     <label class="check" style="margin:0"><input type="checkbox" id="hideTopToggle"> Kopfzeile aus</label>
     <span style="flex:1"></span>
     <button id="exportOne">Folie als Bild</button>
-    <button id="exportAll" class="primary">Alle Folien als Bilder</button>
+    <button id="exportAll" class="primary">Beitrag exportieren (Ordner)</button>
+    <button id="exportDir" title="Anderen Zielordner wählen und exportieren">📁 Zielordner</button>
   </div>
   <div class="studio">
     <div>
@@ -206,6 +212,7 @@
     <div class="stage"><div id="preview"></div></div>
     <div class="editor" id="editor"></div>
   </div>
+  <div class="card" id="postText" style="margin-top:20px"></div>
   <p class="hint">TikTok überdeckt oben, rechts und unten Teile des Bildes – „TikTok-Sicherheitsrahmen“ zeigt die Bereiche (wird nicht exportiert); „Kopfzeile aus“ für TikTok-Versionen von 4:5-Beiträgen. Tipp: *Wort* färbt ein Wort in der Akzentfarbe. Looks abwechseln, damit kein Beitrag wie der letzte aussieht – und das Logo eher klein oder erst am Ende.</p>
 </section>
 
@@ -448,6 +455,7 @@ function renderAll() {
   });
   refreshPreview(false);
   renderEditor();
+  renderPostText();
 }
 
 function field(label, html) { return `<label>${label}</label>${html}`; }
@@ -470,12 +478,16 @@ function renderEditor() {
     ${s.layout === "abschluss" ? field("Aufruf (Knopf)", `<input id="eCta" value="${esc(s.cta)}">`) : ""}
     ${field("Akzentfarbe", `<div class="swatches">${Object.entries(ACCENTS).map(([k, c]) => `<button class="swatch ${k === s.accent ? "sel" : ""}" data-acc="${k}" style="background:${c}" title="${k}"></button>`).join("")}</div>`)}
     ${s.layout === "screenshot" ? field("Screenshot", `<input type="file" id="eImg" accept="image/*">`) + field("Kleines Bild unten links (optional, z. B. Essensfoto)", `<div class="row"><input type="file" id="eInset" accept="image/*"><button id="eInsetDel">weg</button></div>`) : ""}
+    ${s.layout === "screenshot" || look === "foto" || s.inset ? field("Was ist auf dem Bild zu sehen? (für den Alternativtext)", `<input id="eSee" value="${esc(s.see)}" placeholder="z. B. Tagesübersicht mit bunten Ringen, 1.324 kcal verbleibend">`) : ""}
+    ${field("Alternativtext (leer = automatisch)", `<textarea id="eAlt" placeholder="automatisch">${esc(s.alt)}</textarea><div class="hint" id="eAltAuto"></div>`)}
     ${look !== "notiz" && s.layout !== "abschluss" ? `<label class="check"><input type="checkbox" id="eBrand" ${s.brand !== false ? "checked" : ""}> Logo oben zeigen</label>` : ""}
     <div class="row" style="margin-top:16px">
       <button id="eUp">↑</button><button id="eDown">↓</button><button id="eDup">Kopie</button><button id="eDel" class="danger">Löschen</button>
     </div>`;
   const upd = (fn) => { fn(s); save(); renderAll(); };
-  const live = (id, key) => { const n = document.getElementById(id); if (n) n.oninput = () => { s[key] = n.value; save(); refreshPreview(true); }; };
+  const showAuto = () => { const a = document.getElementById("eAltAuto"); if (a) a.textContent = "Automatisch: " + autoAlt(s); };
+  const live = (id, key) => { const n = document.getElementById(id); if (n) n.oninput = () => { s[key] = n.value; save(); refreshPreview(true); showAuto(); renderPostText(); }; };
+  live("eSee", "see"); live("eAlt", "alt"); showAuto();
   document.getElementById("eName").oninput = (e) => { p.name = e.target.value; save(); document.getElementById("projectSel").options[state.current].text = p.name; };
   document.getElementById("eLayout").onchange = (e) => upd((x) => (x.layout = e.target.value));
   document.getElementById("eLook").onchange = (e) => upd((x) => (x.look = e.target.value));
@@ -527,8 +539,77 @@ function readImage(f, cb) {
   r.readAsDataURL(f);
 }
 
+// ---------------- Texte zum Posten ----------------
+const DEFAULT_TAGS = "#kalorienzählen #kalorienapp #abnehmen #ernährung #fitness #protein #kaloriendefizit #indiedev #buildinpublic #appentwicklung";
+const DEFAULT_CALL = "Folg mir, dann verpasst du den Start nicht – oder schreib mir einfach eine Nachricht.";
+const plain = (s) => String(s ?? "").replace(/\*/g, "").replace(/\s*\n\s*/g, " ").trim();
+const dot = (s) => (/[.!?…:👇]$/u.test(s) ? s : s + ".");
+
+/** Alternativtext nach Schema: <Art der Grafik/Screenshot> + was zu sehen ist + Text: <Text auf dem Bild>. */
+function autoAlt(s) {
+  const look = s.look || "neon";
+  let art = s.layout === "screenshot" ? "Screenshot der App Dunories"
+    : look === "foto" ? "Foto" : look === "notiz" ? "Grafik im Stil einer Handy-Notiz"
+    : look === "hell" ? "Helle Grafik" : "Dunkle Grafik";
+  if (s.layout !== "screenshot" && (s.layout === "abschluss" ? look !== "foto" : s.brand !== false && look !== "notiz")) art += " mit dem Dunories-Logo";
+  if (s.layout === "titel" && look === "neon" && !s.big) art += " und großen bunten Ringen";
+  if (s.layout === "screenshot" && s.inset) art += ", daneben ein kleines Foto";
+  const see = plain(s.see);
+  // Punkte als Aufzählung: „…: zu voll, zu teuer, zu viel Druck.“ (Striche/Emojis am Anfang weg)
+  const lines = String(s.lines || "").split("\n").map((l) => plain(l).replace(/^[\s–\-•·\p{Extended_Pictographic}️]+/u, "")).filter(Boolean);
+  const texts = [s.big, s.title].map(plain).filter(Boolean).map(dot);
+  if (lines.length) {
+    const list = lines.reduce((a, l) => (!a ? l : a + (/[:.!?]$/.test(a) ? " " : ", ") + l), "");
+    if (texts.length && texts[texts.length - 1].endsWith(":")) texts[texts.length - 1] += " " + dot(list); else texts.push(dot(list));
+  }
+  if (plain(s.sub)) texts.push(dot(plain(s.sub)));
+  if (s.layout === "abschluss" && s.cta) texts.push(`Darunter ein Knopf: ${plain(s.cta)}`);
+  return `${art}${see ? ": " + dot(see) : "."}${texts.length ? " Text: " + texts.join(" ") : ""}`;
+}
+const altOf = (s) => plain(s.alt) || autoAlt(s);
+
+function postOf(p) {
+  p.post = p.post || {};
+  const o = p.post, first = p.slides[0] || {};
+  return {
+    hook: o.hook ?? plain(first.title), text: o.text ?? "", call: o.call ?? DEFAULT_CALL, question: o.question ?? "",
+    tags: o.tags ?? DEFAULT_TAGS, ttTitle: o.ttTitle ?? "",
+  };
+}
+function caption(p) {
+  const x = postOf(p);
+  return [x.hook, x.text, x.call, x.question, x.tags].map((t) => String(t).trim()).filter(Boolean).join("\n\n");
+}
+function ttTitle(p) {
+  const x = postOf(p);
+  return x.ttTitle.trim() || plain(x.hook);
+}
+
+function renderPostText() {
+  const p = project(), x = postOf(p), box = document.getElementById("postText");
+  const t = ttTitle(p);
+  const inp = (k, label, ph, area) => field(label, area
+    ? `<textarea data-k="${k}" placeholder="${esc(ph)}">${esc(x[k])}</textarea>`
+    : `<input data-k="${k}" value="${esc(x[k])}" placeholder="${esc(ph)}">`);
+  box.innerHTML = `<h3 style="margin:0 0 4px">Texte zum Posten</h3>
+    <p class="hint" style="margin:0">Landen beim Export in der Datei POSTEN.html im Ordner – dort mit Kopieren-Knöpfen und Checkliste. Aufbau: Hook · Inhalt mit Suchbegriffen · Aufruf · Frage · Hashtags.</p>
+    <div class="ptext"><div>
+      ${inp("hook", "1. Hook-Satz (Standard: Überschrift von Folie 1)", plain((p.slides[0] || {}).title))}
+      ${inp("text", "2. Worum geht's – 2–3 Sätze mit Suchbegriffen (Kalorien zählen, abnehmen, Protein …)", "", true)}
+      ${inp("call", "3. Aufruf (folgen/kommentieren)", DEFAULT_CALL, true)}
+      ${inp("question", "4. Frage an die Zuschauer", "z. B. Was nervt dich an Kalorien-Apps am meisten? 👇")}
+      ${inp("tags", "5. Hashtags (6–10)", DEFAULT_TAGS)}
+      ${inp("ttTitle", "TikTok-Titel (kurz, mit „Dunories“ – leer = Hook)", "z. B. Mich hat jede Kalorien-App genervt – also baue ich Dunories")}
+      ${/dunories/i.test(t) ? "" : `<p class="hint" style="color:var(--orange)">⚠ Im TikTok-Titel fehlt „Dunories“.</p>`}
+    </div><div>
+      <label>Bildunterschrift / Beschreibung (Vorschau)</label><pre>${esc(caption(p))}</pre>
+      <label>Alternativtexte</label><ol class="alts">${p.slides.map((s) => `<li>${esc(altOf(s))}</li>`).join("")}</ol>
+    </div></div>`;
+  box.querySelectorAll("[data-k]").forEach((n) => (n.onchange = () => { p.post[n.dataset.k] = n.value; save(); renderPostText(); }));
+}
+
 // ---------------- Export ----------------
-async function exportSlide(i) {
+async function slidePng(i) {
   const p = project();
   const holder = document.createElement("div");
   holder.style.cssText = "position:fixed;left:-99999px;top:0";
@@ -537,16 +618,164 @@ async function exportSlide(i) {
   holder.appendChild(el); document.body.appendChild(holder);
   await document.fonts.ready;
   try {
-    const url = await htmlToImage.toPng(el, { pixelRatio: 1, cacheBust: true });
+    return await htmlToImage.toPng(el, { pixelRatio: 1, cacheBust: true });
+  } finally { holder.remove(); }
+}
+const slug = (s) => String(s).replace(/[^\wäöüÄÖÜß-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 50) || "Beitrag";
+const dataToBytes = async (url) => new Uint8Array(await (await fetch(url)).arrayBuffer());
+
+async function exportSlide(i) {
+  try {
     const a = document.createElement("a");
-    a.href = url; a.download = `${p.name.replace(/[^\wäöüÄÖÜß-]+/g, "_")}_${String(i + 1).padStart(2, "0")}.png`; a.click();
+    a.href = await slidePng(i); a.download = `${slug(project().name)}_${String(i + 1).padStart(2, "0")}.png`; a.click();
+  } catch (e) { alert("Export fehlgeschlagen – braucht Internet für die Export-Bibliothek. " + e); }
+}
+
+// Ordner-Zugriff merken (IndexedDB), damit man den Zielordner nur einmal wählt.
+function idb(mode, fn) {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("dunories-studio", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onsuccess = () => { const tx = r.result.transaction("kv", mode); const q = fn(tx.objectStore("kv")); tx.oncomplete = () => res(q && q.result); tx.onerror = () => rej(tx.error); };
+    r.onerror = () => rej(r.error);
+  });
+}
+async function exportRoot(choose) {
+  let dir = choose ? null : await idb("readonly", (s) => s.get("dir")).catch(() => null);
+  if (dir && (await dir.requestPermission({ mode: "readwrite" })) !== "granted") dir = null;
+  if (!dir) {
+    alert("Wähle einmal den Ordner, in den die Beiträge sollen (z. B. design/werbung/Beiträge). Jeder Beitrag bekommt darin einen eigenen Unterordner.");
+    dir = await window.showDirectoryPicker({ id: "dunories-posts", mode: "readwrite" });
+    await idb("readwrite", (s) => s.put(dir, "dir")).catch(() => {});
+  }
+  return dir;
+}
+
+/** Einfaches ZIP (ohne Kompression) als Ersatz, wenn der Browser keine Ordner schreiben kann. */
+function zip(files) {
+  const crcT = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+  const crc = (b) => { let c = 0xFFFFFFFF; for (const x of b) c = crcT[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  const enc = new TextEncoder(), parts = [], central = [];
+  let off = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), data = f.data, c = crc(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+    h.setUint32(14, c, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+    ch.setUint32(16, c, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
+    ch.setUint32(42, off, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    off += 30 + name.length + data.length;
+  }
+  const size = central.reduce((a, b) => a + b.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, size, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: "application/zip" });
+}
+
+async function exportPost(chooseFolder) {
+  const p = project(), btn = document.getElementById("exportAll");
+  const date = new Date().toISOString().slice(0, 10);
+  const folder = `${date}_${slug(p.name)}`;
+  btn.disabled = true; btn.textContent = "Exportiere …";
+  try {
+    let dir = null;
+    if (window.showDirectoryPicker) {
+      try { dir = await exportRoot(chooseFolder); }
+      catch (e) { if (e.name === "AbortError") return; dir = null; }
+    }
+    const files = [];
+    for (let i = 0; i < p.slides.length; i++) files.push({ name: `Bild-${String(i + 1).padStart(2, "0")}.png`, data: await dataToBytes(await slidePng(i)) });
+    files.push({ name: "POSTEN.html", data: new TextEncoder().encode(postingPage(p, folder, files.map((f) => f.name))) });
+    if (dir) {
+      const sub = await dir.getDirectoryHandle(folder, { create: true });
+      for (const f of files) { const w = await (await sub.getFileHandle(f.name, { create: true })).createWritable(); await w.write(f.data); await w.close(); }
+      alert(`Fertig: Ordner „${folder}“ mit ${p.slides.length} Bildern und POSTEN.html.\nPOSTEN.html per Doppelklick öffnen.`);
+    } else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(zip(files.map((f) => ({ ...f, name: `${folder}/${f.name}` })))); a.download = `${folder}.zip`; a.click();
+    }
+    // Beiträge-Liste: TikTok + Instagram schon vormerken – nach dem Posten nur noch den Link einfügen.
+    for (const plat of ["TikTok", "Instagram"]) {
+      if (!state.posts.some((r) => r.plat === plat && r.title === p.name)) {
+        state.posts.push({ date, plat, title: p.name, link: "", views: 0, likes: 0, comments: 0, note: "", updated: date, history: [] });
+      }
+    }
+    save(); renderPosts();
   } catch (e) {
     alert("Export fehlgeschlagen – braucht Internet für die Export-Bibliothek. " + e);
-  } finally { holder.remove(); }
+  } finally { btn.disabled = false; btn.textContent = "Beitrag exportieren (Ordner)"; }
+}
+
+/** Seite im Export-Ordner: Bilder, alle Texte mit Kopieren-Knopf und Checkliste zum Abhaken (Stand: Posten-Checkliste.md). */
+function postingPage(p, folder, images) {
+  const cap = caption(p), alts = p.slides.map(altOf);
+  const copy = (label, text) => `<div class="cp"><div class="cph"><b>${esc(label)}</b><button onclick="cp(this)">Kopieren</button></div><pre>${esc(text)}</pre></div>`;
+  const chk = (id, html) => `<label class="ck"><input type="checkbox" data-id="${id}"><span>${html}</span></label>`;
+  const altBlock = alts.map((a, i) => copy(`Alternativtext Bild ${i + 1}`, a)).join("");
+  const ig = [
+    ["ig1", `<b>Bilder</b> in Reihenfolge wählen (Karussell): ${images.join(", ")} – optional Musik`],
+    ["ig2", `<b>Bildunterschrift</b> einfügen ↓`, copy("Bildunterschrift", cap)],
+    ["ig3", `<b>Ort:</b> optional (Stadt)`],
+    ["ig4", `<b>Collab-Partner:</b> leer lassen`],
+    ["ig5", `<b>KI-Label: AUS</b> (nur für realistische KI-Fotos/-Videos)`],
+    ["ig6", `<b>Erweiterte Einstellungen → Barrierefreiheit → Alternativtext</b> pro Bild ↓`, altBlock],
+    ["ig7", `Teilen → <b>Link kopieren</b> → im Studio unter „Beiträge“ beim Instagram-Eintrag einfügen`],
+  ];
+  const tt = [
+    ["tt1", `Bilder als <b>Fotomodus</b> hochladen: ${images.join(", ")}`],
+    ["tt2", `<b>Sound:</b> Trend-Sound, Lautstärke ca. 20–40 %, nicht immer derselbe`],
+    ["tt3", `<b>Titel</b> einfügen ↓`, copy("Titel", ttTitle(p))],
+    ["tt4", `<b>Beschreibung</b> einfügen ↓`, copy("Beschreibung", cap)],
+    ["tt5", `<b>Kommentare erlauben:</b> an · <b>Sichtbarkeit:</b> alle`],
+    ["tt6", `<b>Wiederverwendung (Duett/Stitch):</b> an`],
+    ["tt7", `<b>Inhaltsoffenlegung: AN → „Deine Marke“</b> (NICHT „Markenpartnerschaft“)`],
+    ["tt8", `<b>Anzeigenautorisierung: AUS</b> · <b>Nur als Anzeige anzeigen: AUS</b>`],
+    ["tt9", `<b>Alternativtext</b> pro Bild ↓ (bzw. alle in einem)`, altBlock + copy("Alle Alternativtexte in einem", alts.map((a, i) => `Bild ${i + 1}: ${a}`).join("\n"))],
+    ["tt10", `<b>KI-generierter Inhalt: AUS</b>`],
+    ["tt11", `<b>Visuelle Suche erlauben:</b> an`],
+    ["tt12", `<b>Mit Wasserzeichen speichern:</b> aus`],
+    ["tt13", `Teilen → <b>Link kopieren</b> → im Studio unter „Beiträge“ beim TikTok-Eintrag einfügen`],
+  ];
+  const list = (rows) => rows.map(([id, h, extra]) => chk(id, h) + (extra || "")).join("");
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Posten: ${esc(p.name)}</title><style>
+body{margin:0;background:#14141B;color:#F2F2F7;font-family:system-ui,"Segoe UI",sans-serif;font-size:15px}
+main{max-width:1200px;margin:0 auto;padding:24px}h1{margin:0 0 4px;font-size:26px}h2{margin:0 0 12px;font-size:20px}
+.hint{color:#A3A3B8;font-size:13px}.imgs{display:flex;gap:10px;overflow-x:auto;margin:16px 0 20px}.imgs figure{margin:0;text-align:center;font-size:12px;color:#A3A3B8}
+.imgs img{height:200px;border-radius:10px;display:block;margin-bottom:4px}.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}section{background:#1F1F29;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px}
+.ck{display:flex;gap:10px;align-items:flex-start;padding:8px 6px;border-radius:10px;cursor:pointer}.ck:hover{background:#2A2A36}
+.ck input{width:20px;height:20px;margin-top:1px;flex:none;accent-color:#3DDC84}.ck:has(input:checked) span{color:#6B6B78;text-decoration:line-through}
+.cp{margin:2px 0 10px 36px;background:#2A2A36;border-radius:12px;padding:8px 10px}.cph{display:flex;align-items:center;gap:8px}.cph b{flex:1;font-size:13px;color:#A3A3B8}
+pre{white-space:pre-wrap;margin:6px 0 0;font:inherit}button{font:inherit;cursor:pointer;border:0;background:#22D3EE;color:#0A0A0A;font-weight:700;border-radius:999px;padding:5px 12px}
+button.ok{background:#3DDC84}.top{display:flex;gap:12px;align-items:center}.top button{margin-left:auto;background:#2A2A36;color:#F2F2F7;border:1px solid rgba(255,255,255,.12)}
+.done{color:#3DDC84;font-weight:700}
+</style></head><body><main>
+<div class="top"><div><h1>${esc(p.name)}</h1><div class="hint">${esc(folder)} · Bilder 4:5 (1080 × 1350) · Abends/Wochenende posten, Kommentare in den ersten 1–2 Stunden beantworten</div></div>
+<span id="prog" class="hint"></span><button onclick="reset()">Haken zurücksetzen</button></div>
+<div class="imgs">${images.map((n, i) => `<figure><img src="${n}" alt="${esc(alts[i])}">${n}</figure>`).join("")}</div>
+<div class="cols"><section><h2>Instagram</h2>${list(ig)}</section><section><h2>TikTok</h2>${list(tt)}</section></div>
+<p class="hint">Tipp: Bilder direkt aus diesem Ordner ins Upload-Fenster ziehen. Unter ~200 Aufrufen nur Folie 1 (Hook) tauschen. In der eigenen TikTok-Ansicht wirkt das Bild oben/unten verdeckt – für andere passt es.</p>
+</main><script>
+const K="dunories-posten-"+${JSON.stringify(folder)};
+const st=JSON.parse(localStorage.getItem(K)||"{}");const boxes=[...document.querySelectorAll(".ck input")];
+function prog(){const d=boxes.filter(b=>b.checked).length;document.getElementById("prog").innerHTML=d===boxes.length?'<span class="done">Alles erledigt ✓</span>':d+" / "+boxes.length+" erledigt";}
+boxes.forEach(b=>{b.checked=!!st[b.dataset.id];b.onchange=()=>{st[b.dataset.id]=b.checked;localStorage.setItem(K,JSON.stringify(st));prog();};});prog();
+function reset(){boxes.forEach(b=>b.checked=false);localStorage.removeItem(K);prog();}
+async function cp(btn){const t=btn.closest(".cp").querySelector("pre").textContent;
+try{await navigator.clipboard.writeText(t);}catch(e){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();document.execCommand("copy");a.remove();}
+btn.textContent="Kopiert ✓";btn.classList.add("ok");setTimeout(()=>{btn.textContent="Kopieren";btn.classList.remove("ok");},1500);}
+<\/script></body></html>`;
 }
 
 document.getElementById("exportOne").onclick = () => exportSlide(sel);
-document.getElementById("exportAll").onclick = async () => { for (let i = 0; i < project().slides.length; i++) await exportSlide(i); };
+document.getElementById("exportAll").onclick = () => exportPost(false);
+document.getElementById("exportDir").onclick = () => exportPost(true);
 document.getElementById("format").onchange = (e) => { project().format = e.target.value; save(); renderAll(); };
 // Sicherheitsrahmen: nur Anzeige im Editor (wird nie exportiert)
 document.getElementById("safeToggle").onchange = (e) => document.getElementById("folien").classList.toggle("show-safe", e.target.checked);
