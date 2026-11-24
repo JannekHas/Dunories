@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dunories Studio</title>
+<!-- Erzeugt mit `node design/studio/build.mjs` → design/werbung/Dunories-Studio.html (lokal, nicht im Repo). -->
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js" integrity="sha384-UbfRVKN3/elS1r7JcK2FhmPP+KlJ4CvYwbyYD7tH+uTkbT9bNJr9eJeQ0FoFbAgz" crossorigin="anonymous"></script>
+<style>
+  @font-face { font-family: "Bricolage"; src: url(data:font/ttf;base64,__FONT__) format("truetype"); font-weight: 200 800; }
+  :root {
+    --bg: #14141B; --surface: #1F1F29; --surface2: #2A2A36; --line: rgba(255,255,255,.12);
+    --text: #F2F2F7; --muted: #A3A3B8;
+    --cyan: #22D3EE; --green: #3DDC84; --yellow: #FFD400; --orange: #FF8A1F; --red: #FF4D6D; --violet: #A855F7; --magenta: #F43FBF;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: "Bricolage", system-ui, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; border: 1px solid var(--line); background: var(--surface2); border-radius: 999px; padding: 8px 14px; }
+  button.primary { background: var(--cyan); color: #0A0A0A; border: 0; font-weight: 700; }
+  button.danger { color: var(--red); }
+  input, select, textarea { background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; width: 100%; }
+  textarea { resize: vertical; min-height: 64px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); z-index: 5; }
+  header h1 { font-size: 22px; margin: 0; }
+  header img { width: 34px; height: 34px; border-radius: 9px; }
+  nav { display: flex; gap: 6px; margin-left: 12px; }
+  nav button.active { background: var(--cyan); color: #0A0A0A; border-color: transparent; font-weight: 700; }
+  .page { display: none; padding: 20px; }
+  .page.active { display: block; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .toolbar select { width: auto; }
+  .hint { color: var(--muted); font-size: 13px; }
+
+  /* ---------- Folien-Editor ---------- */
+  .studio { display: grid; grid-template-columns: 220px 1fr 360px; gap: 20px; align-items: start; }
+  .thumbs { display: flex; flex-direction: column; gap: 10px; }
+  .thumb { border: 2px solid transparent; border-radius: 14px; overflow: hidden; cursor: pointer; background: #000; position: relative; }
+  .thumb.sel { border-color: var(--cyan); }
+  .thumb .num { position: absolute; top: 6px; left: 8px; font-size: 12px; background: rgba(0,0,0,.6); padding: 2px 8px; border-radius: 999px; }
+  .stage { background: #0C0C11; border-radius: 20px; padding: 16px; display: flex; justify-content: center; }
+  .editor { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px; position: sticky; top: 80px; }
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+  .swatch { width: 30px; height: 30px; border-radius: 50%; border: 3px solid transparent; padding: 0; }
+  .swatch.sel { border-color: #fff; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  @media (max-width: 1250px) { .studio { grid-template-columns: 200px 1fr; } .editor { grid-column: 1 / -1; position: static; } }
+
+  /* ---------- Folie (Originalgröße, Vorschau wird skaliert) ---------- */
+  .slide { width: 1080px; height: 1350px; position: relative; overflow: hidden; background: #14141B; color: #F2F2F7;
+    font-family: "Bricolage", sans-serif; padding: 92px 88px; display: flex; flex-direction: column; }
+  .slide.story { height: 1920px; padding-top: 220px; padding-bottom: 260px; }
+  .slide .bg { position: absolute; inset: 0; z-index: 0;
+    background: radial-gradient(900px 700px at 0% 0%, rgba(124,58,237,.38), transparent 70%),
+                radial-gradient(900px 800px at 100% 100%, rgba(14,116,144,.38), transparent 70%),
+                radial-gradient(700px 600px at 85% 15%, var(--glow), transparent 70%); }
+  .slide > *:not(.bg) { position: relative; z-index: 1; }
+  .slide .top { display: flex; align-items: center; gap: 18px; font-weight: 700; font-size: 38px; }
+  .slide .top img { width: 72px; height: 72px; border-radius: 18px; }
+  .slide .top .count { margin-left: auto; font-size: 30px; color: #A3A3B8; font-weight: 600; }
+  .slide h2 { font-weight: 800; letter-spacing: -2px; line-height: 1.02; margin: 0; }
+  .slide h2 em { font-style: normal; color: var(--accent); }
+  .slide .sub { font-size: 46px; color: #C9C9D6; line-height: 1.25; margin-top: 30px; font-weight: 500; }
+  .slide .bars { display: flex; gap: 14px; margin-top: auto; }
+  .slide .bars span { height: 16px; border-radius: 8px; }
+  .slide.t-titel h2 { font-size: 124px; margin-top: auto; }
+  .slide.t-titel .bars { margin-top: 90px; }
+  .slide.t-text h2 { font-size: 96px; margin-top: 120px; }
+  .slide .lines { margin-top: 70px; display: flex; flex-direction: column; gap: 26px; }
+  .slide .lines div { font-size: 50px; font-weight: 600; padding: 30px 36px; border-radius: 32px;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); }
+  .slide.t-screenshot h2 { font-size: 84px; margin-top: 56px; }
+  .slide.t-screenshot .sub { font-size: 40px; margin-top: 20px; }
+  .slide .phone { margin: 56px auto 0; width: 560px; flex: 0 1 auto; min-height: 0; border-radius: 64px; border: 10px solid #2C2C38;
+    overflow: hidden; background: #000; box-shadow: 0 0 120px var(--glow), 0 30px 80px rgba(0,0,0,.6); position: relative; }
+  .slide .phone img { width: 100%; display: block; }
+  .slide .phone.right { margin-right: 0; margin-left: auto; width: 540px; }
+  .slide .outro { margin-top: 50px; color: var(--accent); font-weight: 700; }
+  .slide .phone .empty { color: #A3A3B8; font-size: 34px; padding: 60px; text-align: center; }
+  .slide .inset { position: absolute; left: 70px; bottom: 120px; width: 330px; height: 330px; border-radius: 40px; overflow: hidden;
+    border: 8px solid var(--accent); box-shadow: 0 20px 60px rgba(0,0,0,.6); transform: rotate(-6deg); z-index: 2; }
+  .slide.story .inset { bottom: 330px; }
+  .slide .inset img { width: 100%; height: 100%; object-fit: cover; }
+  .slide.t-abschluss h2 { font-size: 132px; margin-top: auto; }
+  .slide .cta { margin-top: 60px; align-self: flex-start; background: var(--accent); color: #0A0A0A; font-weight: 800; font-size: 50px;
+    padding: 28px 46px; border-radius: 999px; }
+  .slide .bigicon { width: 260px; height: 260px; border-radius: 64px; margin-top: 40px; box-shadow: 0 0 140px var(--glow); }
+
+  /* ---------- Hooks & Beiträge ---------- */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+  .hooks { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
+  .hook { display: flex; gap: 10px; align-items: center; }
+  .hook.used span { text-decoration: line-through; color: var(--muted); }
+  .hook span { flex: 1; }
+  .hook input[type=checkbox] { width: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: middle; }
+  td input { padding: 4px 6px; }
+  .bar { height: 10px; border-radius: 5px; background: var(--cyan); }
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; min-width: 160px; }
+  .stat b { display: block; font-size: 26px; }
+
+  /* Render-Modus (für Bild-Export per Kommandozeile): nur die Folie */
+  body.render header, body.render .page { display: none !important; }
+  body.render { background: #14141B; }
+  #renderTarget { display: none; }
+  body.render #renderTarget { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <img src="data:image/png;base64,__LOGO__" alt="">
+  <h1>Dunories Studio</h1>
+  <nav>
+    <button data-tab="folien" class="active">Folien</button>
+    <button data-tab="hooks">Hooks</button>
+    <button data-tab="posts">Beiträge</button>
+  </nav>
+  <span class="hint" style="margin-left:auto">Alles bleibt in diesem Browser gespeichert · Sicherung über „JSON speichern“</span>
+</header>
+
+<section class="page active" id="folien">
+  <div class="toolbar">
+    <select id="format">
+      <option value="post">Instagram-Beitrag 4:5 (1080 × 1350)</option>
+      <option value="story">TikTok / Reel / Story 9:16 (1080 × 1920)</option>
+    </select>
+    <select id="projectSel"></select>
+    <button id="newProject">Neue Slideshow</button>
+    <button id="dupProject">Kopie</button>
+    <button id="delProject" class="danger">Slideshow löschen</button>
+    <span style="flex:1"></span>
+    <button id="exportOne">Folie als Bild</button>
+    <button id="exportAll" class="primary">Alle Folien als Bilder</button>
+  </div>
+  <div class="studio">
+    <div>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="row" style="margin-top:10px"><button id="addSlide">+ Folie</button></div>
+    </div>
+    <div class="stage"><div id="preview"></div></div>
+    <div class="editor" id="editor"></div>
+  </div>
+  <p class="hint">Tipp: *Wort* in der Überschrift färbt das Wort in der Akzentfarbe. Bilder (Screenshots) per Datei wählen – am besten echte Screenshots vom Handy.</p>
+</section>
+
+<section class="page" id="hooks">
+  <div class="toolbar">
+    <input id="newHook" placeholder="Eigener Hook …" style="max-width:520px">
+    <button id="addHook" class="primary">Hinzufügen</button>
+    <span class="hint">Abhaken, wenn benutzt · „→ Folie“ legt eine neue Slideshow mit dem Hook als Titel an</span>
+  </div>
+  <div class="hooks" id="hookList"></div>
+</section>
+
+<section class="page" id="posts">
+  <div class="stats" id="postStats"></div>
+  <div class="card">
+    <div class="toolbar">
+      <input id="pDate" type="date" style="max-width:160px">
+      <select id="pPlat" style="max-width:140px"><option>TikTok</option><option>Instagram</option></select>
+      <input id="pTitle" placeholder="Hook / Titel des Beitrags" style="max-width:420px">
+      <input id="pViews" type="number" min="0" placeholder="Aufrufe" style="max-width:120px">
+      <button id="addPost" class="primary">Beitrag eintragen</button>
+    </div>
+    <table>
+      <thead><tr><th>Datum</th><th>Plattform</th><th>Hook / Titel</th><th>Aufrufe</th><th></th><th>Likes</th><th>Kommentare</th><th>Notiz</th><th></th></tr></thead>
+      <tbody id="postRows"></tbody>
+    </table>
+    <p class="hint">Zahlen einfach überschreiben, wenn du später nachschaust. Unter ~200 Aufrufen: meist liegt es am Hook (erste Folie) – nur den tauschen.</p>
+  </div>
+  <div class="toolbar" style="margin-top:16px">
+    <button id="saveJson">JSON speichern (alles)</button>
+    <label style="margin:0"><input type="file" id="loadJson" accept="application/json" style="display:none"><span class="hint" style="cursor:pointer;text-decoration:underline" onclick="document.getElementById('loadJson').click()">JSON laden</span></label>
+  </div>
+</section>
+
+<div id="renderTarget"></div>
+
+<script>
+const ASSETS = {
+  logo: "data:image/png;base64,__LOGO__",
+  heute: "data:image/jpeg;base64,__IMG_HEUTE__",
+  vorschlag: "data:image/jpeg;base64,__IMG_VORSCHLAG__",
+  spaghetti: "data:image/jpeg;base64,__IMG_SPAGHETTI__",
+};
+const ACCENTS = { cyan: "#22D3EE", green: "#3DDC84", yellow: "#FFD400", orange: "#FF8A1F", red: "#FF4D6D", violet: "#A855F7", magenta: "#F43FBF" };
+const LAYOUTS = { titel: "Titel", text: "Text mit Punkten", screenshot: "Screenshot", abschluss: "Abschluss (Aufruf)" };
+
+const INTRO = {
+  name: "Vorstellung",
+  format: "post",
+  slides: [
+    { layout: "titel", accent: "cyan", title: "Ich bau mir meine *eigene* Kalorien-App.", sub: "Hi, ich bin Jannek 👋" },
+    { layout: "text", accent: "red", title: "Weil mich die anderen *genervt* haben.", lines: "🎰 Glücksrad statt fairer Preis\n📢 Werbung und Pop-ups\n🧩 Zu viel Kram, den ich nie nutze", sub: "Also hab ich meine eigene gebaut." },
+    { layout: "screenshot", accent: "green", title: "Nur das, was *du* brauchst.", sub: "Alles andere schaltest du einfach aus.", image: "asset:heute" },
+    { layout: "screenshot", accent: "yellow", title: "Foto rein. *Nährwerte* raus.", sub: "In Sekunden erkannt – du prüfst nur noch.", image: "asset:vorschlag", inset: "asset:spaghetti" },
+    { layout: "abschluss", accent: "magenta", title: "Bald im *Play Store*.", sub: "Willst du zu den Ersten gehören?", cta: "Kommentier 🧪 zum Testen" },
+  ],
+};
+
+const HOOKS = [
+  "Ich hab mir meine eigene Kalorien-App gebaut.",
+  "Du verlierst deine YAZIO-Streak nicht.",
+  "Foto machen, 3 Sekunden, fertig.",
+  "Diese App belohnt dich nie fürs Wenigeressen.",
+  "Kein Glücksrad. Kein Countdown. Ein fairer Preis.",
+  "Kalorien zählen nervt? Dann mach es so.",
+  "Warum ich meine Kalorien-App gewechselt habe.",
+  "Die Kalorien-App, die sich an dich anpasst.",
+  "Du brauchst keine 40 Funktionen. Du brauchst 3.",
+  "30 Tage jeden Tag eingetragen – das ist passiert.",
+  "Tag 1 meiner eigenen Fitness-App.",
+  "Ihr habt es euch gewünscht – hier ist es.",
+  "Unbekannter Barcode? Einmal fotografieren, nie wieder tippen.",
+  "So viel Protein steckt wirklich in deinem Frühstück.",
+  "Dein Kalorienziel ist wahrscheinlich falsch.",
+  "3 Fehler, die beim Kalorienzählen fast alle machen.",
+  "Wo die Kalorien in deinem Essen versteckt sind.",
+  "Ich zeig dir meine App – sag mir, was fehlt.",
+  "Die App, die deine Daten auf deinem Handy lässt.",
+  "Nährwerttabelle abfotografiert → fertig eingetragen.",
+  "Gericht fotografiert – die App erkennt die Zutaten.",
+  "Serie halten ohne Druck: so funktionieren meine Erfolge.",
+  "So sehen 2000 kcal wirklich aus.",
+  "Ich bau eine App und ihr entscheidet mit.",
+  "Warum meine App keine Werbung hat.",
+  "Nur Protein tracken? Ein Schalter.",
+  "Mit Freunden um die längste Serie spielen.",
+  "Meine App vs. die großen – ehrlich verglichen.",
+  "POV: Du willst abnehmen, aber keinen Bock auf Tabellen.",
+  "Was ich nach einem Monat App-Bauen gelernt habe.",
+];
+
+// ---------------- Speicher ----------------
+const KEY = "dunories-studio-v1";
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.projects) return s; } catch (e) {}
+  return { projects: [structuredClone(INTRO)], current: 0, hooks: HOOKS.map((t) => ({ t, used: false })), posts: [] };
+}
+let state = load();
+let sel = 0;
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch (e) { alert("Speicher voll – große Bilder entfernen oder „JSON speichern“ nutzen."); }
+}
+const project = () => state.projects[state.current];
+
+// ---------------- Folie bauen ----------------
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const rich = (s) => esc(s).replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/\n/g, "<br>");
+const img = (ref) => (ref && ref.startsWith("asset:") ? ASSETS[ref.slice(6)] : ref) || "";
+
+function slideEl(s, i, n, format) {
+  const el = document.createElement("div");
+  const accent = ACCENTS[s.accent] || ACCENTS.cyan;
+  el.className = `slide t-${s.layout}${format === "story" ? " story" : ""}`;
+  el.style.setProperty("--accent", accent);
+  el.style.setProperty("--glow", accent + "40");
+  let body = "";
+  if (s.layout === "titel") {
+    body = `<h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}
+      <div class="bars"><span style="width:240px;background:${accent}"></span><span style="width:90px;background:#FFD400"></span><span style="width:50px;background:#3DDC84"></span></div>`;
+  } else if (s.layout === "text") {
+    const lines = String(s.lines || "").split("\n").filter((l) => l.trim());
+    body = `<h2>${rich(s.title)}</h2>
+      <div class="lines">${lines.map((l) => `<div>${esc(l)}</div>`).join("")}</div>
+      ${s.sub ? `<div class="sub outro">${rich(s.sub)}</div>` : ""}
+      <div class="bars"><span style="width:240px;background:${accent}"></span><span style="width:90px;background:#FFD400"></span><span style="width:50px;background:#3DDC84"></span></div>`;
+  } else if (s.layout === "screenshot") {
+    body = `<h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}
+      <div class="phone${img(s.inset) ? " right" : ""}">${img(s.image) ? `<img src="${img(s.image)}">` : `<div class="empty">Screenshot im Editor rechts wählen</div>`}</div>
+      ${img(s.inset) ? `<div class="inset"><img src="${img(s.inset)}"></div>` : ""}`;
+  } else {
+    body = `<img class="bigicon" src="${ASSETS.logo}"><h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}
+      ${s.cta ? `<div class="cta">${esc(s.cta)}</div>` : ""}`;
+  }
+  // Abschluss zeigt das große Logo – oben dann nur die Seitenzahl (sonst doppelt).
+  const brand = s.layout === "abschluss" ? "" : `<img src="${ASSETS.logo}">Dunories`;
+  el.innerHTML = `<div class="bg"></div><div class="top">${brand}<span class="count">${i + 1}/${n}</span></div>${body}`;
+  return el;
+}
+
+function scaled(el, width) {
+  const w = 1080, h = el.classList.contains("story") ? 1920 : 1350, f = width / w;
+  const box = document.createElement("div");
+  box.style.cssText = `width:${w * f}px;height:${h * f}px;overflow:hidden;position:relative`;
+  el.style.transform = `scale(${f})`; el.style.transformOrigin = "0 0"; el.style.position = "absolute";
+  box.appendChild(el);
+  return box;
+}
+
+// ---------------- Oberfläche ----------------
+function renderAll() {
+  const p = project();
+  document.getElementById("format").value = p.format;
+  const ps = document.getElementById("projectSel");
+  ps.innerHTML = state.projects.map((x, i) => `<option value="${i}">${esc(x.name)}</option>`).join("");
+  ps.value = state.current;
+  sel = Math.min(sel, p.slides.length - 1);
+  const thumbs = document.getElementById("thumbs");
+  thumbs.innerHTML = "";
+  p.slides.forEach((s, i) => {
+    const t = document.createElement("div");
+    t.className = "thumb" + (i === sel ? " sel" : "");
+    t.appendChild(scaled(slideEl(s, i, p.slides.length, p.format), 196));
+    t.insertAdjacentHTML("beforeend", `<span class="num">${i + 1}</span>`);
+    t.onclick = () => { sel = i; renderAll(); };
+    thumbs.appendChild(t);
+  });
+  const prev = document.getElementById("preview");
+  prev.innerHTML = "";
+  if (p.slides[sel]) prev.appendChild(scaled(slideEl(p.slides[sel], sel, p.slides.length, p.format), p.format === "story" ? 390 : 520));
+  renderEditor();
+}
+
+function field(label, html) { return `<label>${label}</label>${html}`; }
+
+function renderEditor() {
+  const p = project(), s = p.slides[sel], ed = document.getElementById("editor");
+  if (!s) { ed.innerHTML = "<p class='hint'>Keine Folie – „+ Folie“ antippen.</p>"; return; }
+  ed.innerHTML = `
+    ${field("Name der Slideshow", `<input id="eName" value="${esc(p.name)}">`)}
+    ${field("Art der Folie", `<select id="eLayout">${Object.entries(LAYOUTS).map(([k, v]) => `<option value="${k}" ${k === s.layout ? "selected" : ""}>${v}</option>`).join("")}</select>`)}
+    ${field("Überschrift (*Wort* = farbig)", `<textarea id="eTitle">${esc(s.title)}</textarea>`)}
+    ${field("Untertitel", `<textarea id="eSub">${esc(s.sub)}</textarea>`)}
+    ${s.layout === "text" ? field("Punkte (eine Zeile pro Punkt)", `<textarea id="eLines" style="min-height:110px">${esc(s.lines)}</textarea>`) : ""}
+    ${s.layout === "abschluss" ? field("Aufruf (Knopf)", `<input id="eCta" value="${esc(s.cta)}">`) : ""}
+    ${field("Akzentfarbe", `<div class="swatches">${Object.entries(ACCENTS).map(([k, c]) => `<button class="swatch ${k === s.accent ? "sel" : ""}" data-acc="${k}" style="background:${c}" title="${k}"></button>`).join("")}</div>`)}
+    ${s.layout === "screenshot" ? field("Screenshot", `<input type="file" id="eImg" accept="image/*">`) + field("Kleines Bild unten links (optional, z. B. Essensfoto)", `<div class="row"><input type="file" id="eInset" accept="image/*"><button id="eInsetDel">weg</button></div>`) : ""}
+    <div class="row" style="margin-top:16px">
+      <button id="eUp">↑</button><button id="eDown">↓</button><button id="eDup">Kopie</button><button id="eDel" class="danger">Löschen</button>
+    </div>`;
+  const upd = (fn) => { fn(s); save(); renderAll(); };
+  const live = (id, key) => { const n = document.getElementById(id); if (n) n.oninput = () => { s[key] = n.value; save(); refreshPreview(); }; };
+  document.getElementById("eName").oninput = (e) => { p.name = e.target.value; save(); document.getElementById("projectSel").options[state.current].text = p.name; };
+  document.getElementById("eLayout").onchange = (e) => upd((x) => (x.layout = e.target.value));
+  live("eTitle", "title"); live("eSub", "sub"); live("eLines", "lines"); live("eCta", "cta");
+  ed.querySelectorAll(".swatch").forEach((b) => (b.onclick = () => upd((x) => (x.accent = b.dataset.acc))));
+  const file = (id, key) => { const n = document.getElementById(id); if (n) n.onchange = () => readImage(n.files[0], (d) => upd((x) => (x[key] = d))); };
+  file("eImg", "image"); file("eInset", "inset");
+  const del = document.getElementById("eInsetDel"); if (del) del.onclick = () => upd((x) => delete x.inset);
+  document.getElementById("eUp").onclick = () => move(-1);
+  document.getElementById("eDown").onclick = () => move(1);
+  document.getElementById("eDup").onclick = () => { p.slides.splice(sel + 1, 0, structuredClone(s)); sel++; save(); renderAll(); };
+  document.getElementById("eDel").onclick = () => { p.slides.splice(sel, 1); sel = Math.max(0, sel - 1); save(); renderAll(); };
+}
+
+function refreshPreview() {
+  // Beim Tippen nur Vorschau + Miniatur neu zeichnen (Editor-Fokus bleibt).
+  const p = project();
+  const prev = document.getElementById("preview");
+  prev.innerHTML = "";
+  prev.appendChild(scaled(slideEl(p.slides[sel], sel, p.slides.length, p.format), p.format === "story" ? 390 : 520));
+  const t = document.querySelectorAll(".thumb")[sel];
+  if (t) { t.firstChild.replaceWith(scaled(slideEl(p.slides[sel], sel, p.slides.length, p.format), 196)); }
+}
+
+function move(d) {
+  const sl = project().slides, j = sel + d;
+  if (j < 0 || j >= sl.length) return;
+  [sl[sel], sl[j]] = [sl[j], sl[sel]]; sel = j; save(); renderAll();
+}
+
+/** Bild verkleinern (max. 1200 px, JPEG) – spart Speicher im Browser. */
+function readImage(f, cb) {
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 1200 / Math.max(im.width, im.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      cb(c.toDataURL("image/jpeg", 0.88));
+    };
+    im.src = r.result;
+  };
+  r.readAsDataURL(f);
+}
+
+// ---------------- Export ----------------
+async function exportSlide(i) {
+  const p = project();
+  const holder = document.createElement("div");
+  holder.style.cssText = "position:fixed;left:-99999px;top:0";
+  const el = slideEl(p.slides[i], i, p.slides.length, p.format);
+  holder.appendChild(el); document.body.appendChild(holder);
+  await document.fonts.ready;
+  try {
+    const url = await htmlToImage.toPng(el, { pixelRatio: 1, cacheBust: true });
+    const a = document.createElement("a");
+    a.href = url; a.download = `${p.name.replace(/[^\wäöüÄÖÜß-]+/g, "_")}_${String(i + 1).padStart(2, "0")}.png`; a.click();
+  } catch (e) {
+    alert("Export fehlgeschlagen – braucht Internet für die Export-Bibliothek. " + e);
+  } finally { holder.remove(); }
+}
+
+document.getElementById("exportOne").onclick = () => exportSlide(sel);
+document.getElementById("exportAll").onclick = async () => { for (let i = 0; i < project().slides.length; i++) await exportSlide(i); };
+document.getElementById("format").onchange = (e) => { project().format = e.target.value; save(); renderAll(); };
+document.getElementById("projectSel").onchange = (e) => { state.current = +e.target.value; sel = 0; save(); renderAll(); };
+document.getElementById("newProject").onclick = () => {
+  state.projects.push({ name: "Neue Slideshow", format: project().format, slides: [{ layout: "titel", accent: "cyan", title: "Dein *Hook* hier", sub: "" }] });
+  state.current = state.projects.length - 1; sel = 0; save(); renderAll();
+};
+document.getElementById("dupProject").onclick = () => {
+  const c = structuredClone(project()); c.name += " (Kopie)"; state.projects.push(c); state.current = state.projects.length - 1; save(); renderAll();
+};
+document.getElementById("delProject").onclick = () => {
+  if (state.projects.length === 1) return alert("Die letzte Slideshow bleibt.");
+  if (!confirm(`„${project().name}“ löschen?`)) return;
+  state.projects.splice(state.current, 1); state.current = 0; sel = 0; save(); renderAll();
+};
+document.getElementById("addSlide").onclick = () => {
+  const sl = project().slides; sl.splice(sel + 1, 0, { layout: "text", accent: "cyan", title: "Überschrift", lines: "Punkt 1\nPunkt 2" }); sel++; save(); renderAll();
+};
+
+// ---------------- Hooks ----------------
+function renderHooks() {
+  const list = document.getElementById("hookList");
+  list.innerHTML = "";
+  state.hooks.forEach((h, i) => {
+    const d = document.createElement("div");
+    d.className = "card hook" + (h.used ? " used" : "");
+    d.innerHTML = `<input type="checkbox" ${h.used ? "checked" : ""}><span>${esc(h.t)}</span><button>→ Folie</button><button class="danger">✕</button>`;
+    const [cb, , toSlide, del] = d.children;
+    cb.onchange = () => { h.used = cb.checked; save(); renderHooks(); };
+    toSlide.onclick = () => {
+      state.projects.push({ name: h.t.slice(0, 40), format: project().format, slides: [{ layout: "titel", accent: "cyan", title: h.t, sub: "" }] });
+      state.current = state.projects.length - 1; sel = 0; save(); renderAll(); tab("folien");
+    };
+    del.onclick = () => { state.hooks.splice(i, 1); save(); renderHooks(); };
+    list.appendChild(d);
+  });
+}
+document.getElementById("addHook").onclick = () => {
+  const n = document.getElementById("newHook"); if (!n.value.trim()) return;
+  state.hooks.unshift({ t: n.value.trim(), used: false }); n.value = ""; save(); renderHooks();
+};
+
+// ---------------- Beiträge & Aufrufe ----------------
+function renderPosts() {
+  const rows = [...state.posts].sort((a, b) => (b.views || 0) - (a.views || 0));
+  const max = Math.max(1, ...rows.map((r) => r.views || 0));
+  const body = document.getElementById("postRows");
+  body.innerHTML = "";
+  rows.forEach((r) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${esc(r.date)}</td><td>${esc(r.plat)}</td><td>${esc(r.title)}</td>
+      <td><input type="number" min="0" value="${r.views || 0}" style="width:90px"></td>
+      <td style="width:160px"><div class="bar" style="width:${Math.round(((r.views || 0) / max) * 150)}px;background:${(r.views || 0) < 200 ? "var(--red)" : "var(--cyan)"}"></div></td>
+      <td><input type="number" min="0" value="${r.likes || 0}" style="width:70px"></td>
+      <td><input type="number" min="0" value="${r.comments || 0}" style="width:70px"></td>
+      <td><input value="${esc(r.note)}" placeholder="z. B. anderer Hook"></td>
+      <td><button class="danger">✕</button></td>`;
+    const ins = tr.querySelectorAll("input");
+    ins[0].onchange = () => { r.views = +ins[0].value; save(); renderPosts(); };
+    ins[1].onchange = () => { r.likes = +ins[1].value; save(); renderPosts(); };
+    ins[2].onchange = () => { r.comments = +ins[2].value; save(); renderPosts(); };
+    ins[3].onchange = () => { r.note = ins[3].value; save(); };
+    tr.querySelector("button").onclick = () => { state.posts.splice(state.posts.indexOf(r), 1); save(); renderPosts(); };
+    body.appendChild(tr);
+  });
+  const total = rows.reduce((a, r) => a + (r.views || 0), 0);
+  const avg = rows.length ? Math.round(total / rows.length) : 0;
+  const best = rows[0];
+  const byPlat = (p) => rows.filter((r) => r.plat === p).reduce((a, r) => a + (r.views || 0), 0);
+  document.getElementById("postStats").innerHTML = `
+    <div class="stat"><span class="hint">Beiträge</span><b>${rows.length}</b></div>
+    <div class="stat"><span class="hint">Aufrufe gesamt</span><b>${total.toLocaleString("de-DE")}</b></div>
+    <div class="stat"><span class="hint">Ø pro Beitrag</span><b>${avg.toLocaleString("de-DE")}</b></div>
+    <div class="stat"><span class="hint">TikTok / Instagram</span><b>${byPlat("TikTok").toLocaleString("de-DE")} / ${byPlat("Instagram").toLocaleString("de-DE")}</b></div>
+    <div class="stat" style="flex:1"><span class="hint">Bester Hook</span><b style="font-size:18px">${best ? esc(best.title) : "–"}</b></div>`;
+}
+document.getElementById("pDate").valueAsDate = new Date();
+document.getElementById("addPost").onclick = () => {
+  const t = document.getElementById("pTitle"), v = document.getElementById("pViews");
+  if (!t.value.trim()) return;
+  state.posts.push({ date: document.getElementById("pDate").value, plat: document.getElementById("pPlat").value, title: t.value.trim(), views: +v.value || 0, likes: 0, comments: 0, note: "" });
+  t.value = ""; v.value = ""; save(); renderPosts();
+};
+document.getElementById("saveJson").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(state)], { type: "application/json" }));
+  a.download = `dunories-studio_${new Date().toISOString().slice(0, 10)}.json`; a.click();
+};
+document.getElementById("loadJson").onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then((t) => { const s = JSON.parse(t); if (!s.projects) return alert("Keine Studio-Datei."); state = s; save(); renderAll(); renderHooks(); renderPosts(); });
+};
+
+// ---------------- Reiter & Start ----------------
+function tab(name) {
+  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
+  document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === name));
+}
+document.querySelectorAll("nav button").forEach((b) => (b.onclick = () => tab(b.dataset.tab)));
+
+// Render-Modus: …/Dunories-Studio.html#render=1&format=post – nur Folie 1 in Originalgröße (für Bild-Export per Kommandozeile).
+const hash = new URLSearchParams(location.hash.slice(1));
+if (hash.has("render")) {
+  document.body.classList.add("render");
+  const p = structuredClone(INTRO); p.format = hash.get("format") || p.format;
+  const i = +hash.get("render") - 1;
+  document.getElementById("renderTarget").appendChild(slideEl(p.slides[i], i, p.slides.length, p.format));
+} else {
+  renderAll(); renderHooks(); renderPosts();
+}
+</script>
+</body>
+</html>
