@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dunories Studio</title>
-<!-- Erzeugt mit `node design/studio/build.mjs` → design/werbung/Dunories-Studio.html (lokal, nicht im Repo). -->
+<!-- Erzeugt mit `node design/studio/build.mjs` → design/werbung/Dunories-Studio.html (lokal, nicht im Repo).
+     Looks: Neon, Foto, TikTok-Text, Notiz, Hell, Zeitung, Knallfarbe · Arten: Titel, Text, Screenshot, Kommentar-Antwort, Vergleich, Abschluss.
+     Je Folie: Schrift, Ausrichtung, Text-Position, Textgröße, Aufkleber, Foto verschieben/vergrößern. -->
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js" integrity="sha384-UbfRVKN3/elS1r7JcK2FhmPP+KlJ4CvYwbyYD7tH+uTkbT9bNJr9eJeQ0FoFbAgz" crossorigin="anonymous"></script>
 <style>
   @font-face { font-family: "Bricolage"; src: url(data:font/ttf;base64,__FONT__) format("truetype"); font-weight: 200 800; }
@@ -64,7 +66,7 @@
     background: radial-gradient(900px 700px at 0% 0%, rgba(124,58,237,.38), transparent 70%),
                 radial-gradient(900px 800px at 100% 100%, rgba(14,116,144,.38), transparent 70%),
                 radial-gradient(700px 600px at 85% 15%, var(--glow), transparent 70%); }
-  .slide > *:not(.bg):not(.deco):not(.safe) { position: relative; z-index: 1; }
+  .slide > *:not(.bg):not(.deco):not(.safe):not(.sticker) { position: relative; z-index: 1; }
   .slide .top { display: flex; align-items: center; gap: 18px; font-weight: 700; font-size: 38px; min-height: 72px; }
   .slide .top img { width: 72px; height: 72px; border-radius: 18px; }
   .slide .top .count { margin-left: auto; font-size: 30px; color: #A3A3B8; font-weight: 600; }
@@ -108,7 +110,7 @@
     border: 8px solid var(--accent); box-shadow: 0 20px 60px rgba(0,0,0,.6); transform: rotate(-6deg); z-index: 2; }
   .slide.story .inset { bottom: 560px; }
   .slide .inset img { width: 100%; height: 100%; object-fit: cover; }
-  .slide.t-abschluss h2 { font-size: 132px; margin-top: auto; }
+  .slide.t-abschluss h2 { font-size: 132px; margin-top: 40px; }
   .slide .cta { margin-top: 60px; align-self: flex-start; background: var(--accent); color: #0A0A0A; font-weight: 800; font-size: 50px;
     padding: 28px 46px; border-radius: 999px; }
   .slide .bigicon { width: 260px; height: 260px; border-radius: 64px; margin-top: 40px; box-shadow: 0 0 140px var(--glow); }
@@ -148,6 +150,107 @@
   .slide.l-hell .phone { border-color: #111114; box-shadow: 0 30px 80px rgba(0,0,0,.25); }
   .slide.l-hell h2 em { color: #111114; background: var(--accent); padding: 0 14px; border-radius: 18px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 
+
+  /* ---------- Block mit Text: Position (oben/mitte/unten) und Ausrichtung ---------- */
+  .slide .blk { display: flex; flex-direction: column; margin-top: auto; }
+  .slide.t-text .blk, .slide.t-vergleich .blk { margin: auto 0; }
+  .slide.v-top .blk { margin-top: 40px; margin-bottom: auto; }
+  .slide.v-center .blk { margin-top: auto; margin-bottom: auto; }
+  .slide.v-bottom .blk { margin-top: auto; margin-bottom: 0; }
+  .slide.a-center .blk, .slide.a-center > h2, .slide.a-center > .sub { text-align: center; align-items: center; }
+  .slide.a-center .cta, .slide.a-center .lines div { align-self: center; }
+  .slide.a-center .bars { justify-content: center; }
+
+  /* ---------- Look „TikTok-Text“: Text in weißen Kästchen wie in der TikTok-App (auch auf eigenem Foto) ---------- */
+  .slide.l-tiktok { background: #161616; }
+  .slide.l-tiktok .bg { background: #161616 center / cover no-repeat; }
+  .slide.l-tiktok h2 { font-family: system-ui, "Segoe UI", sans-serif; font-weight: 700; letter-spacing: 0; line-height: 1.5; color: #000; }
+  .slide.l-tiktok h2 .box { background: #fff; padding: 4px 22px; border-radius: 16px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .slide.l-tiktok h2 em { font-style: normal; color: #000; background: var(--accent); border-radius: 10px; padding: 0 8px; }
+  .slide.l-tiktok .sub { color: #fff; font-family: system-ui, "Segoe UI", sans-serif; line-height: 1.6; }
+  .slide.l-tiktok .sub .box { background: rgba(0,0,0,.75); padding: 4px 18px; border-radius: 12px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .slide.l-tiktok .lines div { background: #fff; color: #000; border: 0; align-self: flex-start; font-family: system-ui, "Segoe UI", sans-serif; padding: 14px 26px; border-radius: 16px; }
+  .slide.l-tiktok .top { color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.7); }
+  .slide.l-tiktok .top .count { color: #fff; }
+  .slide.l-tiktok .deco, .slide.l-tiktok .bars { display: none; }
+  .slide.l-tiktok .big { text-shadow: 0 6px 30px rgba(0,0,0,.6); }
+
+  /* ---------- Look „Zeitung“: Papier, Serifenschrift, Linien ---------- */
+  .slide.l-zeitung { background: #F2EDE2; color: #1B1B1B; }
+  .slide.l-zeitung .bg { background: radial-gradient(900px 700px at 100% 0%, rgba(0,0,0,.05), transparent 70%); }
+  .slide.l-zeitung .top { border-bottom: 6px double #1B1B1B; padding-bottom: 18px; font-family: Georgia, serif; letter-spacing: 3px; text-transform: uppercase; font-size: 28px; }
+  .slide.l-zeitung .top .count { color: #1B1B1B; font-size: 26px; }
+  .slide.l-zeitung h2 { font-family: Georgia, "Times New Roman", serif; color: #1B1B1B; letter-spacing: -1.5px; }
+  .slide.l-zeitung h2 em { font-style: italic; color: #1B1B1B; background: linear-gradient(transparent 62%, var(--accent) 62%); }
+  .slide.l-zeitung .sub, .slide.l-zeitung .outro { color: #3A3A3A; font-family: Georgia, serif; font-style: italic; }
+  .slide.l-zeitung .lines div { background: none; border: 0; border-top: 2px solid #1B1B1B; border-radius: 0; padding: 20px 0; color: #1B1B1B; font-family: Georgia, serif; font-weight: 400; }
+  .slide.l-zeitung .bars, .slide.l-zeitung .deco { display: none; }
+  .slide.l-zeitung .big { color: #1B1B1B; text-shadow: none; font-family: Georgia, serif; }
+  .slide.l-zeitung .phone { border-color: #1B1B1B; border-radius: 24px; box-shadow: 16px 16px 0 #1B1B1B; }
+  .slide.l-zeitung .cta { border-radius: 0; color: #1B1B1B; box-shadow: 8px 8px 0 #1B1B1B; }
+
+  /* ---------- Look „Knallfarbe“: ganze Folie in der Akzentfarbe, schwarze Schrift ---------- */
+  .slide.l-knall { background: var(--accent); color: #0A0A0A; }
+  .slide.l-knall .bg { background: radial-gradient(800px 700px at 100% 0%, rgba(255,255,255,.35), transparent 70%); }
+  .slide.l-knall h2, .slide.l-knall .sub, .slide.l-knall .outro { color: #0A0A0A; }
+  .slide.l-knall h2 em { color: #0A0A0A; font-style: normal; text-decoration: underline; text-decoration-thickness: 12px; text-underline-offset: 12px; }
+  .slide.l-knall .top .count { color: rgba(0,0,0,.6); }
+  .slide.l-knall .lines div { background: rgba(0,0,0,.1); border-color: rgba(0,0,0,.15); color: #0A0A0A; }
+  .slide.l-knall .big { color: #0A0A0A; text-shadow: none; }
+  .slide.l-knall .bars, .slide.l-knall .deco { display: none; }
+  .slide.l-knall .cta { background: #0A0A0A; color: var(--accent); }
+  .slide.l-knall .phone { border-color: #0A0A0A; box-shadow: 0 30px 80px rgba(0,0,0,.35); }
+
+  /* ---------- Art „Antwort auf Kommentar“ ---------- */
+  .slide .reply { align-self: flex-start; background: #fff; color: #111; border-radius: 28px; padding: 24px 32px; max-width: 88%;
+    box-shadow: 0 20px 50px rgba(0,0,0,.35); margin-bottom: 50px; font-family: system-ui, "Segoe UI", sans-serif; }
+  .slide .reply .rhead { display: flex; align-items: center; gap: 14px; font-size: 28px; color: #555; }
+  .slide .reply .av { width: 54px; height: 54px; border-radius: 50%; background: var(--accent); color: #000; display: flex;
+    align-items: center; justify-content: center; font-weight: 800; font-size: 26px; flex: none; }
+  .slide .reply .rtext { font-size: 42px; font-weight: 600; margin-top: 12px; line-height: 1.25; }
+  .slide.a-center .reply { align-self: center; text-align: left; }
+  .slide.l-hell .reply, .slide.l-zeitung .reply, .slide.l-notiz .reply { box-shadow: 0 14px 40px rgba(0,0,0,.15); border: 1px solid rgba(0,0,0,.08); }
+
+  /* ---------- Art „Vergleich“: zwei Spalten ---------- */
+  .slide .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 50px; text-align: left; align-self: stretch; }
+  .slide .vs .col { border-radius: 30px; padding: 28px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); }
+  .slide .vs .good { background: color-mix(in srgb, var(--accent) 16%, transparent); border: 2px solid var(--accent); }
+  .slide .vs .ch { font-size: 38px; font-weight: 800; margin-bottom: 14px; }
+  .slide .vs .bad .ch { opacity: .65; }
+  .slide .vs .good .ch { color: var(--accent); }
+  .slide .vs .it { font-size: 36px; line-height: 1.25; padding: 14px 0; display: flex; gap: 14px; border-top: 1px solid rgba(255,255,255,.12); }
+  .slide .vs .bad .it { opacity: .8; }
+  .slide .vs .bad .it span { color: #FF4D6D; font-weight: 800; }
+  .slide .vs .good .it span { color: var(--accent); font-weight: 800; }
+  .slide.l-hell .vs .col, .slide.l-zeitung .vs .col, .slide.l-notiz .vs .col { background: rgba(0,0,0,.04); border-color: rgba(0,0,0,.14); }
+  .slide.l-hell .vs .good, .slide.l-zeitung .vs .good, .slide.l-notiz .vs .good { border-color: #111; }
+  .slide.l-hell .vs .it, .slide.l-zeitung .vs .it, .slide.l-notiz .vs .it, .slide.l-knall .vs .it { border-top-color: rgba(0,0,0,.12); }
+  .slide.l-hell .vs .good .ch, .slide.l-zeitung .vs .good .ch, .slide.l-notiz .vs .good .ch { color: #111; }
+  .slide.l-knall .vs .col { background: rgba(0,0,0,.08); border-color: rgba(0,0,0,.25); }
+  .slide.l-knall .vs .good { background: #0A0A0A; color: var(--accent); }
+  .slide.l-knall .vs .good .ch, .slide.l-knall .vs .good .it span { color: var(--accent); }
+
+  /* ---------- Aufkleber (schräg, wie draufgeklebt) ---------- */
+  .slide .sticker { position: absolute; z-index: 3; background: var(--accent); color: #0A0A0A; font-weight: 800; font-size: 40px;
+    padding: 14px 30px; border-radius: 18px; box-shadow: 0 14px 36px rgba(0,0,0,.35); font-family: "Bricolage", sans-serif; white-space: nowrap; }
+  .slide .sticker.s-or { top: 150px; right: 70px; transform: rotate(6deg); }
+  .slide .sticker.s-ol { top: 150px; left: 70px; transform: rotate(-6deg); }
+  .slide .sticker.s-ur { bottom: 110px; right: 70px; transform: rotate(-5deg); }
+  .slide .sticker.s-ul { bottom: 110px; left: 70px; transform: rotate(4deg); }
+  .slide.story .sticker.s-or, .slide.story .sticker.s-ol { top: 300px; }
+  .slide.story .sticker.s-or, .slide.story .sticker.s-ur { right: 180px; }
+  .slide.story .sticker.s-ur, .slide.story .sticker.s-ul { bottom: 560px; }
+  .slide.l-knall .sticker { background: #0A0A0A; color: var(--accent); }
+
+  /* ---------- Schriften je Folie (zuletzt, damit sie den Look überschreiben) ---------- */
+  .slide.f-bricolage h2, .slide.f-bricolage .sub, .slide.f-bricolage .lines div { font-family: "Bricolage", sans-serif; }
+  .slide.f-serif h2 { font-family: Georgia, "Times New Roman", serif; letter-spacing: -1px; }
+  .slide.f-serif .sub, .slide.f-serif .lines div { font-family: Georgia, serif; }
+  .slide.f-hand h2, .slide.f-hand .sub, .slide.f-hand .lines div, .slide.f-hand .cta, .slide.f-hand .sticker { font-family: "Ink Free", "Segoe Print", "Comic Sans MS", cursive; letter-spacing: 0; font-weight: 700; }
+  .slide.f-impact h2 { font-family: Impact, "Arial Black", sans-serif; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; line-height: 1.04; }
+  .slide.f-mono h2, .slide.f-mono .sub, .slide.f-mono .lines div { font-family: Consolas, "Courier New", monospace; letter-spacing: -1px; }
+  .slide.f-system h2, .slide.f-system .sub, .slide.f-system .lines div { font-family: system-ui, "Segoe UI", sans-serif; letter-spacing: -1px; }
+
   /* ---------- Editor/Hooks/Beiträge ---------- */
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
   .hooks { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
@@ -161,6 +264,11 @@
   .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
   .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; min-width: 160px; }
   .stat b { display: block; font-size: 26px; }
+  .range { display: flex; gap: 10px; align-items: center; }
+  .range input { flex: 1; padding: 0; }
+  .range span { min-width: 48px; text-align: right; color: var(--muted); font-size: 13px; }
+  details.more { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 8px; }
+  details.more summary { cursor: pointer; color: var(--muted); font-size: 14px; padding: 6px 0; }
   .ptext { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .ptext pre { white-space: pre-wrap; background: var(--surface2); border-radius: 12px; padding: 12px; margin: 4px 0 0; font: inherit; font-size: 14px; }
   .alts li { margin-bottom: 8px; font-size: 14px; }
@@ -198,7 +306,9 @@
     <button id="dupProject">Kopie</button>
     <button id="delProject" class="danger">Slideshow löschen</button>
     <label class="check" style="margin:0"><input type="checkbox" id="safeToggle"> TikTok-Sicherheitsrahmen</label>
-    <label class="check" style="margin:0"><input type="checkbox" id="hideTopToggle"> Kopfzeile aus</label>
+    <label class="check" style="margin:0"><input type="checkbox" id="logoToggle"> Logo oben</label>
+    <label class="check" style="margin:0"><input type="checkbox" id="countToggle"> Seitenzahl</label>
+    <button id="mixLooks" title="Jede Folie bekommt einen anderen Look und eine andere Farbe – nie zweimal gleich hintereinander">Looks mischen</button>
     <span style="flex:1"></span>
     <button id="exportOne">Folie als Bild</button>
     <button id="exportAll" class="primary">Beitrag exportieren (Ordner)</button>
@@ -213,7 +323,7 @@
     <div class="editor" id="editor"></div>
   </div>
   <div class="card" id="postText" style="margin-top:20px"></div>
-  <p class="hint">TikTok überdeckt oben, rechts und unten Teile des Bildes – „TikTok-Sicherheitsrahmen“ zeigt die Bereiche (wird nicht exportiert); „Kopfzeile aus“ für TikTok-Versionen von 4:5-Beiträgen. Tipp: *Wort* färbt ein Wort in der Akzentfarbe. Looks abwechseln, damit kein Beitrag wie der letzte aussieht – und das Logo eher klein oder erst am Ende.</p>
+  <p class="hint">TikTok überdeckt oben, rechts und unten Teile des Bildes – „TikTok-Sicherheitsrahmen“ zeigt die Bereiche (wird nicht exportiert); „Logo oben“ und „Seitenzahl“ gelten für die ganze Slideshow (das Logo lässt sich je Folie zusätzlich ausblenden). Tipp: *Wort* färbt ein Wort in der Akzentfarbe. Looks abwechseln, damit kein Beitrag wie der letzte aussieht – und das Logo eher klein oder erst am Ende.</p>
 </section>
 
 <section class="page" id="hooks">
@@ -258,8 +368,14 @@ const ASSETS = {
   spaghetti: "data:image/jpeg;base64,__IMG_SPAGHETTI__",
 };
 const ACCENTS = { cyan: "#22D3EE", green: "#3DDC84", yellow: "#FFD400", orange: "#FF8A1F", red: "#FF4D6D", violet: "#A855F7", magenta: "#F43FBF" };
-const LAYOUTS = { titel: "Titel", text: "Text mit Punkten", screenshot: "Screenshot", abschluss: "Abschluss (Aufruf)" };
-const LOOKS = { neon: "Neon (dunkel)", foto: "Foto-Hintergrund", notiz: "Notiz", hell: "Hell" };
+const LAYOUTS = { titel: "Titel", text: "Text mit Punkten", screenshot: "Screenshot", kommentar: "Antwort auf Kommentar", vergleich: "Vergleich (2 Spalten)", abschluss: "Abschluss (Aufruf)" };
+const LOOKS = { neon: "Neon (dunkel)", foto: "Foto-Hintergrund", tiktok: "TikTok-Text (Kästchen)", notiz: "Notiz", hell: "Hell", zeitung: "Zeitung", knall: "Knallfarbe" };
+const FONTS = { auto: "passend zum Look", bricolage: "Bricolage (App)", system: "Schlicht (wie TikTok)", serif: "Serif (Zeitung)", hand: "Handschrift", impact: "Plakat", mono: "Schreibmaschine" };
+const VALIGN = { auto: "automatisch", top: "oben", center: "Mitte", bottom: "unten" };
+const STICKER_POS = { or: "oben rechts", ol: "oben links", ur: "unten rechts", ul: "unten links" };
+/** Grundgröße der Überschrift je Art (Textgröße-Regler skaliert davon). */
+const H2_SIZE = { titel: 124, text: 96, screenshot: 84, kommentar: 92, vergleich: 84, abschluss: 132 };
+const PHOTO_LOOKS = ["foto", "tiktok"];
 
 // ---------------- Vorlagen ----------------
 const PRESETS = {
@@ -302,6 +418,25 @@ const PRESETS = {
       { layout: "screenshot", look: "hell", accent: "green", title: "Schritt 2: Die KI erkennt die *Zutaten*.", sub: "Du prüfst nur noch.", image: "asset:vorschlag", inset: "asset:spaghetti" },
       { layout: "text", look: "notiz", accent: "violet", title: "Und wenn's mal danebenliegt?", lines: "✏️ Alles bleibt ein Vorschlag\n🗣️ Sag einfach, was es ist\n📦 Barcode & Etikett sind exakt" },
       { layout: "abschluss", look: "neon", accent: "magenta", title: "Willst du's *testen*?", sub: "Bald im Play Store", cta: "Kommentier 🧪" },
+    ],
+  },
+  kommentar: {
+    name: "Antwort auf Kommentar", format: "post",
+    slides: [
+      { layout: "kommentar", look: "tiktok", accent: "cyan", user: "lena", comment: "Und was kann die App, was die anderen nicht können?", title: "Gute Frage. Hier sind *3 Dinge*:", sub: "" },
+      { layout: "text", look: "zeitung", accent: "yellow", title: "1. Nur das, was du *brauchst*", lines: "Wasser, Plan, Fasten – alles zuschaltbar\nAusgeschaltet ist es einfach weg" },
+      { layout: "screenshot", look: "hell", accent: "green", title: "2. Foto rein, *fertig*.", sub: "Die KI schlägt vor, du prüfst.", image: "asset:vorschlag", inset: "asset:spaghetti" },
+      { layout: "titel", look: "knall", accent: "yellow", font: "impact", align: "center", valign: "center", title: "3. Kein Druck.", sub: "Keine Belohnung fürs Wenigeressen. Nie.", brand: false },
+      { layout: "abschluss", look: "neon", accent: "magenta", title: "Noch Fragen? Ab in die *Kommentare*.", sub: "", cta: "Folgen für den Start" },
+    ],
+  },
+  vergleich: {
+    name: "Ehrlich verglichen", format: "post",
+    slides: [
+      { layout: "titel", look: "tiktok", accent: "red", title: "Warum ich nicht einfach eine andere App nehme:", sub: "", brand: false },
+      { layout: "vergleich", look: "neon", accent: "green", title: "Ehrlich *verglichen*", leftT: "Typische Apps", leftLines: "Werbung\n40 Funktionen auf einmal\nAlles abtippen", rightT: "Dunories", rightLines: "Keine Werbung\nNur, was du einschaltest\nFoto rein, fertig" },
+      { layout: "titel", look: "notiz", accent: "yellow", font: "hand", title: "Und ich bau sie selbst – Feedback landet direkt bei mir.", sub: "" },
+      { layout: "abschluss", look: "knall", accent: "cyan", title: "Willst du testen?", sub: "Bald im Play Store", cta: "Kommentier 🧪" },
     ],
   },
   fehler: {
@@ -361,6 +496,8 @@ function load() {
   }
   // Ältere Studio-Version: „Der Anfang“ einmal dazulegen.
   if (!s.v) { s.projects.unshift(structuredClone(PRESETS.anfang)); s.current = 0; s.v = 2; }
+  // Früher „Kopfzeile aus“ (blendete Logo und Seitenzahl gemeinsam aus) → jetzt zwei Schalter.
+  s.projects.forEach((p) => { if (p.hideTop) { p.showLogo = false; p.showCount = false; } delete p.hideTop; });
   return s;
 }
 let state = load();
@@ -378,32 +515,48 @@ const img = (ref) => (ref && ref.startsWith("asset:") ? ASSETS[ref.slice(6)] : r
 const isEmoji = (t) => /\p{Extended_Pictographic}/u.test(t || "") && !/[0-9A-Za-zÄÖÜäöü]/.test(t || "");
 const NOTE_DATE = () => new Date().toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
 
-function slideEl(s, i, n, format) {
+function slideEl(s, i, n, format, proj = project()) {
   const el = document.createElement("div");
   const look = s.look || "neon";
   const accent = ACCENTS[s.accent] || ACCENTS.cyan;
-  el.className = `slide t-${s.layout} l-${look}${format === "story" ? " story" : ""}`;
+  const font = s.font && s.font !== "auto" ? ` f-${s.font}` : "";
+  el.className = `slide t-${s.layout} l-${look}${format === "story" ? " story" : ""}${font}${s.align === "center" ? " a-center" : ""}${s.valign && s.valign !== "auto" ? " v-" + s.valign : ""}`;
   el.style.setProperty("--accent", accent);
   el.style.setProperty("--glow", accent + (look === "hell" ? "55" : "40"));
-  const showBrand = s.brand !== false && look !== "notiz" && s.layout !== "abschluss";
-  const hideTop = state && project && project().hideTop && !hash.has("render");
+  const showLogo = proj.showLogo !== false && s.brand !== false && look !== "notiz" && s.layout !== "abschluss";
+  const showCount = proj.showCount !== false;
   const bars = `<div class="bars"><span style="width:240px;background:${accent}"></span><span style="width:90px;background:#FFD400"></span><span style="width:50px;background:#3DDC84"></span></div>`;
   const big = s.big ? `<div class="big${isEmoji(s.big) ? " emoji" : ""}">${esc(s.big)}</div>` : "";
+  // Überschrift: Größe per Regler; im TikTok-Look jede Zeile in ein weißes Kästchen.
+  let base = H2_SIZE[s.layout] || 100;
+  if (s.layout === "titel" && s.big) base = 104;
+  if (format === "story" && s.layout === "text") base = 112;
+  const size = Math.round(base * ((+s.size || 100) / 100));
+  const boxed = (html) => html.split("<br>").map((l) => `<span class="box">${l}</span>`).join("<br>");
+  const h2 = (text) => `<h2 style="font-size:${size}px">${look === "tiktok" ? boxed(rich(text)) : rich(text)}</h2>`;
+  const sub = (cls = "sub") => (s.sub ? `<div class="${cls}">${look === "tiktok" ? boxed(rich(s.sub)) : rich(s.sub)}</div>` : "");
+  const list = (t) => String(t || "").split("\n").filter((l) => l.trim());
   let body = "";
   if (s.layout === "titel") {
-    body = `${big}<h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}${look === "neon" ? bars : ""}`;
+    body = `<div class="blk">${big}${h2(s.title)}${sub()}${look === "neon" ? bars : ""}</div>`;
   } else if (s.layout === "text") {
-    const lines = String(s.lines || "").split("\n").filter((l) => l.trim());
-    body = `<div class="center">${big}<h2>${rich(s.title)}</h2>
-      <div class="lines">${lines.map((l) => `<div>${esc(l)}</div>`).join("")}</div>
-      ${s.sub ? `<div class="sub outro">${rich(s.sub)}</div>` : ""}</div>${look === "neon" ? bars : ""}`;
+    body = `<div class="blk">${big}${h2(s.title)}
+      <div class="lines">${list(s.lines).map((l) => `<div>${esc(l)}</div>`).join("")}</div>
+      ${sub("sub outro")}</div>${look === "neon" ? bars : ""}`;
   } else if (s.layout === "screenshot") {
-    body = `<h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}
+    body = `${h2(s.title)}${sub()}
       <div class="phone${img(s.inset) ? " right" : ""}">${img(s.image) ? `<img src="${img(s.image)}">` : `<div class="empty ph-hint">Screenshot im Editor rechts wählen</div>`}</div>
       ${img(s.inset) ? `<div class="inset"><img src="${img(s.inset)}"></div>` : ""}`;
+  } else if (s.layout === "kommentar") {
+    const user = String(s.user || "").replace(/^@/, "").trim() || "jemand";
+    body = `<div class="blk"><div class="reply"><div class="rhead"><span class="av">${esc(user.charAt(0).toUpperCase())}</span><span>Antwort auf den Kommentar von <b>${esc(user)}</b></span></div>
+      <div class="rtext">${esc(s.comment || "Dein Kommentar …")}</div></div>${big}${h2(s.title)}${sub()}</div>`;
+  } else if (s.layout === "vergleich") {
+    const col = (cls, head, lines, mark) => `<div class="col ${cls}"><div class="ch">${esc(head)}</div>${list(lines).map((l) => `<div class="it"><span>${mark}</span>${esc(l)}</div>`).join("")}</div>`;
+    body = `<div class="blk">${h2(s.title)}<div class="vs">${col("bad", s.leftT || "Andere Apps", s.leftLines, "✕")}${col("good", s.rightT || "Dunories", s.rightLines, "✓")}</div>${sub()}</div>`;
   } else {
-    body = `${look === "foto" ? "" : `<img class="bigicon" src="${ASSETS.logo}">`}${big}<h2>${rich(s.title)}</h2>${s.sub ? `<div class="sub">${rich(s.sub)}</div>` : ""}
-      ${s.cta ? `<div class="cta">${esc(s.cta)}</div>` : ""}`;
+    body = `<div class="blk">${look === "foto" || look === "tiktok" ? "" : `<img class="bigicon" src="${ASSETS.logo}">`}${big}${h2(s.title)}${sub()}
+      ${s.cta ? `<div class="cta">${esc(s.cta)}</div>` : ""}</div>`;
   }
   const safe = format === "story"
     ? `<div class="safe"><div style="left:0;right:0;top:0;height:250px"></div><span style="left:20px;top:200px">TikTok: Reiter/Suche</span>
@@ -412,16 +565,19 @@ function slideEl(s, i, n, format) {
     : `<div class="safe"><div style="left:0;right:0;top:0;height:130px"></div><span style="left:20px;top:84px">TikTok: Suchleiste</span>
         <div style="right:0;top:130px;width:130px;bottom:80px"></div><span style="right:10px;top:700px">Knöpfe</span>
         <div style="left:0;right:0;bottom:0;height:80px"></div></div>`;
-  const top = hideTop ? "" : look === "notiz"
+  // Kopfzeile: Logo und Seitenzahl einzeln schaltbar; ist beides aus, rückt der Inhalt nach oben.
+  const top = look === "notiz"
     ? `<div class="notehead"><span>‹ Notizen</span><span>Fertig</span></div><div class="notedate">${NOTE_DATE()}</div>`
-    : `<div class="top">${showBrand ? `<img src="${ASSETS.logo}">Dunories` : ""}<span class="count">${i + 1}/${n}</span></div>`;
-  const photo = img(s.bg);
-  const bg = look === "foto"
-    ? `<div class="bg" style="${photo ? `background-image:url('${photo}')` : ""}">${photo ? "" : `<div class="nophoto ph-hint">📷 Foto im Editor wählen</div>`}</div>`
-    : `<div class="bg"></div>`;
+    : showLogo || showCount
+      ? `<div class="top">${showLogo ? `<img src="${ASSETS.logo}">Dunories` : ""}${showCount ? `<span class="count">${i + 1}/${n}</span>` : ""}</div>`
+      : "";
+  const photo = PHOTO_LOOKS.includes(look) ? img(s.bg) : "";
+  const bgStyle = photo ? `background-image:url('${photo}');background-position:50% ${s.bgY ?? 50}%;transform:scale(${(+s.bgZoom || 100) / 100})` : "";
+  const bg = `<div class="bg" style="${bgStyle}">${look === "foto" && !photo ? `<div class="nophoto ph-hint">📷 Foto im Editor wählen</div>` : ""}</div>`;
   // Titel im Neon-Look ohne Riesen-Zahl: große Ringe angeschnitten als Blickfang (wirkt sonst leer)
   const deco = s.layout === "titel" && look === "neon" && !s.big ? `<img class="deco" src="${ASSETS.logo}">` : "";
-  el.innerHTML = `${bg}${deco}${top}${body}${safe}`;
+  const sticker = s.sticker ? `<div class="sticker s-${s.stickerPos || "or"}">${esc(s.sticker)}</div>` : "";
+  el.innerHTML = `${bg}${deco}${top}${body}${sticker}${safe}`;
   return el;
 }
 
@@ -438,7 +594,8 @@ function scaled(el, width) {
 function renderAll() {
   const p = project();
   document.getElementById("format").value = p.format;
-  document.getElementById("hideTopToggle").checked = !!p.hideTop;
+  document.getElementById("logoToggle").checked = p.showLogo !== false;
+  document.getElementById("countToggle").checked = p.showCount !== false;
   const ps = document.getElementById("projectSel");
   ps.innerHTML = state.projects.map((x, i) => `<option value="${i}">${esc(x.name)}</option>`).join("");
   ps.value = state.current;
@@ -464,42 +621,72 @@ function renderEditor() {
   const p = project(), s = p.slides[sel], ed = document.getElementById("editor");
   if (!s) { ed.innerHTML = "<p class='hint'>Keine Folie – „+ Folie“ antippen.</p>"; return; }
   const look = s.look || "neon";
+  const opts = (obj, cur) => Object.entries(obj).map(([k, v]) => `<option value="${k}" ${k === cur ? "selected" : ""}>${v}</option>`).join("");
+  const range = (id, label, val, min, max, step, unit) => field(label, `<div class="range"><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"><span id="${id}V">${val}${unit}</span></div>`);
+  const hasBlock = s.layout !== "screenshot";
   ed.innerHTML = `
     ${field("Name der Slideshow", `<input id="eName" value="${esc(p.name)}">`)}
     <div class="row">
-      <div>${field("Art der Folie", `<select id="eLayout">${Object.entries(LAYOUTS).map(([k, v]) => `<option value="${k}" ${k === s.layout ? "selected" : ""}>${v}</option>`).join("")}</select>`)}</div>
-      <div>${field("Look", `<select id="eLook">${Object.entries(LOOKS).map(([k, v]) => `<option value="${k}" ${k === look ? "selected" : ""}>${v}</option>`).join("")}</select>`)}</div>
+      <div>${field("Art der Folie", `<select id="eLayout">${opts(LAYOUTS, s.layout)}</select>`)}</div>
+      <div>${field("Look", `<select id="eLook">${opts(LOOKS, look)}</select>`)}</div>
     </div>
-    ${look === "foto" ? field("Hintergrund-Foto (z. B. du mit Handy)", `<input type="file" id="eBg" accept="image/*">`) : ""}
-    ${s.layout !== "screenshot" ? field("Riesen-Zahl oder Emoji (optional, z. B. 3 Sek. · 81 · 🔥)", `<input id="eBig" value="${esc(s.big)}">`) : ""}
-    ${field("Überschrift (*Wort* = farbig)", `<textarea id="eTitle">${esc(s.title)}</textarea>`)}
-    ${field(s.layout === "text" ? "Schlusssatz (optional)" : "Untertitel", `<textarea id="eSub">${esc(s.sub)}</textarea>`)}
+    ${PHOTO_LOOKS.includes(look) ? field(look === "foto" ? "Hintergrund-Foto (z. B. du mit Handy)" : "Hintergrund-Foto (optional)", `<div class="row"><input type="file" id="eBg" accept="image/*">${s.bg ? `<button id="eBgDel">weg</button>` : ""}</div>`) : ""}
+    ${PHOTO_LOOKS.includes(look) && s.bg ? range("eBgY", "Foto verschieben (oben ↔ unten)", s.bgY ?? 50, 0, 100, 1, "%") + range("eBgZoom", "Foto vergrößern", s.bgZoom || 100, 100, 250, 5, "%") : ""}
+    ${s.layout === "kommentar" ? field("Name im Kommentar", `<input id="eUser" value="${esc(s.user)}" placeholder="z. B. lena">`) + field("Kommentar, auf den du antwortest", `<textarea id="eComment">${esc(s.comment)}</textarea>`) : ""}
+    ${s.layout !== "screenshot" && s.layout !== "vergleich" ? field("Riesen-Zahl oder Emoji (optional, z. B. 3 Sek. · 81 · 🔥)", `<input id="eBig" value="${esc(s.big)}">`) : ""}
+    ${field(s.layout === "kommentar" ? "Deine Antwort (*Wort* = farbig)" : "Überschrift (*Wort* = farbig)", `<textarea id="eTitle">${esc(s.title)}</textarea>`)}
+    ${field(s.layout === "text" ? "Schlusssatz (optional)" : "Untertitel (optional)", `<textarea id="eSub">${esc(s.sub)}</textarea>`)}
     ${s.layout === "text" ? field("Punkte (eine Zeile pro Punkt)", `<textarea id="eLines" style="min-height:110px">${esc(s.lines)}</textarea>`) : ""}
+    ${s.layout === "vergleich" ? `<div class="row"><div>${field("Linke Spalte", `<input id="eLeftT" value="${esc(s.leftT)}" placeholder="Andere Apps">`)}${field("Punkte links (✕)", `<textarea id="eLeftLines" style="min-height:100px">${esc(s.leftLines)}</textarea>`)}</div>
+      <div>${field("Rechte Spalte", `<input id="eRightT" value="${esc(s.rightT)}" placeholder="Dunories">`)}${field("Punkte rechts (✓)", `<textarea id="eRightLines" style="min-height:100px">${esc(s.rightLines)}</textarea>`)}</div></div>` : ""}
     ${s.layout === "abschluss" ? field("Aufruf (Knopf)", `<input id="eCta" value="${esc(s.cta)}">`) : ""}
     ${field("Akzentfarbe", `<div class="swatches">${Object.entries(ACCENTS).map(([k, c]) => `<button class="swatch ${k === s.accent ? "sel" : ""}" data-acc="${k}" style="background:${c}" title="${k}"></button>`).join("")}</div>`)}
     ${s.layout === "screenshot" ? field("Screenshot", `<input type="file" id="eImg" accept="image/*">`) + field("Kleines Bild unten links (optional, z. B. Essensfoto)", `<div class="row"><input type="file" id="eInset" accept="image/*"><button id="eInsetDel">weg</button></div>`) : ""}
-    ${s.layout === "screenshot" || look === "foto" || s.inset ? field("Was ist auf dem Bild zu sehen? (für den Alternativtext)", `<input id="eSee" value="${esc(s.see)}" placeholder="z. B. Tagesübersicht mit bunten Ringen, 1.324 kcal verbleibend">`) : ""}
-    ${field("Alternativtext (leer = automatisch)", `<textarea id="eAlt" placeholder="automatisch">${esc(s.alt)}</textarea><div class="hint" id="eAltAuto"></div>`)}
-    ${look !== "notiz" && s.layout !== "abschluss" ? `<label class="check"><input type="checkbox" id="eBrand" ${s.brand !== false ? "checked" : ""}> Logo oben zeigen</label>` : ""}
+    <details class="more" ${s.font || s.align || s.valign || s.size || s.sticker ? "open" : ""}>
+      <summary>Gestaltung: Schrift, Größe, Position, Aufkleber</summary>
+      <div class="row">
+        <div>${field("Schrift", `<select id="eFont">${opts(FONTS, s.font || "auto")}</select>`)}</div>
+        <div>${field("Ausrichtung", `<select id="eAlign">${opts({ left: "links", center: "mittig" }, s.align || "left")}</select>`)}</div>
+      </div>
+      ${hasBlock ? field("Text-Position", `<select id="eValign">${opts(VALIGN, s.valign || "auto")}</select>`) : ""}
+      ${range("eSize", "Textgröße", s.size || 100, 60, 150, 5, "%")}
+      <div class="row">
+        <div>${field("Aufkleber (optional, z. B. Tag 12 · NEU · ehrlich)", `<input id="eSticker" value="${esc(s.sticker)}">`)}</div>
+        <div>${field("Wo?", `<select id="eStickerPos">${opts(STICKER_POS, s.stickerPos || "or")}</select>`)}</div>
+      </div>
+      ${look !== "notiz" && s.layout !== "abschluss" ? `<label class="check"><input type="checkbox" id="eBrand" ${s.brand !== false ? "checked" : ""}> Logo auf dieser Folie (wenn „Logo oben“ an ist)</label>` : ""}
+    </details>
+    <details class="more" ${s.alt || s.see ? "open" : ""}>
+      <summary>Alternativtext</summary>
+      ${s.layout === "screenshot" || PHOTO_LOOKS.includes(look) || s.inset ? field("Was ist auf dem Bild zu sehen?", `<input id="eSee" value="${esc(s.see)}" placeholder="z. B. Tagesübersicht mit bunten Ringen, 1.324 kcal verbleibend">`) : ""}
+      ${field("Alternativtext (leer = automatisch)", `<textarea id="eAlt" placeholder="automatisch">${esc(s.alt)}</textarea><div class="hint" id="eAltAuto"></div>`)}
+    </details>
     <div class="row" style="margin-top:16px">
-      <button id="eUp">↑</button><button id="eDown">↓</button><button id="eDup">Kopie</button><button id="eDel" class="danger">Löschen</button>
+      <button id="eUp">↑</button><button id="eDown">↓</button><button id="eDup">Kopie</button><button id="eDice" title="Look, Farbe und Schrift dieser Folie zufällig neu">Würfeln</button><button id="eDel" class="danger">Löschen</button>
     </div>`;
   const upd = (fn) => { fn(s); save(); renderAll(); };
   const showAuto = () => { const a = document.getElementById("eAltAuto"); if (a) a.textContent = "Automatisch: " + autoAlt(s); };
   const live = (id, key) => { const n = document.getElementById(id); if (n) n.oninput = () => { s[key] = n.value; save(); refreshPreview(true); showAuto(); renderPostText(); }; };
+  const liveNum = (id, key, unit) => { const n = document.getElementById(id); if (n) n.oninput = () => { s[key] = +n.value; document.getElementById(id + "V").textContent = n.value + unit; save(); refreshPreview(true); }; };
+  const pickSel = (id, key, def) => { const n = document.getElementById(id); if (n) n.onchange = () => upd((x) => { if (n.value === def) delete x[key]; else x[key] = n.value; }); };
   live("eSee", "see"); live("eAlt", "alt"); showAuto();
   document.getElementById("eName").oninput = (e) => { p.name = e.target.value; save(); document.getElementById("projectSel").options[state.current].text = p.name; };
   document.getElementById("eLayout").onchange = (e) => upd((x) => (x.layout = e.target.value));
   document.getElementById("eLook").onchange = (e) => upd((x) => (x.look = e.target.value));
-  live("eTitle", "title"); live("eSub", "sub"); live("eLines", "lines"); live("eCta", "cta"); live("eBig", "big");
+  ["eTitle:title", "eSub:sub", "eLines:lines", "eCta:cta", "eBig:big", "eUser:user", "eComment:comment", "eLeftT:leftT", "eLeftLines:leftLines", "eRightT:rightT", "eRightLines:rightLines", "eSticker:sticker"]
+    .forEach((x) => live(...x.split(":")));
+  liveNum("eSize", "size", "%"); liveNum("eBgY", "bgY", "%"); liveNum("eBgZoom", "bgZoom", "%");
+  pickSel("eFont", "font", "auto"); pickSel("eAlign", "align", "left"); pickSel("eValign", "valign", "auto"); pickSel("eStickerPos", "stickerPos", "or");
   ed.querySelectorAll(".swatch").forEach((b) => (b.onclick = () => upd((x) => (x.accent = b.dataset.acc))));
   const file = (id, key) => { const n = document.getElementById(id); if (n) n.onchange = () => readImage(n.files[0], (d) => upd((x) => (x[key] = d))); };
   file("eImg", "image"); file("eInset", "inset"); file("eBg", "bg");
   const del = document.getElementById("eInsetDel"); if (del) del.onclick = () => upd((x) => delete x.inset);
+  const bgDel = document.getElementById("eBgDel"); if (bgDel) bgDel.onclick = () => upd((x) => { delete x.bg; delete x.bgY; delete x.bgZoom; });
   const brand = document.getElementById("eBrand"); if (brand) brand.onchange = () => upd((x) => (x.brand = brand.checked));
   document.getElementById("eUp").onclick = () => move(-1);
   document.getElementById("eDown").onclick = () => move(1);
   document.getElementById("eDup").onclick = () => { p.slides.splice(sel + 1, 0, structuredClone(s)); sel++; save(); renderAll(); };
+  document.getElementById("eDice").onclick = () => upd((x) => shuffleSlide(x, p.slides[sel - 1]));
   document.getElementById("eDel").onclick = () => { p.slides.splice(sel, 1); sel = Math.max(0, sel - 1); save(); renderAll(); };
 }
 
@@ -548,10 +735,15 @@ const dot = (s) => (/[.!?…:👇]$/u.test(s) ? s : s + ".");
 /** Alternativtext nach Schema: <Art der Grafik/Screenshot> + was zu sehen ist + Text: <Text auf dem Bild>. */
 function autoAlt(s) {
   const look = s.look || "neon";
+  const pr = project();
+  const photo = PHOTO_LOOKS.includes(look) && img(s.bg);
   let art = s.layout === "screenshot" ? "Screenshot der App Dunories"
-    : look === "foto" ? "Foto" : look === "notiz" ? "Grafik im Stil einer Handy-Notiz"
-    : look === "hell" ? "Helle Grafik" : "Dunkle Grafik";
-  if (s.layout !== "screenshot" && (s.layout === "abschluss" ? look !== "foto" : s.brand !== false && look !== "notiz")) art += " mit dem Dunories-Logo";
+    : look === "foto" ? "Foto" : look === "tiktok" ? (photo ? "Foto mit Text in weißen Kästchen" : "Grafik mit Text in weißen Kästchen")
+    : look === "notiz" ? "Grafik im Stil einer Handy-Notiz" : look === "zeitung" ? "Grafik im Zeitungsstil"
+    : look === "knall" ? "Farbige Grafik" : look === "hell" ? "Helle Grafik" : "Dunkle Grafik";
+  if (s.layout === "kommentar") art += `, oben die Antwort auf einen Kommentar${s.user ? " von " + plain(s.user).replace(/^@/, "") : ""}: „${plain(s.comment)}“`;
+  if (s.layout === "vergleich") art += ", Vergleich in zwei Spalten";
+  if (s.layout !== "screenshot" && (s.layout === "abschluss" ? look !== "foto" && look !== "tiktok" : pr.showLogo !== false && s.brand !== false && look !== "notiz")) art += " mit dem Dunories-Logo";
   if (s.layout === "titel" && look === "neon" && !s.big) art += " und großen bunten Ringen";
   if (s.layout === "screenshot" && s.inset) art += ", daneben ein kleines Foto";
   const see = plain(s.see);
@@ -563,7 +755,12 @@ function autoAlt(s) {
     if (texts.length && texts[texts.length - 1].endsWith(":")) texts[texts.length - 1] += " " + dot(list); else texts.push(dot(list));
   }
   if (plain(s.sub)) texts.push(dot(plain(s.sub)));
+  if (s.layout === "vergleich") {
+    const side = (head, lines, def) => `${plain(head) || def}: ${String(lines || "").split("\n").map(plain).filter(Boolean).join(", ")}`;
+    texts.push(dot(`Links ${side(s.leftT, s.leftLines, "Andere Apps")}`), dot(`Rechts ${side(s.rightT, s.rightLines, "Dunories")}`));
+  }
   if (s.layout === "abschluss" && s.cta) texts.push(`Darunter ein Knopf: ${plain(s.cta)}`);
+  if (plain(s.sticker)) texts.push(dot(`Aufkleber: ${plain(s.sticker)}`));
   return `${art}${see ? ": " + dot(see) : "."}${texts.length ? " Text: " + texts.join(" ") : ""}`;
 }
 const altOf = (s) => plain(s.alt) || autoAlt(s);
@@ -779,7 +976,37 @@ document.getElementById("exportDir").onclick = () => exportPost(true);
 document.getElementById("format").onchange = (e) => { project().format = e.target.value; save(); renderAll(); };
 // Sicherheitsrahmen: nur Anzeige im Editor (wird nie exportiert)
 document.getElementById("safeToggle").onchange = (e) => document.getElementById("folien").classList.toggle("show-safe", e.target.checked);
-document.getElementById("hideTopToggle").onchange = (e) => { project().hideTop = e.target.checked; save(); renderAll(); };
+document.getElementById("logoToggle").onchange = (e) => { project().showLogo = e.target.checked; save(); renderAll(); };
+document.getElementById("countToggle").onchange = (e) => { project().showCount = e.target.checked; save(); renderAll(); };
+// Looks mischen: jede Folie anders (Look + Farbe), nie zweimal gleich hintereinander; Fotos/Notizen bleiben, wo sie Sinn haben.
+const pick = (arr, not) => { const c = arr.filter((x) => x !== not); return c[Math.floor(Math.random() * c.length)]; };
+function shuffleSlide(s, prev) {
+  const looks = Object.keys(LOOKS).filter((l) => l !== "foto" || img(s.bg));
+  s.look = s.look === "foto" && img(s.bg) ? pick(["foto", "tiktok"], prev?.look) : pick(looks, prev?.look);
+  s.accent = pick(Object.keys(ACCENTS), prev?.accent);
+  s.font = pick(["auto", "auto", "auto", "bricolage", "system", "serif", "hand", "impact"], prev?.font);
+}
+// Gemischt wird ohne Zurücklegen: erst kommt jeder Look einmal dran, dann wieder von vorn (Foto bleibt bei Folien mit Foto).
+const shuffled = (arr) => arr.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+document.getElementById("mixLooks").onclick = () => {
+  const sl = project().slides;
+  let looks = [], accents = [];
+  sl.forEach((s, i) => {
+    const prev = sl[i - 1];
+    if (!looks.length) looks = shuffled(Object.keys(LOOKS).filter((l) => l !== "foto"));
+    if (!accents.length) accents = shuffled(Object.keys(ACCENTS));
+    if (s.look === "foto" && img(s.bg)) {
+      s.look = prev?.look === "foto" ? "tiktok" : "foto";
+    } else {
+      const k = looks.findIndex((l) => l !== prev?.look);
+      s.look = looks.splice(Math.max(0, k), 1)[0];
+    }
+    const a = accents.findIndex((c) => c !== prev?.accent);
+    s.accent = accents.splice(Math.max(0, a), 1)[0];
+    s.font = pick(["auto", "auto", "auto", "bricolage", "system", "serif", "hand", "impact"], prev?.font);
+  });
+  save(); renderAll();
+};
 document.getElementById("projectSel").onchange = (e) => { state.current = +e.target.value; sel = 0; save(); renderAll(); };
 const presetSel = document.getElementById("presetSel");
 presetSel.innerHTML += Object.entries(PRESETS).map(([k, v]) => `<option value="${k}">${esc(v.name)}</option>`).join("");
@@ -910,7 +1137,7 @@ if (hash.has("render")) {
   const p = structuredClone(PRESETS[hash.get("preset") || "anfang"]);
   p.format = hash.get("format") || p.format;
   const i = +hash.get("render") - 1;
-  document.getElementById("renderTarget").appendChild(slideEl(p.slides[i], i, p.slides.length, p.format));
+  document.getElementById("renderTarget").appendChild(slideEl(p.slides[i], i, p.slides.length, p.format, p));
 } else {
   renderAll(); renderHooks(); renderPosts();
 }
