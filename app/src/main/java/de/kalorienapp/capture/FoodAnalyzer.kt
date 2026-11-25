@@ -36,7 +36,11 @@ class FoodAnalyzer(
 ) {
     private val barcodeScanner = BarcodeScanner()
 
-    suspend fun analyzePhoto(uri: Uri, onStage: (AnalysisStage) -> Unit): AnalysisResult {
+    /** Nur nachsehen, ob ein Barcode auf dem Foto ist (vor der Foto-Vorschau: Barcode → Vorschau überspringen). */
+    suspend fun scanBarcode(uri: Uri): String? = barcodeScanner.scan(ImageLoader.load(context, uri, maxSide = BARCODE_MAX_SIDE))
+
+    /** [hint] = was der Nutzer zum Foto gesagt hat (nur für die KI; bei einem Barcode egal). */
+    suspend fun analyzePhoto(uri: Uri, onStage: (AnalysisStage) -> Unit, hint: String? = null): AnalysisResult {
         onStage(AnalysisStage.BARCODE)
         val bitmap = ImageLoader.load(context, uri, maxSide = BARCODE_MAX_SIDE)
         val barcode = barcodeScanner.scan(bitmap)
@@ -47,7 +51,7 @@ class FoodAnalyzer(
             community?.lookup(barcode)?.let { return AnalysisResult.Drafts(listOf(it), ownBarcode = barcode, community = true) }
             return AnalysisResult.UnknownBarcode(barcode)
         }
-        return AnalysisResult.Drafts(analyzeWithAi(bitmap, onStage))
+        return AnalysisResult.Drafts(analyzeWithAi(bitmap, onStage, hint))
     }
 
     /** Foto direkt per KI analysieren (z. B. wenn der Barcode unbekannt ist). */

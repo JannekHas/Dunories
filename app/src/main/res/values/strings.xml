@@ -578,6 +578,15 @@
     <string name="channel_reminders">Erinnerungen</string>
     <string name="channel_reports">KI-Wochenauswertung</string>
     <string name="channel_ai">Erkanntes Essen</string>
+    <string name="capture_review_title">Foto prüfen</string>
+    <string name="capture_review_photo">Dein Foto</string>
+    <string name="capture_review_hint_title">Noch was dazu sagen? (optional)</string>
+    <string name="capture_review_hint_placeholder">z. B. Vollkorntoast mit Frischkäse und Putenbrust</string>
+    <string name="capture_review_send">Erkennen lassen</string>
+    <string name="capture_review_read">Ablesen lassen</string>
+    <string name="capture_review_retake">Neues Foto</string>
+    <string name="capture_hold_to_speak">Gedrückt halten und sprechen</string>
+    <string name="capture_hold_listening">Ich höre zu – loslassen zum Auslösen</string>
     <string name="ai_queue_hint">Dunories kann es im Hintergrund weiter versuchen und gibt dir Bescheid, sobald dein Essen erkannt ist.</string>
     <string name="ai_queue_button">Im Hintergrund erkennen lassen</string>
     <string name="capture_retry_now">Jetzt nochmal versuchen</string>

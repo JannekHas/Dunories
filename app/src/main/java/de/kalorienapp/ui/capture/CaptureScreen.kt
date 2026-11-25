@@ -67,6 +67,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -185,6 +195,14 @@ fun CaptureScreen(
                 )
             }
             is CaptureStep.Analyzing -> AnalyzingContent(step.stage, contentModifier)
+            is CaptureStep.Review -> ReviewContent(
+                review = step,
+                hint = state.hint,
+                onHintChange = viewModel::onHintChange,
+                onSubmit = viewModel::submitReview,
+                onRetake = viewModel::backToCamera,
+                modifier = contentModifier,
+            )
             is CaptureStep.UnknownBarcode -> MessageContent(
                 title = stringResource(R.string.capture_unknown_barcode_title),
                 message = stringResource(R.string.capture_unknown_barcode_text, step.barcode),
@@ -260,17 +278,51 @@ private fun CameraContent(
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         hasPermission = it
     }
-    fun shoot() {
+    fun shoot(hint: String? = null) {
         if (hasPermission && !capturing) {
             capturing = true
             controller.takePhoto(context) { uri ->
                 capturing = false
-                if (uri != null) viewModel.onPhoto(uri) else viewModel.onCaptureFailed()
+                when {
+                    uri == null -> viewModel.onCaptureFailed()
+                    hint.isNullOrBlank() -> viewModel.onPhoto(uri)
+                    else -> viewModel.onPhotoWithHint(uri, hint)
+                }
             }
         }
     }
+    // Versteckter Schnellweg: Auslöser gedrückt halten = sprechen, loslassen = Foto mit dem Gesagten (ohne Vorschau).
+    var holding by remember { mutableStateOf(false) }
+    var holdText by remember { mutableStateOf("") }
+    val holdSpeech = remember {
+        ContinuousSpeech(
+            context,
+            onUpdate = { segments, partial -> holdText = SpeechText.combine("", segments, partial, ", ") },
+            onLevel = {},
+            onStopped = {},
+        )
+    }
+    DisposableEffect(Unit) { onDispose { holdSpeech.destroy() } }
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    fun startHold() {
+        if (!hasPermission || capturing) return
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) return
+        holdText = ""
+        holding = true
+        holdSpeech.start()
+    }
+    fun endHold() {
+        if (!holding) return
+        holding = false
+        holdSpeech.stop()
+        shoot(holdText)
+    }
     // Lauter-/Leiser-Taste löst aus, solange die Kamera sichtbar ist.
-    val currentShoot by rememberUpdatedState(::shoot)
+    val currentShoot by rememberUpdatedState({ shoot() })
     DisposableEffect(Unit) {
         HardwareShutter.onPress = { currentShoot() }
         onDispose { HardwareShutter.onPress = null }
@@ -368,6 +420,23 @@ private fun CameraContent(
             }
         }
 
+        if (holding) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(start = 24.dp, end = 24.dp, bottom = 170.dp)
+                    .background(Color.Black.copy(alpha = 0.7f), MaterialTheme.shapes.large)
+                    .border(1.dp, Neon.Violet, MaterialTheme.shapes.large)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(stringResource(R.string.capture_hold_listening), color = Neon.Violet, style = MaterialTheme.typography.labelLarge)
+                if (holdText.isNotBlank()) {
+                    Text(holdText, color = Color.White, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp))
+                }
+            }
+        }
+
         // Feste Knopfleiste → Systemschrift begrenzen (Beschriftungen werden notfalls etwas kleiner).
         LimitFontScale {
         Row(
@@ -395,18 +464,39 @@ private fun CameraContent(
                 color = Neon.Yellow,
                 onClick = viewModel::showQuickPick,
             )
-            LargeFloatingActionButton(
+            // Antippen = Foto; gedrückt halten = sprechen, loslassen = Foto mit Hinweis (nicht beworben).
+            val shutterLabel = stringResource(R.string.capture_take_photo)
+            val holdLabel = stringResource(R.string.capture_hold_to_speak)
+            androidx.compose.material3.Surface(
                 shape = CircleShape,
-                onClick = ::shoot,
+                color = if (holding) Neon.Violet else androidx.compose.material3.FloatingActionButtonDefaults.containerColor,
+                contentColor = if (holding) Neon.OnNeon else MaterialTheme.colorScheme.onPrimaryContainer,
+                shadowElevation = 6.dp,
+                modifier = Modifier
+                    .size(96.dp)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = shutterLabel
+                        onClick { shoot(); true }
+                        onLongClick(holdLabel) { false }
+                    }
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { shoot() },
+                            onLongPress = { startHold() },
+                            onPress = {
+                                tryAwaitRelease()
+                                endHold()
+                            },
+                        )
+                    },
             ) {
-                if (capturing) {
-                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
-                } else {
-                    Icon(
-                        painterResource(R.drawable.ic_capture_camera),
-                        stringResource(R.string.capture_take_photo),
-                        modifier = Modifier.size(38.dp),
-                    )
+                Box(contentAlignment = Alignment.Center) {
+                    when {
+                        capturing -> CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                        holding -> Icon(painterResource(R.drawable.ic_mic), contentDescription = null, modifier = Modifier.size(38.dp))
+                        else -> Icon(painterResource(R.drawable.ic_capture_camera), contentDescription = null, modifier = Modifier.size(38.dp))
+                    }
                 }
             }
             CameraAction(
@@ -499,6 +589,69 @@ private fun TextInputContent(
     }
 }
 
+/** Foto ansehen, bevor es losgeht: neu machen (verschwommen?), etwas dazu sagen oder abschicken. */
+@Composable
+private fun ReviewContent(
+    review: CaptureStep.Review,
+    hint: String,
+    onHintChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onRetake: () -> Unit,
+    modifier: Modifier,
+) {
+    val context = LocalContext.current
+    var bitmap by remember(review.uri) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    LaunchedEffect(review.uri) {
+        bitmap = runCatching { de.kalorienapp.capture.ImageLoader.load(context, review.uri, maxSide = 1600).asImageBitmap() }.getOrNull()
+    }
+    Column(
+        modifier = modifier
+            .imePadding()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 200.dp, max = 420.dp)
+                .clip(MaterialTheme.shapes.large)
+                .background(Color.Black),
+            contentAlignment = Alignment.Center,
+        ) {
+            val image = bitmap
+            if (image != null) {
+                androidx.compose.foundation.Image(
+                    bitmap = image,
+                    contentDescription = stringResource(R.string.capture_review_photo),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                CircularProgressIndicator()
+            }
+        }
+        if (!review.label) {
+            Text(stringResource(R.string.capture_review_hint_title), style = MaterialTheme.typography.titleMedium)
+            SpeechButton(text = hint, onChange = onHintChange, separator = ", ")
+            OutlinedTextField(
+                value = hint,
+                onValueChange = onHintChange,
+                placeholder = { Text(stringResource(R.string.capture_review_hint_placeholder)) },
+                minLines = 2,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Button(onClick = onSubmit, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(if (review.label) R.string.capture_review_read else R.string.capture_review_send))
+        }
+        OutlinedButton(onClick = onRetake, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.capture_review_retake))
+        }
+    }
+}
+
 @Composable
 private fun AnalyzingContent(stage: AnalysisStage, modifier: Modifier) {
     // Statt Kreisel: was gerade passiert + Skelett des kommenden Vorschlags (zeigt, was gleich kommt).
@@ -568,6 +721,7 @@ private val CaptureStep.titleRes: Int
         CaptureStep.TextInput -> R.string.capture_describe
         is CaptureStep.QuickPick -> R.string.quick_title
         is CaptureStep.Analyzing -> R.string.capture_analyzing_title
+        is CaptureStep.Review -> R.string.capture_review_title
         is CaptureStep.UnknownBarcode, is CaptureStep.Failed -> R.string.capture_title
         is CaptureStep.Proposal -> R.string.proposal_title
     }

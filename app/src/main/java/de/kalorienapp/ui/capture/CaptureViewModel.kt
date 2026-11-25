@@ -67,6 +67,8 @@ sealed interface CaptureStep {
     data class UnknownBarcode(val barcode: String) : CaptureStep
     data class QuickPick(val selected: Set<String> = emptySet()) : CaptureStep
     data class Failed(val error: CaptureError) : CaptureStep
+    /** Foto ansehen, bevor es zur KI geht: neu machen, etwas dazu sagen oder abschicken (Tester-Wunsch Marek). */
+    data class Review(val uri: Uri, val label: Boolean) : CaptureStep
     data class Proposal(val items: List<ProposalItem>, val expandedId: Long?) : CaptureStep {
         val canSave: Boolean get() = items.isNotEmpty() && items.all { it.isValid }
     }
@@ -81,6 +83,8 @@ data class CaptureUiState(
     /** Im Vorschlag wird gerade ein weiteres Foto erkannt. */
     val adding: Boolean = false,
     val addError: CaptureError? = null,
+    /** Was der Nutzer in der Foto-Vorschau dazu sagt („Vollkorntoast mit Frischkäse“). */
+    val hint: String = "",
 )
 
 class CaptureViewModel(
@@ -248,7 +252,50 @@ class CaptureViewModel(
         route.queueId?.let(::openQueued)
     }
 
-    fun onPhoto(uri: Uri) = analyze(if (_state.value.labelMode) Input.Label(uri) else Input.Photo(uri))
+    /**
+     * Neues Foto (Kamera/Galerie): erst die Vorschau zum Prüfen bzw. Dazusagen. Ist ein Barcode drauf, geht es
+     * ohne Vorschau weiter – beim Scannen bringt ein Hinweis nichts und es soll kein Schritt dazukommen.
+     */
+    fun onPhoto(uri: Uri) {
+        val label = _state.value.labelMode
+        _state.update { it.copy(hint = "") }
+        if (label) {
+            setStep(CaptureStep.Review(uri, label = true))
+            return
+        }
+        pendingBarcode = null
+        analysisJob?.cancel()
+        analysisJob = viewModelScope.launch {
+            setStep(CaptureStep.Analyzing(AnalysisStage.BARCODE))
+            val barcode = try {
+                analyzer.scanBarcode(uri)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+            if (barcode != null) analyze(Input.Photo(uri)) else setStep(CaptureStep.Review(uri, label = false))
+        }
+    }
+
+    /** Auslöser gedrückt halten und sprechen (versteckter Schnellweg): Foto + Gesagtes gehen ohne Vorschau los. */
+    fun onPhotoWithHint(uri: Uri, hint: String) {
+        if (_state.value.labelMode || hint.isBlank()) return onPhoto(uri)
+        _state.update { it.copy(hint = hint.trim()) }
+        analyze(Input.Photo(uri, hint = hint.trim()))
+    }
+
+    fun onHintChange(text: String) = _state.update { it.copy(hint = text) }
+
+    /** Vorschau → abschicken (Barcode wurde schon geprüft). */
+    fun submitReview() {
+        val review = _state.value.step as? CaptureStep.Review ?: return
+        if (review.label) {
+            analyze(Input.Label(review.uri))
+        } else {
+            analyze(Input.Photo(review.uri, skipBarcode = true, hint = _state.value.hint.trim().ifBlank { null }))
+        }
+    }
 
     fun setLabelMode(enabled: Boolean) = _state.update { it.copy(labelMode = enabled) }
 
@@ -507,7 +554,7 @@ class CaptureViewModel(
                     is Input.Photo -> if (input.skipBarcode) {
                         proposalOf(analyzer.analyzePhotoWithAi(input.uri, onStage, input.hint), pendingBarcode)
                     } else {
-                        when (val result = analyzer.analyzePhoto(input.uri, onStage)) {
+                        when (val result = analyzer.analyzePhoto(input.uri, onStage, input.hint)) {
                             is AnalysisResult.Drafts -> proposalOf(result.drafts, result.ownBarcode, result.community)
                             is AnalysisResult.UnknownBarcode -> {
                                 pendingBarcode = result.barcode
