@@ -194,7 +194,10 @@
   .slide.l-knall { background: var(--accent); color: #0A0A0A; }
   .slide.l-knall .bg { background: radial-gradient(800px 700px at 100% 0%, rgba(255,255,255,.35), transparent 70%); }
   .slide.l-knall h2, .slide.l-knall .sub, .slide.l-knall .outro { color: #0A0A0A; }
-  .slide.l-knall h2 em { color: #0A0A0A; font-style: normal; text-decoration: underline; text-decoration-thickness: 12px; text-underline-offset: 12px; }
+  .slide.l-knall h2 { line-height: 1.16; }
+  /* Hervorhebung: Akzentfarbe ginge auf Akzent-Grund unter → invertiert (schwarzes Kästchen, Schrift in der Akzentfarbe) */
+  .slide.l-knall h2 em { color: var(--accent); background: #0A0A0A; font-style: normal; padding: 0 16px; border-radius: 16px;
+    box-decoration-break: clone; -webkit-box-decoration-break: clone; }
   .slide.l-knall .top .count { color: rgba(0,0,0,.6); }
   .slide.l-knall .lines div { background: rgba(0,0,0,.1); border-color: rgba(0,0,0,.15); color: #0A0A0A; }
   .slide.l-knall .big { color: #0A0A0A; text-shadow: none; }
