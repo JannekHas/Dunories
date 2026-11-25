@@ -6,7 +6,8 @@
 <title>Dunories Studio</title>
 <!-- Erzeugt mit `node design/studio/build.mjs` → design/werbung/Dunories-Studio.html (lokal, nicht im Repo).
      Looks: Neon, Foto, TikTok-Text, Notiz, Hell, Zeitung, Knallfarbe · Arten: Titel, Text, Screenshot, Kommentar-Antwort, Vergleich, Abschluss.
-     Je Folie: Schrift, Ausrichtung, Text-Position, Textgröße, Aufkleber, Foto verschieben/vergrößern. -->
+     Je Folie: Schrift, Ausrichtung, Text-Position, Textgröße, Aufkleber, Foto verschieben/vergrößern.
+     Vorlagen dürfen `post` (Texte zum Posten) mitbringen. -->
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js" integrity="sha384-UbfRVKN3/elS1r7JcK2FhmPP+KlJ4CvYwbyYD7tH+uTkbT9bNJr9eJeQ0FoFbAgz" crossorigin="anonymous"></script>
 <style>
   @font-face { font-family: "Bricolage"; src: url(data:font/ttf;base64,__FONT__) format("truetype"); font-weight: 200 800; }
@@ -418,6 +419,21 @@ const PRESETS = {
       { layout: "screenshot", look: "hell", accent: "green", title: "Schritt 2: Die KI erkennt die *Zutaten*.", sub: "Du prüfst nur noch.", image: "asset:vorschlag", inset: "asset:spaghetti" },
       { layout: "text", look: "notiz", accent: "violet", title: "Und wenn's mal danebenliegt?", lines: "✏️ Alles bleibt ein Vorschlag\n🗣️ Sag einfach, was es ist\n📦 Barcode & Etikett sind exakt" },
       { layout: "abschluss", look: "neon", accent: "magenta", title: "Willst du's *testen*?", sub: "Bald im Play Store", cta: "Kommentier 🧪" },
+    ],
+  },
+  versteckt: {
+    name: "Versteckte Kalorien (Beitrag 2)", format: "post", showCount: true,
+    post: {
+      hook: "Du zählst Kalorien und nimmst trotzdem nicht ab?",
+      text: "Beim Kalorienzählen gehen oft die kleinen Sachen unter: Öl in der Pfanne, Dressing, der Kaffee zwischendurch. Das sind schnell 300–400 kcal am Tag – und plötzlich ist dein Kaloriendefizit weg.",
+      call: "Ich baue gerade meine eigene Kalorien-App Dunories – folg mir, wenn du beim Start dabei sein willst.",
+      question: "Was vergisst du am häufigsten einzutragen? 👇",
+      ttTitle: "3 versteckte Kalorienfallen beim Abnehmen – Dunories",
+    },
+    slides: [
+      { layout: "titel", look: "tiktok", accent: "yellow", brand: false, valign: "center", title: "Du zählst Kalorien und nimmst *trotzdem* nicht ab?", sub: "Check mal diese 3 Dinge 👇" },
+      { layout: "text", look: "zeitung", accent: "orange", title: "Was beim Eintragen oft *fehlt*:", lines: "🥄 1 EL Öl beim Braten: ~90 kcal\n🥗 2 EL Dressing: ~120 kcal\n☕ Latte macchiato: ~150 kcal", sub: "Zusammen schnell 350 kcal – jeden Tag." },
+      { layout: "abschluss", look: "knall", accent: "cyan", size: 75, title: "Ich bau gerade eine App, die *genau das* leichter macht.", sub: "Foto rein – und du siehst, was drinsteckt.", cta: "Folgen für den Start" },
     ],
   },
   kommentar: {
