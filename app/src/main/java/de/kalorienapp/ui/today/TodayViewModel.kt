@@ -136,12 +136,17 @@ class TodayViewModel(
         viewModelScope.launch { aiQueue?.remove(id) }
     }
 
-    /** Neu freigeschalteter Erfolg (Level & Erfolge an) → kurze Karte oben auf „Heute“. */
-    val newAchievement: StateFlow<de.kalorienapp.domain.Gamification.Progress?> =
-        kotlinx.coroutines.flow.combine(game.state, settings.gamificationEnabled) { g, on -> if (on) g.newlyUnlocked.firstOrNull() else null }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    /**
+     * Neu freigeschaltete Erfolge (Level & Erfolge an) → kurze Karte oben auf „Heute“: einer nach dem anderen,
+     * bei vielen auf einmal (z. B. nach dem Einspielen einer Sicherung) eine Sammelkarte (Handy-Test 26.11.).
+     */
+    val newAchievements: StateFlow<List<de.kalorienapp.domain.Gamification.Progress>> =
+        kotlinx.coroutines.flow.combine(game.state, settings.gamificationEnabled) { g, on -> if (on) g.newlyUnlocked else emptyList() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun achievementSeen(achievement: de.kalorienapp.domain.Gamification.Progress) = game.markCelebrated(listOf(achievement))
+
+    fun achievementsSeen(list: List<de.kalorienapp.domain.Gamification.Progress>) = game.markCelebrated(list)
 
     /** Tester-Belohnungsprogramm: neu bewertetes Feedback → einmal „Danke, du hast x Punkte bekommen“. */
     private val _reward = MutableStateFlow<de.kalorienapp.account.AiStatus?>(null)
@@ -351,6 +356,12 @@ class TodayViewModel(
         return target + entry
     }
 
+    /** Eintrag auf einen anderen Tag (gleiche Mahlzeit, ans Ende). @return alter Stand für „Rückgängig“. */
+    fun moveToDay(entry: FoodEntry, day: LocalDate): FoodEntry {
+        viewModelScope.launch { entryRepository.save(entry.copy(date = day, sortKey = null)) }
+        return entry
+    }
+
     fun restoreAll(entries: List<FoodEntry>) {
         viewModelScope.launch { entryRepository.saveAll(entries) }
     }
@@ -445,6 +456,14 @@ class TodayViewModel(
             .takeIf { it.isNotEmpty() }
             ?.let { LeftoverSuggestion(meal, it) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Offene Reste – für „Doch alles gegessen“ im Menü eines Eintrags. */
+    val openLeftovers: StateFlow<List<de.kalorienapp.domain.model.Leftover>> =
+        leftovers.open.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun eatAll(entry: FoodEntry, rest: de.kalorienapp.domain.model.Leftover, onDone: (de.kalorienapp.data.repository.LeftoverUndo) -> Unit) {
+        viewModelScope.launch { onDone(leftovers.eatAll(entry, rest)) }
+    }
 
     fun groupDish(entries: List<FoodEntry>, name: String, eatenAmount: Double, onDone: (de.kalorienapp.data.repository.LeftoverUndo.Grouped) -> Unit) {
         viewModelScope.launch { leftovers.group(entries, name, eatenAmount)?.let(onDone) }

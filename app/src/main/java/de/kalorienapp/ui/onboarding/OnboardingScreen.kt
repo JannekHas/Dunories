@@ -1,5 +1,7 @@
 package de.kalorienapp.ui.onboarding
 
+import kotlinx.coroutines.launch
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -17,6 +19,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -137,6 +141,11 @@ fun OnboardingScreen(
         Page.GOAL_DETAILS -> form.isValid && goal?.direction == if (choice == GoalChoice.GAIN) Goal.GAIN else Goal.LOSE
     }
 
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val imeVisible = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
+
     fun back() {
         forward = false
         index--
@@ -146,6 +155,16 @@ fun OnboardingScreen(
         if (page == Page.NAME) onSaveName(name.trim().take(Feedback.MAX_NAME))
         if (isLast) {
             viewModel.save(withGoal = choice != GoalChoice.NONE) { saved = true }
+        } else if (imeVisible) {
+            // Tastatur erst schließen, dann weiter – sonst springt die nächste Seite mit dem Tastatur-Rand kurz
+            // runter und wieder hoch (Handy-Test 26.11.).
+            keyboard?.hide()
+            focusManager.clearFocus()
+            scope.launch {
+                kotlinx.coroutines.delay(KEYBOARD_CLOSE_MS)
+                forward = true
+                index++
+            }
         } else {
             forward = true
             index++
@@ -408,3 +427,6 @@ private fun PageHint(text: String) {
 private const val DEFAULT_AGE = 30
 private const val MIN_WEIGHT = 30.0
 private const val MAX_WEIGHT = 300.0
+
+/** So lange schließt sich die Tastatur, bevor die nächste Seite kommt. */
+private const val KEYBOARD_CLOSE_MS = 250L

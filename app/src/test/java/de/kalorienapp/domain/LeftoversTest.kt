@@ -106,10 +106,34 @@ class LeftoversTest {
         assertEquals(7L, remaining.id)
         assertEquals(450.0, remaining.amount, 0.001)
         assertEquals(300.0, remaining.portionAmount!!, 0.001)
-        assertNull(remaining.dismissedDay)
+        // heute schon davon gegessen → heute nicht noch einmal vorschlagen
+        assertEquals(next, remaining.dismissedDay)
+        assertTrue(!Leftovers.suggestOn(remaining, next, MealType.DINNER))
+        assertTrue(Leftovers.suggestOn(remaining, next.plusDays(1), MealType.LUNCH))
         val second = Leftovers.take(remaining, 450.0, next, MealType.DINNER, now = 60)
         assertNull(second.remaining)
         assertEquals(720.0, second.entry.nutrients.kcal, 0.001)
+    }
+
+    @Test
+    fun `doch alles gegessen holt den rest zurueck`() {
+        val split = Leftovers.group(listOf(mince, beans, rice), "Chili", 750.0, 0)!!
+        val dish = split.eaten.copy(id = 5)
+        val rest = split.leftover!!.copy(id = 9)
+        assertEquals(rest, Leftovers.restOf(dish, listOf(open, rest)))
+        val full = Leftovers.eatAll(dish, rest)
+        assertEquals(5L, full.id)
+        assertEquals(1500.0, full.amount!!, 0.001)
+        assertEquals(2400.0, full.nutrients.kcal, 0.001)
+        assertEquals(3, full.components.size)
+        // einzelnes Lebensmittel bleibt ein Lebensmittel
+        val single = Leftovers.partial(rice.copy(id = 3), 200.0, 0)!!
+        val back = Leftovers.eatAll(single.eaten, single.leftover!!)
+        assertEquals(600.0, back.amount!!, 0.001)
+        assertEquals(800.0, back.nutrients.kcal, 0.001)
+        assertTrue(!back.isDish)
+        // anderer Tag → kein passender Rest
+        assertNull(Leftovers.restOf(dish.copy(date = day.plusDays(1)), listOf(rest)))
     }
 
     @Test

@@ -256,9 +256,9 @@ class CaptureViewModel(
      * Neues Foto (Kamera/Galerie): erst die Vorschau zum Prüfen bzw. Dazusagen. Ist ein Barcode drauf, geht es
      * ohne Vorschau weiter – beim Scannen bringt ein Hinweis nichts und es soll kein Schritt dazukommen.
      */
-    fun onPhoto(uri: Uri) {
+    fun onPhoto(uri: Uri, hint: String = "") {
         val label = _state.value.labelMode
-        _state.update { it.copy(hint = "") }
+        _state.update { it.copy(hint = hint.trim()) }
         if (label) {
             setStep(CaptureStep.Review(uri, label = true))
             return
@@ -278,12 +278,11 @@ class CaptureViewModel(
         }
     }
 
-    /** Auslöser gedrückt halten und sprechen (versteckter Schnellweg): Foto + Gesagtes gehen ohne Vorschau los. */
-    fun onPhotoWithHint(uri: Uri, hint: String) {
-        if (_state.value.labelMode || hint.isBlank()) return onPhoto(uri)
-        _state.update { it.copy(hint = hint.trim()) }
-        analyze(Input.Photo(uri, hint = hint.trim()))
-    }
+    /**
+     * Auslöser gedrückt halten und sprechen (versteckter Schnellweg): landet in der Foto-Vorschau, das Gesagte steht
+     * schon im Feld – noch korrigierbar, dann „Erkennen lassen“ (Wunsch aus dem Handy-Test 26.11.).
+     */
+    fun onPhotoWithHint(uri: Uri, hint: String) = onPhoto(uri, if (_state.value.labelMode) "" else hint)
 
     fun onHintChange(text: String) = _state.update { it.copy(hint = text) }
 
@@ -545,6 +544,13 @@ class CaptureViewModel(
         // Neues Foto/neue Beschreibung: ein früher unbekannter Barcode gilt nicht mehr (Etikett/KI danach schon).
         if ((input is Input.Photo && !input.skipBarcode) || input is Input.Text) pendingBarcode = null
         analysisJob?.cancel()
+        // Ohne Netz sofort „Im Hintergrund erkennen lassen“ anbieten statt erst auf die KI zu warten.
+        // (Foto mit möglichem Barcode darf weiter: eigene Barcodes und der Barcode-Zwischenspeicher gehen offline.)
+        val needsAi = input is Input.Text || input is Input.Label || (input is Input.Photo && input.skipBarcode)
+        if (needsAi && !analyzer.isOnline()) {
+            setStep(CaptureStep.Failed(CaptureError.NETWORK))
+            return
+        }
         analysisJob = viewModelScope.launch {
             val onStage: (AnalysisStage) -> Unit = { stage -> setStep(CaptureStep.Analyzing(stage)) }
             try {

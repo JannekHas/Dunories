@@ -715,7 +715,7 @@
     <string name="report_error_data">Zu wenig Daten: Trage an mindestens 2 Tagen etwas ein.</string>
     <!-- Datensicherung -->
     <string name="section_backup">Datensicherung</string>
-    <string name="backup_text">Sichert alles – Tagebuch, Rezepte mit Bildern, Gewichte, Ziele, Auswertungen, Einkaufsliste und Einstellungen – in eine Datei. Die Datei bleibt bei dir: teilen (z. B. an dich per WhatsApp) oder auf dem Gerät speichern.</string>
+    <string name="backup_text">Sichert alles – Tagebuch, Rezepte mit Bildern, Gewichte, Ziele, Auswertungen, Einkaufsliste und Einstellungen – in eine Datei. Die Datei bleibt bei dir. „Speichern“ legt sie auf diesem Handy ab – von dort spielst du sie wieder ein. „Teilen“ schickt sie weiter, z. B. aufs neue Handy (dort erst speichern, dann einspielen).</string>
     <string name="backup_share">Sicherung teilen</string>
     <string name="backup_save">Speichern…</string>
     <string name="backup_restore">Sicherung einspielen</string>
@@ -1133,7 +1133,7 @@
     <string name="social_streak_current">Aktuell</string>
     <string name="social_streak_longest">Längste</string>
     <string name="social_streak_hint">Tage am Stück, an denen du etwas eingetragen hast. Heute zählt mit, sobald du einträgst.</string>
-    <string name="social_streak_hint_imported">Tage am Stück mit Einträgen – deine Serie aus YAZIO ist eingerechnet.</string>
+    <string name="social_streak_hint_imported">Tage am Stück mit Einträgen – deine übernommene Serie ist eingerechnet.</string>
     <plurals name="social_streak_days">
         <item quantity="one">%1$d Tag</item>
         <item quantity="other">%1$d Tage</item>
@@ -1142,10 +1142,10 @@
         <item quantity="one">Längste Serie: %1$d Tag</item>
         <item quantity="other">Längste Serie: %1$d Tage</item>
     </plurals>
-    <string name="yazio_title">Serie aus YAZIO übernehmen</string>
-    <string name="yazio_intro">Du kommst von YAZIO? Nimm deine Serie mit – deine Tage am Stück zählen hier weiter.</string>
+    <string name="yazio_title">Serie aus einer anderen App übernehmen</string>
+    <string name="yazio_intro">Du kommst von einer anderen Kalorien-App? Nimm deine Serie mit – deine Tage am Stück zählen hier weiter.</string>
     <string name="yazio_how_title">So geht’s</string>
-    <string name="yazio_how">1. Öffne YAZIO und tipp oben rechts auf die Flamme.\n2. Mach einen Screenshot von der Seite mit deiner Serie.\n3. Wähl ihn hier aus – die KI liest die Zahlen ab. Du kannst sie auch einfach eintippen.</string>
+    <string name="yazio_how">1. Öffne deine bisherige App und such deine Serie (meist eine Flamme mit „Tage in Folge“).\n2. Mach einen Screenshot von der Seite mit deiner Serie.\n3. Wähl ihn hier aus – die KI liest die Zahlen ab. Du kannst sie auch einfach eintippen.</string>
     <string name="yazio_pick">Screenshot wählen</string>
     <string name="yazio_nothing">Auf dem Bild war keine Serie zu erkennen. Nimm den Screenshot von der Seite mit „Tage in Folge“ – oder tipp die Zahlen ein.</string>
     <string name="yazio_read_done">Abgelesen – prüf die Zahlen kurz.</string>
@@ -1157,8 +1157,8 @@
     <string name="yazio_saved_on">Übernommen am %1$s. Neu übernehmen ersetzt die alten Zahlen.</string>
     <string name="yazio_remove">Übernommene Serie entfernen</string>
     <string name="yazio_later">Später</string>
-    <string name="yazio_settings_entry">Serie aus YAZIO übernehmen</string>
-    <string name="yazio_onboarding_entry">Du kommst von YAZIO? Serie mitnehmen</string>
+    <string name="yazio_settings_entry">Serie aus einer anderen App übernehmen</string>
+    <string name="yazio_onboarding_entry">Du kommst von einer anderen Kalorien-App? Serie mitnehmen</string>
     <string name="rarity_common">Gewöhnlich</string>
     <string name="rarity_uncommon">Ungewöhnlich</string>
     <string name="rarity_rare">Selten</string>
@@ -1168,6 +1168,10 @@
     <string name="social_tester_title">Tester</string>
     <string name="social_tester_text">Für hilfreiches Feedback gibt es Tester-Punkte – die fleißigsten Tester bekommen zum Start eine Belohnung.</string>
     <string name="achievement_unlocked">Erfolg freigeschaltet</string>
+    <plurals name="achievements_many">
+        <item quantity="one">%1$d neuer Erfolg – tippen zum Ansehen</item>
+        <item quantity="other">%1$d neue Erfolge – tippen zum Ansehen</item>
+    </plurals>
     <string name="areas_social">Social</string>
     <string name="game_enable">Erfolge &amp; Abzeichen</string>
     <string name="game_enable_text">Erfolge und Abzeichen im Reiter „Social“ – und eine kurze Karte auf „Heute“, wenn du etwas freischaltest.</string>
@@ -1405,6 +1409,14 @@
     <string name="leftover_preview_take_all">%1$s · danach ist der Rest aufgebraucht</string>
     <string name="leftover_confirm_group">Zusammenfassen</string>
     <string name="leftover_partial">Nicht alles gegessen</string>
+    <string name="leftover_ate_all">Doch alles gegessen</string>
+    <string name="move_day">Auf anderen Tag …</string>
+    <string name="move_day_before">Einen Tag früher</string>
+    <string name="move_day_after">Einen Tag später</string>
+    <string name="move_day_pick">Datum wählen …</string>
+    <string name="move_day_confirm">Verschieben</string>
+    <string name="move_day_done">„%1$s“ auf %2$s verschoben</string>
+    <string name="leftover_ate_all_done">Rest zurück in „%1$s“ – zählt jetzt ganz</string>
     <string name="leftover_partial_hint">Nur der gegessene Teil zählt für den Tag. Der Rest bleibt offen, auch eingefroren, so lange du willst.</string>
     <string name="leftover_keep_rest">Rest aufheben</string>
     <string name="leftover_grouped">Zu „%1$s“ zusammengefasst</string>

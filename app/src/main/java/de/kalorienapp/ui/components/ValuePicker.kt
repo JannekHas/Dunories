@@ -1,6 +1,14 @@
 package de.kalorienapp.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,6 +60,7 @@ import kotlin.math.roundToLong
  *
  * @param slideStep Raster der Ziehleiste (z. B. 0,5 kg), [step] Raster von „−“/„+“ (z. B. 0,1 kg).
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun ValuePicker(
     value: Double,
@@ -108,16 +117,46 @@ fun ValuePicker(
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StepButton(null, stringResource(R.string.stepper_less)) { onValueChange(snap(value - step, step)) }
+            // Handy-Test 26.11.: der schmale Standard-Strich war schwer zu treffen und ruckelte (jeder Schritt lief
+            // über den ViewModel-Zustand). Jetzt großer runder Knopf, dicke Leiste, große Tippfläche; beim Ziehen
+            // gleitet der Knopf frei mit, nur die Zahl rastet ein.
+            var sliding by remember { mutableStateOf<Float?>(null) }
+            val interaction = remember { MutableInteractionSource() }
+            val colors = SliderDefaults.colors(
+                thumbColor = Neon.Cyan,
+                activeTrackColor = Neon.Cyan,
+                inactiveTrackColor = Neon.Track,
+                activeTickColor = Color.Transparent,
+                inactiveTickColor = Color.Transparent,
+            )
             Slider(
-                value = value.coerceIn(sliderRange.start, sliderRange.endInclusive).toFloat(),
-                onValueChange = { onValueChange(snap(it.toDouble(), slideStep)) },
+                value = sliding ?: value.coerceIn(sliderRange.start, sliderRange.endInclusive).toFloat(),
+                onValueChange = {
+                    sliding = it
+                    onValueChange(snap(it.toDouble(), slideStep))
+                },
+                onValueChangeFinished = { sliding = null },
                 valueRange = sliderRange.start.toFloat()..sliderRange.endInclusive.toFloat(),
-                colors = SliderDefaults.colors(
-                    thumbColor = Neon.Cyan,
-                    activeTrackColor = Neon.Cyan,
-                    inactiveTrackColor = Neon.Track,
-                ),
-                modifier = Modifier.weight(1f).semantics { contentDescription = label },
+                colors = colors,
+                interactionSource = interaction,
+                thumb = {
+                    Box(
+                        Modifier
+                            .size(30.dp)
+                            .shadow(4.dp, CircleShape)
+                            .background(Neon.Cyan, CircleShape),
+                    )
+                },
+                track = { state ->
+                    SliderDefaults.Track(
+                        sliderState = state,
+                        colors = colors,
+                        drawStopIndicator = null,
+                        thumbTrackGapSize = 0.dp,
+                        modifier = Modifier.height(12.dp),
+                    )
+                },
+                modifier = Modifier.weight(1f).height(56.dp).semantics { contentDescription = label },
             )
             StepButton(Icons.Filled.Add, stringResource(R.string.stepper_more)) { onValueChange(snap(value + step, step)) }
         }

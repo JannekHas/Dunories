@@ -374,11 +374,20 @@ async function removeGrant(uid) {
 }
 
 let fbFilter = "unrated";
+/** Rangliste → Tester antippen: nur dessen Feedbacks (auch bewertete, Punkte änderbar). */
+let fbKey = null, fbKeyLabel = "";
 const TYPES = { bug: "Fehler", idea: "Idee", praise: "Lob" };
 const when = (ms) => new Date(ms).toLocaleString("de-DE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
+function showTester(key, label) {
+  fbKey = key; fbKeyLabel = label;
+  loadFeedback();
+  $("feedback").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function setFbFilter(f) {
   fbFilter = f;
+  fbKey = null;
   $("fbUnrated").className = f === "unrated" ? "" : "ghost";
   $("fbAll").className = f === "all" ? "" : "ghost";
   loadFeedback();
@@ -386,8 +395,10 @@ function setFbFilter(f) {
 
 async function loadFeedback() {
   try {
-    const list = await api(`/admin/feedback?filter=${fbFilter}&limit=200`);
-    $("feedback").innerHTML = list.length ? list.map((f) => `
+    const list = await api(fbKey ? `/admin/feedback?key=${encodeURIComponent(fbKey)}&limit=200` : `/admin/feedback?filter=${fbFilter}&limit=200`);
+    const head = fbKey ? `<div class="hint" style="margin:10px 0">Alle Feedbacks von <b>${esc(fbKeyLabel)}</b> – Punkte lassen sich hier nachträglich ändern.
+      <button class="ghost" onclick="setFbFilter(fbFilter)">Zurück zur Liste</button></div>` : "";
+    $("feedback").innerHTML = head + (list.length ? list.map((f) => `
       <div class="fb ${f.rated ? "rated" : ""}" id="fb${f.id}">
         <div class="head">
           <b class="type-${esc(f.type)}">${esc(TYPES[f.type] || f.type)}</b>
@@ -406,7 +417,7 @@ async function loadFeedback() {
           ${f.blocked ? "" : `<button class="danger" onclick="blockByFeedback(${f.id})">Person sperren</button>`}
           <button class="danger" onclick="delFeedback(${f.id})">Löschen</button>
         </div>
-      </div>`).join("") : `<div class="hint" style="margin-top:10px">${fbFilter === "unrated" ? "Alles bewertet – nichts Neues." : "Noch kein Feedback."}</div>`;
+      </div>`).join("") : `<div class="hint" style="margin-top:10px">${fbFilter === "unrated" && !fbKey ? "Alles bewertet – nichts Neues." : "Noch kein Feedback."}</div>`);
   } catch (e) { $("feedback").innerHTML = `<div class="hint">Laden fehlgeschlagen: ${esc(e.message)}</div>`; }
 }
 
@@ -446,7 +457,7 @@ async function loadTesters() {
   try {
     const t = await api("/admin/testers");
     $("testers").innerHTML = t.length ? "<tr><th>#</th><th>Kennung</th><th>Name</th><th>Punkte</th><th>Feedbacks</th><th>Unbewertet</th><th>Danke-Liste</th><th>Zuletzt</th><th></th></tr>" +
-      t.map((r, i) => `<tr><td class="num">${r.blocked ? "" : i + 1}</td><td><code>${esc(r.uid)}</code></td><td>${esc(r.name ?? "")}</td><td class="num"><b>${r.points}</b></td>
+      t.map((r, i) => `<tr style="cursor:pointer" title="Feedbacks und Punkte dieser Person ansehen/ändern" onclick="if (event.target.tagName !== 'BUTTON') showTester('${esc(r.key)}', '${esc(r.name || r.uid)}')"><td class="num">${r.blocked ? "" : i + 1}</td><td><code>${esc(r.uid)}</code></td><td>${esc(r.name ?? "")}</td><td class="num"><b>${r.points}</b> <span class="hint">›</span></td>
         <td class="num">${r.feedbacks}</td><td class="num">${r.unrated}</td><td>${r.credits ? '<span class="pill on">ja</span>' : '<span class="pill">nein</span>'}</td>
         <td>${r.last ? when(r.last) : ""}</td>
         <td>${r.blocked ? `<span class="pill off">gesperrt</span> <button class="ghost" onclick="unblock('${esc(r.key)}')">Entsperren</button>`

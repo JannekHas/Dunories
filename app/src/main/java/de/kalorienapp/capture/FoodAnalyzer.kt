@@ -36,6 +36,13 @@ class FoodAnalyzer(
 ) {
     private val barcodeScanner = BarcodeScanner()
 
+    /** Gerade Internet? Ohne Netz gar nicht erst auf die KI warten (Handy-Test 26.11.). */
+    fun isOnline(): Boolean {
+        val cm = context.getSystemService(android.net.ConnectivityManager::class.java) ?: return true
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+        return caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
     /** Nur nachsehen, ob ein Barcode auf dem Foto ist (vor der Foto-Vorschau: Barcode → Vorschau überspringen). */
     suspend fun scanBarcode(uri: Uri): String? = barcodeScanner.scan(ImageLoader.load(context, uri, maxSide = BARCODE_MAX_SIDE))
 

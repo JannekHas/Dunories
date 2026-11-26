@@ -117,8 +117,10 @@ class AccountManager(private val context: Context) {
 
     suspend fun signOut() {
         auth?.signOut()
+        // Sofort „abgemeldet“ – nicht erst nach dem Aufräumen der Google-Auswahl: meldete man sich in der Zwischenzeit
+        // wieder an, überschrieb das späte null die neue Anmeldung (Handy-Test 26.11.).
+        _user.value = auth?.currentUser?.toAccount()
         runCatching { CredentialManager.create(context).clearCredentialState(ClearCredentialStateRequest()) }
-        _user.value = null
     }
 
     /**

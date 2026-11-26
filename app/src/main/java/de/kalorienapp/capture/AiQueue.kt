@@ -75,12 +75,20 @@ class AiQueue(private val context: Context) {
         withContext(Dispatchers.IO) { photoFile(id).delete() }
     }
 
-    private fun schedule(id: String) {
+    /**
+     * App wieder offen und Netz da → wartende sofort versuchen statt auf den nächsten Termin zu warten
+     * (Handy-Test 26.11.: nach dem Einschalten des Netzes kam die Benachrichtigung spürbar spät).
+     */
+    fun retryWaitingNow() {
+        _jobs.value.filter { it.status == QueuedStatus.WAITING }.forEach { schedule(it.id, now = true) }
+    }
+
+    private fun schedule(id: String, now: Boolean = false) {
         val request = OneTimeWorkRequestBuilder<AiQueueWorker>()
             .setInputData(workDataOf(AiQueueWorker.KEY_ID to id))
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            // Erster Versuch nach einer halben Minute, danach 1, 2, 4 … Minuten (Überlastung dauert oft etwas).
-            .setInitialDelay(30, TimeUnit.SECONDS)
+            // Erster Versuch nach 15 s (ohne Netz wartet WorkManager ohnehin), danach 1, 2, 4 … Minuten.
+            .setInitialDelay(if (now) 0L else 15L, TimeUnit.SECONDS)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(workName(id), ExistingWorkPolicy.REPLACE, request)

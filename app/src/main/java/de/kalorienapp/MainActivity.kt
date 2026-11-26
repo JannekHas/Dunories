@@ -120,6 +120,8 @@ class MainActivity : ComponentActivity() {
         // Tageswechsel bei geöffneter App / nach langer Pause: Benachrichtigung auf heute bringen.
         val container = (application as KalorienApplication).container
         container.appScope.launch { container.calorieNotifier.refresh() }
+        // Wartende KI-Erkennungen gleich versuchen (Netz ist evtl. wieder da).
+        container.aiQueue.retryWaitingNow()
     }
 
     override fun onStop() {

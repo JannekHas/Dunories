@@ -141,10 +141,32 @@ object Leftovers {
     fun take(leftover: Leftover, amount: Double, date: LocalDate, mealType: MealType, now: Long): Take {
         val (eaten, rest) = split(leftover.components, amount)
         val entry = entryFrom(leftover.name, eaten, date, mealType, leftover.source, now)
+        // Heute schon davon gegessen → heute nicht noch einmal auf „Heute“ vorschlagen (Handy-Test 26.11.: nach dem
+        // Verschieben des übernommenen Eintrags stand „Rest da“ wieder in der leer gewordenen Mahlzeit).
         val remaining = rest.takeIf { it.isNotEmpty() }?.let {
-            leftover.copy(components = it, portionAmount = amount, dismissedDay = null)
+            leftover.copy(components = it, portionAmount = amount, dismissedDay = date)
         }
         return Take(entry, remaining)
+    }
+
+    /**
+     * Offener Rest, der aus diesem Eintrag entstanden ist (Zusammenfassen oder „Nicht alles gegessen“):
+     * gleicher Name, Tag und Mahlzeit. Für „Doch alles gegessen“.
+     */
+    fun restOf(entry: FoodEntry, open: List<Leftover>): Leftover? =
+        open.firstOrNull { it.name.trim().equals(entry.name.trim(), ignoreCase = true) && it.createdDay == entry.date && it.mealType == entry.mealType }
+
+    /**
+     * „Doch alles gegessen“ (Handy-Test 26.11.: Zusammenfassen/Rest ließ sich nicht mehr zurücknehmen): der noch offene
+     * Rest kommt zurück in den Eintrag – gleiche Zutaten werden addiert, andere angehängt.
+     */
+    fun eatAll(entry: FoodEntry, rest: Leftover): FoodEntry {
+        val merged = componentsOf(listOf(entry)).toMutableList()
+        rest.components.forEach { r ->
+            val i = merged.indexOfFirst { it.name.equals(r.name, ignoreCase = true) && it.unit == r.unit }
+            if (i >= 0) merged[i] = merged[i].copy(amount = merged[i].amount + r.amount) else merged += r
+        }
+        return entryFrom(entry.name, merged, entry.date, entry.mealType, entry.source, entry.createdAt, entry.sortKey, entry.id)
     }
 
     /** Vorauswahl beim Übernehmen: zuletzt gegessene Portion, höchstens der ganze Rest. */

@@ -367,7 +367,10 @@ async function admin(request, env, url) {
   }
   if (url.pathname === "/admin/feedback" && request.method === "GET") {
     const filter = url.searchParams.get("filter") === "all" ? "all" : "unrated";
-    return ok(await usage.listFeedback(filter, Math.min(num(url.searchParams.get("limit"), 100), 500)));
+    // key = alle Feedbacks einer Person (Rangliste → Tester antippen → Punkte nachträglich ändern)
+    const key = url.searchParams.get("key");
+    if (key != null && (key.length === 0 || key.length > 128)) return bad();
+    return ok(await usage.listFeedback(key ? "all" : filter, Math.min(num(url.searchParams.get("limit"), 100), 500), key));
   }
   if (url.pathname === "/admin/feedback/shot" && request.method === "GET") {
     const id = Number(url.searchParams.get("id"));
@@ -768,12 +771,13 @@ export class Usage extends DurableObject {
     this.sql.exec("UPDATE feedback SET notified = 1 WHERE uid = ? AND rated IS NOT NULL AND notified = 0", uid);
   }
 
-  listFeedback(filter, limit) {
-    const where = filter === "all" ? "" : "WHERE rated IS NULL";
+  listFeedback(filter, limit, key = null) {
+    const where = key ? "WHERE uid = ?" : filter === "all" ? "" : "WHERE rated IS NULL";
     return this.sql.exec(
       `SELECT id, uid, ts, type, text, name, credits, screenshot IS NOT NULL AS hasShot, app, version_code AS versionCode, device,
               android, points, rated, EXISTS (SELECT 1 FROM blocked b WHERE b.uid = feedback.uid) AS blocked
        FROM feedback ${where} ORDER BY ts DESC LIMIT ${Math.max(1, Math.floor(limit))}`,
+      ...(key ? [key] : []),
     ).toArray().map((f) => ({ ...f, uid: f.uid.slice(0, 8), credits: !!f.credits, hasShot: !!f.hasShot, blocked: !!f.blocked }));
   }
 

@@ -216,10 +216,11 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                 null -> Unit
             }
         }
-        // Einmalig nach dem Onboarding um Erlaubnis für Benachrichtigungen bitten (Erinnerungen sind standardmäßig an).
+        // Einmalig nach der Einrichtung um Erlaubnis für Benachrichtigungen bitten (Erinnerungen sind standardmäßig an) –
+        // erst auf „Heute“, nicht schon bei Abstechern aus der Einrichtung (z. B. Serie übernehmen; Handy-Test 26.11.).
         LaunchedEffect(currentDestination) {
             val destination = currentDestination ?: return@LaunchedEffect
-            if (Build.VERSION.SDK_INT >= 33 && !destination.hasRoute(OnboardingRoute::class) &&
+            if (Build.VERSION.SDK_INT >= 33 && destination.hasRoute(TodayRoute::class) &&
                 !container.settings.notificationPermissionAsked
             ) {
                 container.settings.notificationPermissionAsked = true

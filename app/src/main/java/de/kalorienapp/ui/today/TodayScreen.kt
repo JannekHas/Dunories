@@ -52,6 +52,11 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -174,7 +179,17 @@ fun TodayScreen(
     // Nach einem Update einmal „Neu in Dunories“ zeigen (nur auf dem echten „Heute“, nicht im Kalender-Tag)
     val unseenChangelog by viewModel.unseenChangelog.collectAsStateWithLifecycle()
     val reward by viewModel.reward.collectAsStateWithLifecycle()
-    val newAchievement by viewModel.newAchievement.collectAsStateWithLifecycle()
+    val newAchievements by viewModel.newAchievements.collectAsStateWithLifecycle()
+    // Mehr als 3 auf einmal → eine Sammelkarte statt einer langen Reihe.
+    val manyAchievements = newAchievements.size > MAX_SINGLE_ACHIEVEMENTS
+    val newAchievement = newAchievements.firstOrNull()
+    // Einzelne Erfolgs-Karte verschwindet nach ein paar Sekunden von selbst, dann kommt die nächste.
+    LaunchedEffect(newAchievement?.achievement?.key, newAchievement?.level, manyAchievements) {
+        val a = newAchievement ?: return@LaunchedEffect
+        if (manyAchievements) return@LaunchedEffect
+        kotlinx.coroutines.delay(ACHIEVEMENT_SHOW_MS)
+        viewModel.achievementSeen(a)
+    }
     if (onBack == null && unseenChangelog.isNotEmpty()) {
         ChangelogDialog(ChangelogUi.byCodes(unseenChangelog), onClose = viewModel::changelogRead)
     } else if (onBack == null) {
@@ -230,6 +245,30 @@ fun TodayScreen(
             if (result == SnackbarResult.ActionPerformed && undo != null) viewModel.undoLeftover(undo)
         }
     }
+    val openLeftovers by viewModel.openLeftovers.collectAsStateWithLifecycle()
+    // Eintrag auf einen anderen Tag (Handy-Test 26.11.: Ziehen ging nur zwischen Mahlzeiten)
+    var moveDayEntry by remember { mutableStateOf<FoodEntry?>(null) }
+    val movedDayMessage = stringResource(R.string.move_day_done)
+    moveDayEntry?.let { entry ->
+        MoveDayDialog(
+            current = entry.date,
+            onPick = { day ->
+                moveDayEntry = null
+                val old = viewModel.moveToDay(entry, day)
+                scope.launch {
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                    val result = snackbarHostState.showSnackbar(
+                        movedDayMessage.format(entry.name, day.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, d. MMMM", java.util.Locale.GERMAN))),
+                        actionLabel = leftoverUndoLabel,
+                        duration = SnackbarDuration.Long,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) viewModel.restore(old)
+                }
+            },
+            onDismiss = { moveDayEntry = null },
+        )
+    }
+    val ateAllMessage = stringResource(R.string.leftover_ate_all_done)
     fun discardLeftover(leftover: Leftover) {
         viewModel.discardLeftover(leftover) { leftoverSnackbar(discardedMessage.format(leftover.name), it) }
     }
@@ -476,8 +515,20 @@ fun TodayScreen(
             if (!state.hasGoal && state.isToday && !proteinOnly && weightEnabled && !goalSkipped) {
                 item(key = "goal_banner") { GoalBanner(onSetGoal) }
             }
-            newAchievement?.takeIf { state.isToday && onBack == null }?.let { a ->
-                item(key = "achievement") {
+            if (manyAchievements && state.isToday && onBack == null) {
+                item(key = "achievements_many") {
+                    AchievementBanner(
+                        newAchievement!!,
+                        count = newAchievements.size,
+                        onOpen = {
+                            viewModel.achievementsSeen(newAchievements)
+                            onOpenSocial()
+                        },
+                        onDismiss = { viewModel.achievementsSeen(newAchievements) },
+                    )
+                }
+            } else newAchievement?.takeIf { state.isToday && onBack == null }?.let { a ->
+                item(key = "achievement_${a.achievement.key}_${a.level}") {
                     AchievementBanner(
                         a,
                         onOpen = {
@@ -485,6 +536,7 @@ fun TodayScreen(
                             onOpenSocial()
                         },
                         onDismiss = { viewModel.achievementSeen(a) },
+                        modifier = Modifier.animateItem(),
                     )
                 }
             }
@@ -595,6 +647,9 @@ fun TodayScreen(
                     onSaveCombo = { comboToSave = group },
                     onGroupDish = { groupDialog = group },
                     onPartial = { partialEntry = it },
+                    restOf = { Leftovers.restOf(it, openLeftovers) },
+                    onMoveDay = { moveDayEntry = it },
+                    onEatAll = { entry, rest -> viewModel.eatAll(entry, rest) { leftoverSnackbar(ateAllMessage.format(entry.name), it) } },
                     leftovers = leftoverSuggestion?.takeIf { it.meal == group.mealType }?.items.orEmpty(),
                     today = state.date,
                     onTakeLeftover = { takeLeftover = it to group.mealType },
@@ -668,8 +723,11 @@ private fun AchievementBanner(
     achievement: de.kalorienapp.domain.Gamification.Progress,
     onOpen: () -> Unit,
     onDismiss: () -> Unit,
+    /** > 1 = Sammelkarte „x neue Erfolge“. */
+    count: Int = 1,
+    modifier: Modifier = Modifier,
 ) {
-    GlassCard(strong = true, onClick = onOpen) {
+    GlassCard(modifier = modifier, strong = true, onClick = onOpen) {
         Row(
             Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -679,8 +737,12 @@ private fun AchievementBanner(
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.achievement_unlocked), style = MaterialTheme.typography.labelMedium, color = Neon.Yellow)
                 Text(
-                    de.kalorienapp.ui.social.badgeTitle(achievement.achievement.key) + " · " +
-                        stringResource(de.kalorienapp.ui.social.rarityName(achievement.rarity)),
+                    if (count > 1) {
+                        pluralStringResource(R.plurals.achievements_many, count, count)
+                    } else {
+                        de.kalorienapp.ui.social.badgeTitle(achievement.achievement.key) + " · " +
+                            stringResource(de.kalorienapp.ui.social.rarityName(achievement.rarity))
+                    },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )
@@ -1012,6 +1074,9 @@ private fun MealCard(
     onSaveCombo: () -> Unit,
     onGroupDish: () -> Unit,
     onPartial: (FoodEntry) -> Unit,
+    restOf: (FoodEntry) -> Leftover? = { null },
+    onMoveDay: (FoodEntry) -> Unit = {},
+    onEatAll: (FoodEntry, Leftover) -> Unit = { _, _ -> },
     leftovers: List<Leftover>,
     today: LocalDate,
     onTakeLeftover: (Leftover) -> Unit,
@@ -1125,6 +1190,9 @@ private fun MealCard(
                 onDelete = { onDelete(entry) },
                 onToggleFavorite = { onToggleFavorite(entry) },
                 onPartial = { onPartial(entry) },
+                rest = restOf(entry),
+                onEatAll = { rest -> onEatAll(entry, rest) },
+                onMoveDay = { onMoveDay(entry) },
             )
         }
         if (slotIndex >= visible.size) DropSlot(dragState, group.mealType.neonColor)
@@ -1140,6 +1208,10 @@ private fun EntryRow(
     onDelete: () -> Unit,
     onToggleFavorite: () -> Unit,
     onPartial: () -> Unit,
+    /** Offener Rest aus diesem Eintrag → „Doch alles gegessen“ statt „Nicht alles gegessen“. */
+    rest: Leftover? = null,
+    onEatAll: (Leftover) -> Unit = {},
+    onMoveDay: () -> Unit = {},
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val n = entry.nutrients
@@ -1171,7 +1243,13 @@ private fun EntryRow(
                             },
                             onClick = { menuOpen = false; onToggleFavorite() },
                         )
-                        if ((entry.amount ?: 0.0) > 0) {
+                        if (rest != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.leftover_ate_all)) },
+                                leadingIcon = { Box(Modifier.size(24.dp)) },
+                                onClick = { menuOpen = false; onEatAll(rest) },
+                            )
+                        } else if ((entry.amount ?: 0.0) > 0) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.leftover_partial)) },
                                 // Kein passendes Symbol in den Kern-Icons → Platzhalter, damit der Text bündig bleibt
@@ -1179,6 +1257,11 @@ private fun EntryRow(
                                 onClick = { menuOpen = false; onPartial() },
                             )
                         }
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.move_day)) },
+                            leadingIcon = { Icon(Icons.Filled.DateRange, null) },
+                            onClick = { menuOpen = false; onMoveDay() },
+                        )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.delete)) },
                             leadingIcon = { Icon(Icons.Filled.Delete, null) },
@@ -1188,6 +1271,48 @@ private fun EntryRow(
                 }
             }
         },
+    )
+}
+
+/** „Auf anderen Tag …“: Gestern / Morgen / Datum wählen. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MoveDayDialog(current: LocalDate, onPick: (LocalDate) -> Unit, onDismiss: () -> Unit) {
+    var calendar by remember { mutableStateOf(false) }
+    if (calendar) {
+        val zone = java.time.ZoneOffset.UTC
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = current.atStartOfDay(zone).toInstant().toEpochMilli(),
+        )
+        DatePickerDialog(
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { onPick(java.time.Instant.ofEpochMilli(it).atZone(zone).toLocalDate()) }
+                }) { Text(stringResource(R.string.move_day_confirm)) }
+            },
+            dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        ) { DatePicker(state = pickerState) }
+        return
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.move_day)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onPick(current.minusDays(1)) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.move_day_before))
+                }
+                OutlinedButton(onClick = { onPick(current.plusDays(1)) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.move_day_after))
+                }
+                OutlinedButton(onClick = { calendar = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.move_day_pick))
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
@@ -1288,3 +1413,7 @@ private fun RewardDialog(status: de.kalorienapp.account.AiStatus, onClose: () ->
         },
     )
 }
+
+/** Erfolgs-Karte auf „Heute“: so lange sichtbar, bevor die nächste kommt; ab mehr als 3 eine Sammelkarte. */
+private const val ACHIEVEMENT_SHOW_MS = 5_000L
+private const val MAX_SINGLE_ACHIEVEMENTS = 3

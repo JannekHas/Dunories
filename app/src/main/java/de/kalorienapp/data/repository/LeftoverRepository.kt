@@ -17,6 +17,7 @@ sealed interface LeftoverUndo {
     data class Partial(val original: FoodEntry, val restId: Long) : LeftoverUndo
     data class Taken(val entryId: Long, val before: Leftover) : LeftoverUndo
     data class Discarded(val before: Leftover) : LeftoverUndo
+    data class AteAll(val original: FoodEntry, val rest: Leftover) : LeftoverUndo
 }
 
 /** Reste / offene Mengen (siehe [Leftovers]). */
@@ -61,6 +62,12 @@ class LeftoverRepository(private val dao: LeftoverDao) {
         return LeftoverUndo.Discarded(leftover)
     }
 
+    /** „Doch alles gegessen“: Rest zurück in den Eintrag, Rest schließen. */
+    suspend fun eatAll(entry: FoodEntry, rest: Leftover): LeftoverUndo.AteAll {
+        dao.undoPartial(FoodEntryEntity.fromDomain(Leftovers.eatAll(entry, rest)), rest.id)
+        return LeftoverUndo.AteAll(entry, rest)
+    }
+
     /** Eingefroren, „heute nicht“ oder „noch gut“. */
     suspend fun update(leftover: Leftover) = dao.upsert(LeftoverEntity.fromDomain(leftover))
 
@@ -69,5 +76,6 @@ class LeftoverRepository(private val dao: LeftoverDao) {
         is LeftoverUndo.Partial -> dao.undoPartial(FoodEntryEntity.fromDomain(undo.original), undo.restId)
         is LeftoverUndo.Taken -> dao.undoTake(undo.entryId, LeftoverEntity.fromDomain(undo.before))
         is LeftoverUndo.Discarded -> dao.upsert(LeftoverEntity.fromDomain(undo.before))
+        is LeftoverUndo.AteAll -> dao.partial(FoodEntryEntity.fromDomain(undo.original), LeftoverEntity.fromDomain(undo.rest)).let { }
     }
 }
