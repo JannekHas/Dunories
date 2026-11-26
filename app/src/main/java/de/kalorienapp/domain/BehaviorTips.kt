@@ -25,6 +25,14 @@ enum class BehaviorTip {
 
     /** Gelöscht und gleich in einer anderen Mahlzeit neu eingetragen → Verschieben-Tipp (heißt wie der alte feste Tipp). */
     MOVE,
+
+    /**
+     * „App passt sich an“ (Nov. 2026): Wasser öfter als Essen eingetragen, Bereich aus → „Wasser tracken?“ mit Einschalten.
+     */
+    AREA_WATER,
+
+    /** Oft dasselbe in mehreren Mahlzeiten, Ernährungsplan aus → „Ernährungsplan?“ (führt zu den Bereichen). */
+    AREA_PLAN,
 }
 
 /** Gerade gelöschter Eintrag – um „gelöscht und woanders neu eingetragen“ zu erkennen. */
@@ -92,6 +100,36 @@ object BehaviorTips {
                     end < captures.size && captures[end] - captures[i] <= PHOTO_WINDOW_MS
                 }
             }
+
+    const val WATER_COUNT = 3
+    const val WATER_DAYS = 2
+    const val PLAN_REPEAT_DAYS = 3
+    const val PLAN_MEALS = 2
+
+    /** Wasser als Lebensmittel (Wasser, Mineralwasser, Sprudel …) – nicht Wassermelone. */
+    fun isWater(name: String): Boolean {
+        val k = key(name)
+        return ("wasser" in k && "melone" !in k) || k == "sprudel" || k.startsWith("sprudel ")
+    }
+
+    /** Mindestens [WATER_COUNT] Wasser-Einträge an mindestens [WATER_DAYS] Tagen in den letzten 14 Tagen. */
+    fun waterCandidate(entries: List<FoodEntry>, today: LocalDate): Boolean {
+        val water = entries.filter { it.date >= today.minusDays(LOOKBACK_DAYS) && isWater(it.name) }
+        return water.size >= WATER_COUNT && water.map { it.date }.distinct().size >= WATER_DAYS
+    }
+
+    /**
+     * In mindestens [PLAN_MEALS] Mahlzeiten gab es an je mindestens [PLAN_REPEAT_DAYS] Tagen genau dasselbe
+     * (gleiche Lebensmittel) → ein Ernährungsplan würde helfen. @return die Mahlzeit mit den meisten Wiederholungen.
+     */
+    fun planCandidate(entries: List<FoodEntry>, today: LocalDate): MealType? {
+        val recent = entries.filter { it.date >= today.minusDays(LOOKBACK_DAYS) && key(it.name).isNotEmpty() }
+        val repeats = recent.groupBy { it.mealType }.mapValues { (_, list) ->
+            list.groupBy { it.date }.values.map { day -> day.map { key(it.name) }.toSet() }
+                .groupingBy { it }.eachCount().values.maxOrNull() ?: 0
+        }.filterValues { it >= PLAN_REPEAT_DAYS }
+        return if (repeats.size >= PLAN_MEALS) repeats.maxBy { it.value }.key else null
+    }
 
     /** Der gelöschte Eintrag wurde kurz danach am selben Tag in einer anderen Mahlzeit neu eingetragen. */
     fun reEnteredElsewhere(deleted: DeletedEntry?, entries: List<FoodEntry>): Boolean {

@@ -321,6 +321,11 @@
     <string name="btip_favorite_action">Als Favorit</string>
     <string name="btip_combo">Diese Mahlzeit hattest du so schon mal. Als Kombi gespeichert trägst du die ganze Mahlzeit beim nächsten Mal mit einem Fingertipp ein.</string>
     <string name="btip_combo_action">Als Kombi</string>
+    <string name="btip_area_water">Du trägst öfter Wasser ein. Mit der Wasser-Karte geht das mit einem Tipp – und du siehst, wie viel noch fehlt.</string>
+    <string name="btip_area_water_action">Einschalten</string>
+    <string name="btip_area_water_done">Wasser ist an – die Karte steht jetzt oben auf „Heute“</string>
+    <string name="btip_area_plan">Du isst oft dasselbe. Ein Ernährungsplan trägt deine festen Mahlzeiten für dich vor – du bestätigst nur noch.</string>
+    <string name="btip_area_plan_action">Ansehen</string>
     <string name="btip_one_photo">Ein Foto reicht: Fotografier den ganzen Teller auf einmal – die KI erkennt alles, was darauf liegt, und trägt es einzeln ein.</string>
     <string name="btip_scan_instead">Schneller als Abtippen: Scann den Barcode der Verpackung oder stell oben auf „Nährwerttabelle“ und fotografier sie – die Werte werden exakt übernommen.</string>
     <string name="tip_add">Mit dem + trägst du Essen ein: Foto vom Teller, Barcode einer Verpackung, Nährwerttabelle – oder einfach beschreiben oder sprechen.</string>

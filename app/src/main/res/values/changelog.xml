@@ -3,6 +3,7 @@
      Neue Version: Array anlegen und in ChangelogUi.VERSIONS eintragen. -->
 <resources>
     <string-array name="changelog_8">
+        <item>Dunories passt sich an|Trägst du öfter Wasser ein, schlägt Dunories die Wasser-Karte vor – ein Tipp, und sie ist da. Isst du oft dasselbe, kommt der Vorschlag für einen Ernährungsplan. Immer nur als Vorschlag: du entscheidest.</item>
         <item>Aufgeräumt|Das Profil zeigt nur noch das Wichtigste: dich, deine Ziele und „Meine Bereiche“ – tipp auf „+“, um etwas wie Wasser dazuzunehmen. Alle Einstellungen findest du hinter dem Zahnrad oben rechts, sortiert in sechs Kategorien. Und die Statistik hat jetzt drei Reiter: im Verlauf schaltest du zwischen 7 Tagen, 30 Tagen und dem Kalender um.</item>
         <item>Feinschliff aus dem Test|Reste: Hast du doch alles gegessen, tipp beim Eintrag auf ⋮ → „Doch alles gegessen“. Neu im selben Menü: „Auf anderen Tag …“ verschiebt einen Eintrag auf gestern, morgen oder ein Datum. Die Zahlen in der Einrichtung lassen sich jetzt leichter ziehen, neue Erfolge kommen nacheinander statt alle auf einmal, und ohne Internet bietet Dunories sofort an, dein Foto später im Hintergrund zu erkennen.</item>
         <item>Foto erst ansehen, dann abschicken|Nach dem Foto siehst du es kurz: verschwommen? Einfach neu machen. Und unter „Noch was dazu sagen?“ sprichst oder tippst du, was die KI nicht sehen kann – zum Beispiel „Vollkorntoast mit Frischkäse und Putenbrust“. Dann „Erkennen lassen“. Barcodes gehen wie bisher sofort durch. Danke Marek!</item>

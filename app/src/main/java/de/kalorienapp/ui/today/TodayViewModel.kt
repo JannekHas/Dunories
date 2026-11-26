@@ -88,6 +88,12 @@ sealed interface TodayBehaviorTip {
 
     /** Gelöscht und hier neu eingetragen → „Halte gedrückt und zieh“. */
     data class Move(override val meal: MealType) : TodayBehaviorTip
+
+    /** „App passt sich an“: Wasser öfter als Essen eingetragen → Wasser-Bereich vorschlagen. */
+    data class Water(override val meal: MealType) : TodayBehaviorTip
+
+    /** Oft dasselbe gegessen → Ernährungsplan vorschlagen. */
+    data class Plan(override val meal: MealType) : TodayBehaviorTip
 }
 
 /** Offene Reste, die in der leeren Mahlzeit [meal] vorgeschlagen werden (nur heute). */
@@ -182,7 +188,8 @@ class TodayViewModel(
             library.favorites,
             library.combos,
             lastDeleted,
-        ) { entries, favorites, combos, deleted ->
+            combine(settings.waterEnabled, mealPlan.config) { water, plan -> water to plan.enabled },
+        ) { entries, favorites, combos, deleted, (waterOn, planOn) ->
             val todays = entries.filter { it.date == today }
             if (BehaviorTips.manySinglePhotos(todays)) settings.addPendingTip(BehaviorTip.ONE_PHOTO.name)
             val moved = deleted?.takeIf { BehaviorTips.reEnteredElsewhere(it, todays) }
@@ -197,10 +204,17 @@ class TodayViewModel(
                         ?.let { TodayBehaviorTip.Move(it.mealType) }
                 favorite != null && BehaviorTip.FAVORITE.name !in seen -> TodayBehaviorTip.Favorite(favorite)
                 combo != null && BehaviorTip.COMBO.name !in seen -> TodayBehaviorTip.Combo(combo.first, combo.second)
+                // Bereiche vorschlagen, die zum Verhalten passen (nur wenn aus) – über der Mahlzeit, in der es passiert.
+                !waterOn && BehaviorTip.AREA_WATER.name !in seen && BehaviorTips.waterCandidate(entries, today) ->
+                    TodayBehaviorTip.Water(entries.filter { BehaviorTips.isWater(it.name) }.maxByOrNull { it.createdAt }?.mealType ?: MealType.BREAKFAST)
+                !planOn && BehaviorTip.AREA_PLAN.name !in seen ->
+                    BehaviorTips.planCandidate(entries, today)?.let { TodayBehaviorTip.Plan(it) }
                 else -> null
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun enableWater() = settings.setWaterEnabled(true)
 
     fun addFavorite(entry: FoodEntry) {
         viewModelScope.launch { library.addFavorite(entry) }

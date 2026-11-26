@@ -163,6 +163,8 @@ fun TodayScreen(
     onAdjustPlan: (date: LocalDate, mealType: MealType, dayIndex: Int) -> Unit = { _, _, _ -> },
     /** Im Hintergrund erkanntes (oder noch wartendes) Foto öffnen. */
     onOpenQueued: (de.kalorienapp.capture.QueuedJob) -> Unit = {},
+    /** Vorschlag „Ernährungsplan?“ → Einstellungen → Bereiche. */
+    onOpenAreas: () -> Unit = {},
     viewModel: TodayViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -174,6 +176,7 @@ fun TodayScreen(
     val waterEnabled by viewModel.waterEnabled.collectAsStateWithLifecycle()
     val proteinOnly = LocalProteinOnly.current
     val behaviorTip by viewModel.behaviorTip.collectAsStateWithLifecycle()
+    val waterOnMessage = stringResource(R.string.btip_area_water_done)
     val weightEnabled = LocalWeightEnabled.current
     val goalSkipped by viewModel.goalSkipped.collectAsStateWithLifecycle()
     // Nach einem Update einmal „Neu in Dunories“ zeigen (nur auf dem echten „Heute“, nicht im Kalender-Tag)
@@ -602,11 +605,15 @@ fun TodayScreen(
                             is TodayBehaviorTip.Favorite -> BehaviorTip.FAVORITE
                             is TodayBehaviorTip.Combo -> BehaviorTip.COMBO
                             is TodayBehaviorTip.Move -> BehaviorTip.MOVE
+                            is TodayBehaviorTip.Water -> BehaviorTip.AREA_WATER
+                            is TodayBehaviorTip.Plan -> BehaviorTip.AREA_PLAN
                         },
                         text = when (tip) {
                             is TodayBehaviorTip.Favorite -> stringResource(R.string.btip_favorite, tip.entry.name.trim())
                             is TodayBehaviorTip.Combo -> stringResource(R.string.btip_combo)
                             is TodayBehaviorTip.Move -> stringResource(R.string.tip_move)
+                            is TodayBehaviorTip.Water -> stringResource(R.string.btip_area_water)
+                            is TodayBehaviorTip.Plan -> stringResource(R.string.btip_area_plan)
                         },
                         condition = true,
                         caret = TipCaret.DOWN_CENTER,
@@ -614,6 +621,8 @@ fun TodayScreen(
                             is TodayBehaviorTip.Favorite -> stringResource(R.string.btip_favorite_action)
                             is TodayBehaviorTip.Combo -> stringResource(R.string.btip_combo_action)
                             is TodayBehaviorTip.Move -> null
+                            is TodayBehaviorTip.Water -> stringResource(R.string.btip_area_water_action)
+                            is TodayBehaviorTip.Plan -> stringResource(R.string.btip_area_plan_action)
                         },
                         onAction = {
                             when (tip) {
@@ -623,6 +632,11 @@ fun TodayScreen(
                                 }
                                 is TodayBehaviorTip.Combo -> comboToSave = group.copy(entries = tip.entries)
                                 is TodayBehaviorTip.Move -> Unit
+                                is TodayBehaviorTip.Water -> {
+                                    viewModel.enableWater()
+                                    scope.launch { snackbarHostState.showSnackbar(waterOnMessage) }
+                                }
+                                is TodayBehaviorTip.Plan -> onOpenAreas()
                             }
                         },
                     )

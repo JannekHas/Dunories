@@ -79,4 +79,34 @@ class BehaviorTipsTest {
         assertFalse(BehaviorTips.reEnteredElsewhere(deleted, listOf(entry("Apfel", meal = MealType.SNACK, createdAt = 500))))
         assertFalse(BehaviorTips.reEnteredElsewhere(null, listOf(entry("Apfel", meal = MealType.SNACK))))
     }
+
+    @Test
+    fun `wasser vorschlagen ab dreimal an zwei tagen`() {
+        assertTrue(BehaviorTips.isWater("Mineralwasser"))
+        assertTrue(BehaviorTips.isWater("Wasser still"))
+        assertTrue(BehaviorTips.isWater("Sprudel"))
+        assertFalse(BehaviorTips.isWater("Wassermelone"))
+        val sameDay = listOf(entry("Wasser"), entry("Wasser"), entry("Wasser"))
+        assertFalse(BehaviorTips.waterCandidate(sameDay, today)) // nur ein Tag
+        val spread = listOf(entry("Wasser"), entry("Mineralwasser", today.minusDays(2)), entry("Sprudel", today.minusDays(5)))
+        assertTrue(BehaviorTips.waterCandidate(spread, today))
+        val old = listOf(entry("Wasser"), entry("Wasser", today.minusDays(20)), entry("Wasser", today.minusDays(30)))
+        assertFalse(BehaviorTips.waterCandidate(old, today))
+    }
+
+    @Test
+    fun `ernaehrungsplan wenn zwei mahlzeiten sich wiederholen`() {
+        fun day(d: Long) = listOf(
+            entry("Haferflocken", today.minusDays(d), MealType.BREAKFAST),
+            entry("Milch", today.minusDays(d), MealType.BREAKFAST),
+            entry("Hähnchen mit Reis", today.minusDays(d), MealType.LUNCH),
+        )
+        // nur zwei Tage gleich → noch nicht
+        assertNull(BehaviorTips.planCandidate(day(1) + day(2), today))
+        // drei Tage gleich in Frühstück und Mittag → Plan
+        assertEquals(MealType.BREAKFAST, BehaviorTips.planCandidate(day(1) + day(2) + day(3), today))
+        // nur eine Mahlzeit wiederholt sich → kein Plan (dafür gibt es Kombis)
+        val breakfastOnly = (1L..4L).flatMap { d -> listOf(entry("Toast", today.minusDays(d)), entry("Pizza $d", today.minusDays(d), MealType.DINNER)) }
+        assertNull(BehaviorTips.planCandidate(breakfastOnly, today))
+    }
 }

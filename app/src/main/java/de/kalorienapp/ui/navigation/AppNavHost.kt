@@ -279,6 +279,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onOpenQueued = { job ->
                                 navController.navigate(CaptureRoute(epochDay = job.date.toEpochDay(), mealType = job.mealType.name, queueId = job.id))
                             },
+                            onOpenAreas = { navController.navigate(SettingsCategoryRoute(de.kalorienapp.ui.profile.SettingsCategory.AREAS.name)) },
                             requestedDay = container.navRequests.showDay.collectAsStateWithLifecycle().value,
                             onDayShown = container.navRequests::dayShown,
                             onSetGoal = { navController.navigate(GoalRoute) },
@@ -380,6 +381,7 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                             onOpenQueued = { job ->
                                 navController.navigate(CaptureRoute(epochDay = job.date.toEpochDay(), mealType = job.mealType.name, queueId = job.id))
                             },
+                            onOpenAreas = { navController.navigate(SettingsCategoryRoute(de.kalorienapp.ui.profile.SettingsCategory.AREAS.name)) },
                             onBack = { navController.popBackStack() },
                         )
                     }
