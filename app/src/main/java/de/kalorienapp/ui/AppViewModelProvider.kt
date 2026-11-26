@@ -140,6 +140,7 @@ object AppViewModelProvider {
         }
         initializer { MealPlanViewModel(container().mealPlanRepository) }
         initializer { de.kalorienapp.ui.profile.WaterSettingsViewModel(container().settings) }
+        initializer { de.kalorienapp.ui.profile.AreasViewModel(container().settings, container().mealPlanRepository) }
         initializer { MealPlanImportViewModel(container().mealPlanImporter, container().mealPlanRepository) }
         initializer {
             de.kalorienapp.ui.profile.AccountViewModel(

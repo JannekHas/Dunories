@@ -63,10 +63,14 @@ internal fun Long.premiumDay(): String = Instant.ofEpochMilli(this).atZone(ZoneI
  * Konto-Karte ganz oben in Profil → Einstellungen (Phase 2): freiwillig, ohne Konto bleibt alles lokal.
  * Unsichtbar, solange Firebase/Google-Anmeldung nicht eingerichtet ist.
  */
+/** Welche Teile der Konto-Karte gezeigt werden (Einstellungen in Kategorien, Neuordnung Nov. 2026). */
+enum class AccountPart { ALL, ACCOUNT, PREMIUM }
+
 @Composable
 fun AccountSection(
     onPrivacy: () -> Unit = {},
     onPremium: () -> Unit = {},
+    part: AccountPart = AccountPart.ALL,
     viewModel: AccountViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -81,7 +85,7 @@ fun AccountSection(
         onPauseOrDispose { }
     }
 
-    aiStatus?.let { status ->
+    if (part != AccountPart.ACCOUNT) aiStatus?.let { status ->
         PremiumCard(
             status = status,
             signedIn = state.user != null,
@@ -90,7 +94,7 @@ fun AccountSection(
         )
     }
 
-    GlassCard(Modifier.fillMaxWidth()) {
+    if (part != AccountPart.PREMIUM) GlassCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.account_title), style = MaterialTheme.typography.titleMedium)
             val user = state.user

@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,6 +74,7 @@ fun StatsScreen(
     val bodyVisible by viewModel.bodyPageVisible.collectAsStateWithLifecycle()
     val pages = if (bodyVisible) StatsPage.entries else StatsPage.entries - StatsPage.BODY
     val pagerState = rememberPagerState { pages.size }
+    var calendar by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     LaunchedEffect(openWeighDialog, pages) {
         if (openWeighDialog && StatsPage.BODY in pages) pagerState.scrollToPage(pages.indexOf(StatsPage.BODY))
     }
@@ -86,14 +88,21 @@ fun StatsScreen(
             when (pages[page]) {
                 StatsPage.FOOD -> {
                     TipSlot(Tip.STATS, textRes = if (StatsPage.BODY in pages) R.string.tip_stats else R.string.tip_stats_no_body)
+                    // Verlauf: 7 Tage · 30 Tage · Kalender – der Kalender ist eine Ansicht statt eigener Reiter (Neuordnung Nov. 2026).
                     ChoiceChips(
-                        options = StatsPeriod.entries,
-                        selected = state.period,
-                        onSelect = viewModel::selectPeriod,
-                        label = { stringResource(if (it == StatsPeriod.WEEK) R.string.stats_period_week else R.string.stats_period_month) },
+                        options = HistoryView.entries,
+                        selected = if (calendar) HistoryView.CALENDAR else if (state.period == StatsPeriod.WEEK) HistoryView.WEEK else HistoryView.MONTH,
+                        onSelect = { view ->
+                            calendar = view == HistoryView.CALENDAR
+                            if (view == HistoryView.WEEK) viewModel.selectPeriod(StatsPeriod.WEEK)
+                            if (view == HistoryView.MONTH) viewModel.selectPeriod(StatsPeriod.MONTH)
+                        },
+                        label = { stringResource(it.labelRes) },
                     )
                     val stats = state.stats
-                    if (stats != null && stats.loggedDays == 0) {
+                    if (calendar) {
+                        CalendarSection(onDayClick = onDayClick)
+                    } else if (stats != null && stats.loggedDays == 0) {
                         EmptyState(
                             title = stringResource(R.string.stats_empty_title),
                             text = stringResource(R.string.stats_empty_text),
@@ -112,7 +121,6 @@ fun StatsScreen(
                         AverageCard(stats, state.targets, state.sex)
                     }
                 }
-                StatsPage.CALENDAR -> CalendarSection(onDayClick = onDayClick)
                 StatsPage.BODY -> BodySection(
                     openWeighDialog = openWeighDialog,
                     onWeighDialogShown = onWeighDialogShown,
@@ -132,12 +140,18 @@ fun StatsScreen(
     }
 }
 
-/** Reiter der Statistik in Anzeige-Reihenfolge. */
+/** Reiter der Statistik in Anzeige-Reihenfolge: Verlauf | Körper | KI. */
 private enum class StatsPage(val labelRes: Int) {
     FOOD(R.string.stats_tab_food),
-    CALENDAR(R.string.nav_calendar),
     BODY(R.string.stats_tab_body),
     AI(R.string.stats_tab_ai),
+}
+
+/** Ansichten im Verlauf. */
+private enum class HistoryView(val labelRes: Int) {
+    WEEK(R.string.stats_period_week),
+    MONTH(R.string.stats_period_month),
+    CALENDAR(R.string.nav_calendar),
 }
 
 private fun percent(value: Double?) = value?.let { "${(it * 100).roundToInt()} %" } ?: "–"

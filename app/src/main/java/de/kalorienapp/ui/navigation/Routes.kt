@@ -11,6 +11,14 @@ data object TodayRoute
 @Serializable
 data object ProfileRoute
 
+/** Einstellungen hinter dem Zahnrad im Profil (Kategorien). */
+@Serializable
+data object SettingsRoute
+
+/** Eine Kategorie der Einstellungen; [category] = Name eines [de.kalorienapp.ui.profile.SettingsCategory]. */
+@Serializable
+data class SettingsCategoryRoute(val category: String)
+
 @Serializable
 data object StatsRoute
 

@@ -386,6 +386,24 @@ fun AppNavHost(startDestination: Any, container: AppContainer) {
                     screen<ProfileRoute> {
                         ProfileScreen(
                             onNewGoal = { navController.navigate(GoalRoute) },
+                            onOpenSettings = { navController.navigate(SettingsRoute) },
+                            onOpenAreas = { navController.navigate(SettingsCategoryRoute(de.kalorienapp.ui.profile.SettingsCategory.AREAS.name)) },
+                            onOpenSocial = { navController.navigateTopLevel(SocialRoute) },
+                        )
+                    }
+                    screen<SettingsRoute> {
+                        de.kalorienapp.ui.profile.SettingsScreen(
+                            onBack = { navController.popBackStack() },
+                            onOpen = { navController.navigate(SettingsCategoryRoute(it.name)) },
+                        )
+                    }
+                    screen<SettingsCategoryRoute> { entry ->
+                        val name = entry.toRoute<SettingsCategoryRoute>().category
+                        val category = de.kalorienapp.ui.profile.SettingsCategory.entries.firstOrNull { it.name == name }
+                            ?: de.kalorienapp.ui.profile.SettingsCategory.ACCOUNT
+                        de.kalorienapp.ui.profile.SettingsCategoryScreen(
+                            category = category,
+                            onBack = { navController.popBackStack() },
                             onOpenPlan = { navController.navigate(MealPlanRoute) },
                             onFeedback = { navController.navigate(FeedbackRoute) },
                             onPrivacy = { navController.navigate(PrivacyRoute) },

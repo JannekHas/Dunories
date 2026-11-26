@@ -45,7 +45,34 @@
     <string name="meal_snack">Snacks</string>
 
     <!-- Profil -->
-    <string name="profile_title">Profil &amp; Ziele</string>
+    <string name="profile_title">Profil</string>
+    <string name="profile_no_name">Dein Profil</string>
+    <string name="profile_header_hint">Avatar, Serie und Erfolge im Social-Reiter</string>
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_cat_account">Konto &amp; Cloud-Sicherung</string>
+    <string name="settings_cat_account_text">Anmelden, automatisch sichern</string>
+    <string name="settings_cat_areas">Bereiche</string>
+    <string name="settings_cat_areas_text">Wasser, Plan, Fasten, Gewicht … ein- und ausschalten</string>
+    <string name="settings_cat_notifications">Benachrichtigungen</string>
+    <string name="settings_cat_notifications_text">Erinnerungen, Kalorien-Anzeige, Widget, Tipps</string>
+    <string name="settings_cat_ai">KI &amp; Premium</string>
+    <string name="settings_cat_ai_text">KI-Aufrufe, Code einlösen, Tester-Punkte</string>
+    <string name="settings_cat_data">Daten</string>
+    <string name="settings_cat_data_text">Sicherung, Serie aus einer anderen App</string>
+    <string name="settings_cat_help">Hilfe &amp; Infos</string>
+    <string name="settings_cat_help_text">Feedback, Was ist neu, Datenschutz</string>
+    <string name="settings_ai_hint">Fotos und Beschreibungen erkennt eine KI. Barcode, Favoriten und Eintragen von Hand gehen immer – auch ohne KI.</string>
+    <string name="areas_mine">Meine Bereiche</string>
+    <string name="areas_mine_hint">Nur eingeschaltete Bereiche siehst du in der App. Tipp auf „+“, um etwas dazuzunehmen.</string>
+    <string name="areas_manage">Anpassen</string>
+    <string name="area_water">Wasser</string>
+    <string name="area_plan">Ernährungsplan</string>
+    <string name="area_fasting">Intervallfasten</string>
+    <string name="area_weight">Gewicht</string>
+    <string name="area_body">Körperanalyse</string>
+    <string name="area_measures">Körpermaße</string>
+    <string name="area_game">Erfolge</string>
+    <string name="area_protein_only">Nur Protein</string>
     <string name="profile_tab_goals">Ziele</string>
     <string name="profile_tab_areas">Bereiche</string>
     <string name="profile_tab_notifications">Hinweise</string>
@@ -329,7 +356,7 @@
     <string name="calendar_over">Drüber</string>
     <string name="calendar_no_data">Kein Eintrag</string>
     <string name="stats_title">Statistik</string>
-    <string name="stats_tab_food">Ernährung</string>
+    <string name="stats_tab_food">Verlauf</string>
     <string name="stats_tab_body">Körper</string>
     <string name="stats_tab_ai">KI</string>
     <string name="stats_period_week">7 Tage</string>
@@ -1059,7 +1086,7 @@
     <string name="social_edit_name">Name ändern</string>
     <string name="social_name_label">Dein Name</string>
     <string name="social_name_text">So heißt du in Dunories – z. B. beim Feedback und später in Ranglisten.</string>
-    <string name="social_game_off">Erfolge &amp; Abzeichen sind ausgeschaltet. Einschalten unter Profil → Bereiche.</string>
+    <string name="social_game_off">Erfolge &amp; Abzeichen sind ausgeschaltet. Einschalten unter Profil → Meine Bereiche.</string>
     <string name="social_badges">Abzeichen</string>
     <plurals name="social_badges_count">
         <item quantity="one">%1$d Abzeichen</item>
