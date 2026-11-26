@@ -373,8 +373,12 @@ const ASSETS = {
 };
 const ACCENTS = { cyan: "#22D3EE", green: "#3DDC84", yellow: "#FFD400", orange: "#FF8A1F", red: "#FF4D6D", violet: "#A855F7", magenta: "#F43FBF" };
 const LAYOUTS = { titel: "Titel", text: "Text mit Punkten", screenshot: "Screenshot", kommentar: "Antwort auf Kommentar", vergleich: "Vergleich (2 Spalten)", abschluss: "Abschluss (Aufruf)" };
-const LOOKS = { neon: "Neon (dunkel)", foto: "Foto-Hintergrund", tiktok: "TikTok-Text (Kästchen)", notiz: "Notiz", hell: "Hell", zeitung: "Zeitung", knall: "Knallfarbe" };
-const FONTS = { auto: "passend zum Look", bricolage: "Bricolage (App)", system: "Schlicht (wie TikTok)", serif: "Serif (Zeitung)", hand: "Handschrift", impact: "Plakat", mono: "Schreibmaschine" };
+// Auswahl ausgedünnt (Nutzer 26.11.: Notiz, Zeitung, TikTok-Kästchen nie genutzt). Alte Folien mit diesen Looks
+// werden weiter richtig angezeigt (LEGACY_LOOKS), sind aber nicht mehr wählbar.
+const LOOKS = { neon: "Neon (dunkel)", foto: "Foto-Hintergrund", hell: "Hell", knall: "Knallfarbe" };
+const LEGACY_LOOKS = { tiktok: "TikTok-Text (alt)", notiz: "Notiz (alt)", zeitung: "Zeitung (alt)" };
+const FONTS = { auto: "passend zum Look", bricolage: "Bricolage (App)", system: "Schlicht (wie TikTok)", serif: "Serif", impact: "Plakat", mono: "Schreibmaschine" };
+const LEGACY_FONTS = { hand: "Handschrift (alt)" };
 const VALIGN = { auto: "automatisch", top: "oben", center: "Mitte", bottom: "unten" };
 const STICKER_POS = { or: "oben rechts", ol: "oben links", ur: "unten rechts", ul: "unten links" };
 /** Grundgröße der Überschrift je Art (Textgröße-Regler skaliert davon). */
@@ -387,19 +391,19 @@ const PRESETS = {
     name: "Der Anfang (erster Beitrag)", format: "post",
     slides: [
       { layout: "titel", look: "foto", accent: "cyan", brand: false, title: "Ich hab angefangen, meine eigene *Kalorien-App* zu bauen.", sub: "" },
-      { layout: "text", look: "notiz", accent: "yellow", brand: false, title: "Warum?", lines: "Weil mich jede App genervt hat:\n– zu voll\n– zu teuer\n– zu viel Druck", sub: "Also mach ich's selbst." },
+      { layout: "text", look: "hell", accent: "yellow", brand: false, title: "Warum?", lines: "Weil mich jede App genervt hat:\n– zu voll\n– zu teuer\n– zu viel Druck", sub: "Also mach ich's selbst." },
       { layout: "screenshot", look: "neon", accent: "green", brand: true, title: "Das ist sie: *Dunories*.", sub: "Nur das, was du brauchst.", image: "asset:heute" },
       { layout: "screenshot", look: "hell", accent: "yellow", brand: false, title: "Mein Lieblingsteil: *Foto rein*, fertig.", sub: "", image: "asset:vorschlag", inset: "asset:spaghetti" },
-      { layout: "abschluss", look: "hell", accent: "magenta", brand: true, title: "Ab Dezember suche ich *Tester*.", sub: "Willst du dabei sein?", cta: "Kommentier 🧪" },
+      { layout: "abschluss", look: "neon", accent: "magenta", brand: true, title: "Ab Dezember suche ich *Tester*.", sub: "Willst du dabei sein?", cta: "Kommentier 🧪" },
     ],
   },
   vorstellung: {
     name: "Vorstellung", format: "post",
     slides: [
       { layout: "titel", look: "neon", accent: "cyan", title: "Ich bau mir meine *eigene* Kalorien-App.", sub: "Hi, ich bin Jannek 👋" },
-      { layout: "text", look: "neon", accent: "red", title: "Weil mich die anderen *genervt* haben.", lines: "🎰 Glücksrad statt fairer Preis\n📢 Werbung und Pop-ups\n🧩 Zu viel Kram, den ich nie nutze", sub: "Also hab ich meine eigene gebaut." },
+      { layout: "text", look: "hell", accent: "red", title: "Weil mich die anderen *genervt* haben.", lines: "🎰 Glücksrad statt fairer Preis\n📢 Werbung und Pop-ups\n🧩 Zu viel Kram, den ich nie nutze", sub: "Also hab ich meine eigene gebaut." },
       { layout: "screenshot", look: "neon", accent: "green", title: "Nur das, was *du* brauchst.", sub: "Alles andere schaltest du einfach aus.", image: "asset:heute" },
-      { layout: "screenshot", look: "neon", accent: "yellow", title: "Foto rein. *Nährwerte* raus.", sub: "In Sekunden erkannt – du prüfst nur noch.", image: "asset:vorschlag", inset: "asset:spaghetti" },
+      { layout: "screenshot", look: "hell", accent: "yellow", title: "Foto rein. *Nährwerte* raus.", sub: "In Sekunden erkannt – du prüfst nur noch.", image: "asset:vorschlag", inset: "asset:spaghetti" },
       { layout: "abschluss", look: "neon", accent: "magenta", title: "Bald im *Play Store*.", sub: "Willst du zu den Ersten gehören?", cta: "Kommentier 🧪 zum Testen" },
     ],
   },
@@ -409,8 +413,8 @@ const PRESETS = {
       { layout: "titel", look: "neon", accent: "red", big: "🔥", title: "Du verlierst deine *YAZIO*-Serie nicht.", sub: "Wechseln dauert 30 Sekunden 👇" },
       { layout: "screenshot", look: "hell", accent: "orange", title: "1. Screenshot von deiner *Serie*", sub: "In YAZIO oben rechts auf die Flamme", image: "" },
       { layout: "screenshot", look: "neon", accent: "yellow", title: "2. In Dunories *übernehmen*", sub: "Die KI liest Tage in Folge und Rekord ab", image: "" },
-      { layout: "screenshot", look: "neon", accent: "green", title: "Deine Serie läuft *weiter*", sub: "Und zählt für deine Erfolge", image: "" },
-      { layout: "text", look: "notiz", accent: "cyan", title: "Und obendrauf:", lines: "📸 Essen per Foto\n🧾 Barcode & Etikett\n🎯 Nur, was du brauchst" },
+      { layout: "screenshot", look: "hell", accent: "green", title: "Deine Serie läuft *weiter*", sub: "Und zählt für deine Erfolge", image: "" },
+      { layout: "text", look: "neon", accent: "cyan", title: "Und obendrauf:", lines: "📸 Essen per Foto\n🧾 Barcode & Etikett\n🎯 Nur, was du brauchst" },
       { layout: "abschluss", look: "hell", accent: "magenta", title: "Bald im *Play Store*.", sub: "Sei beim Start dabei", cta: "Folg für den Start 🔔" },
     ],
   },
@@ -420,19 +424,19 @@ const PRESETS = {
       { layout: "titel", look: "neon", accent: "yellow", big: "3 Sek.", title: "So schnell tracke ich mein *Essen*.", sub: "Ohne Abtippen. Ohne Waage." },
       { layout: "titel", look: "foto", accent: "cyan", brand: false, bg: "asset:spaghetti", title: "Schritt 1: *Foto* machen.", sub: "" },
       { layout: "screenshot", look: "hell", accent: "green", title: "Schritt 2: Die KI erkennt die *Zutaten*.", sub: "Du prüfst nur noch.", image: "asset:vorschlag", inset: "asset:spaghetti" },
-      { layout: "text", look: "notiz", accent: "violet", title: "Und wenn's mal danebenliegt?", lines: "✏️ Alles bleibt ein Vorschlag\n🗣️ Sag einfach, was es ist\n📦 Barcode & Etikett sind exakt" },
-      { layout: "abschluss", look: "neon", accent: "magenta", title: "Willst du's *testen*?", sub: "Bald im Play Store", cta: "Kommentier 🧪" },
+      { layout: "text", look: "neon", accent: "violet", title: "Und wenn's mal danebenliegt?", lines: "✏️ Alles bleibt ein Vorschlag\n🗣️ Sag einfach, was es ist\n📦 Barcode & Etikett sind exakt" },
+      { layout: "abschluss", look: "hell", accent: "magenta", title: "Willst du's *testen*?", sub: "Bald im Play Store", cta: "Kommentier 🧪" },
     ],
   },
   stories: {
     name: "Stories – Einzelbilder zum Aussuchen", format: "story", showCount: false,
     slides: [
-      { layout: "text", look: "notiz", accent: "yellow", font: "hand", title: "Heute an Dunories gebaut:", lines: "✓ Reste aufheben\n✓ Foto + kurz dazusagen\n✓ Tausend kleine Fehler", sub: "Morgen geht's weiter." },
-      { layout: "titel", look: "tiktok", accent: "cyan", brand: false, valign: "center", title: "Was nervt dich an Kalorien-Apps am *meisten*?", sub: "Schreib's mir – ich bau's besser 👇" },
+      { layout: "text", look: "hell", accent: "yellow", title: "Heute an Dunories gebaut:", lines: "✓ Reste aufheben\n✓ Foto + kurz dazusagen\n✓ Tausend kleine Fehler", sub: "Morgen geht's weiter." },
+      { layout: "titel", look: "neon", accent: "cyan", brand: false, valign: "center", title: "Was nervt dich an Kalorien-Apps am *meisten*?", sub: "Schreib's mir – ich bau's besser 👇" },
       { layout: "titel", look: "knall", accent: "yellow", brand: false, valign: "center", align: "center", big: "~150", title: "kcal hat ein *Latte macchiato*.", sub: "Getränke zählen mit." },
-      { layout: "titel", look: "zeitung", accent: "green", valign: "center", title: "Mythos: Abends essen macht *dick*.", sub: "Fakt: Am Ende zählt, was du über den ganzen Tag isst." },
-      { layout: "titel", look: "neon", accent: "magenta", valign: "center", big: "Bald", title: "Dunories kommt in den *Play Store*.", sub: "Willst du testen? Schreib mir.", sticker: "Testphase", stickerPos: "or" },
-      { layout: "screenshot", look: "hell", accent: "green", title: "Tester-Wunsch: *erst sagen*, dann erkennen.", sub: "Foto machen, kurz dazusagen, fertig.", image: "asset:vorschlag" },
+      { layout: "titel", look: "neon", accent: "green", valign: "center", title: "Mythos: Abends essen macht *dick*.", sub: "Fakt: Am Ende zählt, was du über den ganzen Tag isst." },
+      { layout: "titel", look: "hell", accent: "magenta", valign: "center", big: "Bald", title: "Dunories kommt in den *Play Store*.", sub: "Willst du testen? Schreib mir.", sticker: "Testphase", stickerPos: "or" },
+      { layout: "screenshot", look: "neon", accent: "green", title: "Tester-Wunsch: *erst sagen*, dann erkennen.", sub: "Foto machen, kurz dazusagen, fertig.", image: "asset:vorschlag" },
       { layout: "titel", look: "foto", accent: "orange", brand: false, valign: "bottom", title: "Feierabend. Morgen wird *weitergebaut*.", sub: "" },
     ],
   },
@@ -446,7 +450,7 @@ const PRESETS = {
       ttTitle: "Ständig Hunger beim Abnehmen? Das hilft – Dunories",
     },
     slides: [
-      { layout: "titel", look: "tiktok", accent: "green", brand: false, valign: "center", title: "Du nimmst ab, hast aber *ständig* Hunger?", sub: "Oft fehlt einfach das hier 👇" },
+      { layout: "titel", look: "neon", accent: "green", brand: false, valign: "center", title: "Du nimmst ab, hast aber *ständig* Hunger?", sub: "Oft fehlt einfach das hier 👇" },
       { layout: "text", look: "hell", accent: "green", title: "Protein macht *satt*:", lines: "🥛 250 g Magerquark: ~30 g\n🥚 3 Eier: ~20 g\n🍗 150 g Hähnchenbrust: ~35 g", sub: "Viele zielen auf ca. 1,6 g pro kg Körpergewicht." },
       { layout: "screenshot", look: "neon", accent: "magenta", title: "Meine App zeigt dir Kalorien *und* Protein.", sub: "Bald im Play Store – folg für den Start.", image: "asset:heute" },
     ],
@@ -461,16 +465,16 @@ const PRESETS = {
       ttTitle: "3 versteckte Kalorienfallen beim Abnehmen – Dunories",
     },
     slides: [
-      { layout: "titel", look: "tiktok", accent: "yellow", brand: false, valign: "center", title: "Du zählst Kalorien und nimmst *trotzdem* nicht ab?", sub: "Check mal diese 3 Dinge 👇" },
-      { layout: "text", look: "zeitung", accent: "orange", title: "Was beim Eintragen oft *fehlt*:", lines: "🥄 1 EL Öl beim Braten: ~90 kcal\n🥗 2 EL Dressing: ~120 kcal\n☕ Latte macchiato: ~150 kcal", sub: "Zusammen schnell 350 kcal – jeden Tag." },
-      { layout: "abschluss", look: "knall", accent: "cyan", size: 75, title: "Ich bau gerade eine App, die *genau das* leichter macht.", sub: "Foto rein – und du siehst, was drinsteckt.", cta: "Folgen für den Start" },
+      { layout: "titel", look: "neon", accent: "yellow", brand: false, valign: "center", title: "Du zählst Kalorien und nimmst *trotzdem* nicht ab?", sub: "Check mal diese 3 Dinge 👇" },
+      { layout: "text", look: "knall", accent: "orange", title: "Was beim Eintragen oft *fehlt*:", lines: "🥄 1 EL Öl beim Braten: ~90 kcal\n🥗 2 EL Dressing: ~120 kcal\n☕ Latte macchiato: ~150 kcal", sub: "Zusammen schnell 350 kcal – jeden Tag." },
+      { layout: "abschluss", look: "neon", accent: "cyan", size: 75, title: "Ich bau gerade eine App, die *genau das* leichter macht.", sub: "Foto rein – und du siehst, was drinsteckt.", cta: "Folgen für den Start" },
     ],
   },
   kommentar: {
     name: "Antwort auf Kommentar", format: "post",
     slides: [
-      { layout: "kommentar", look: "tiktok", accent: "cyan", user: "lena", comment: "Und was kann die App, was die anderen nicht können?", title: "Gute Frage. Hier sind *3 Dinge*:", sub: "" },
-      { layout: "text", look: "zeitung", accent: "yellow", title: "1. Nur das, was du *brauchst*", lines: "Wasser, Plan, Fasten – alles zuschaltbar\nAusgeschaltet ist es einfach weg" },
+      { layout: "kommentar", look: "neon", accent: "cyan", user: "lena", comment: "Und was kann die App, was die anderen nicht können?", title: "Gute Frage. Hier sind *3 Dinge*:", sub: "" },
+      { layout: "text", look: "knall", accent: "yellow", title: "1. Nur das, was du *brauchst*", lines: "Wasser, Plan, Fasten – alles zuschaltbar\nAusgeschaltet ist es einfach weg" },
       { layout: "screenshot", look: "hell", accent: "green", title: "2. Foto rein, *fertig*.", sub: "Die KI schlägt vor, du prüfst.", image: "asset:vorschlag", inset: "asset:spaghetti" },
       { layout: "titel", look: "knall", accent: "yellow", font: "impact", align: "center", valign: "center", title: "3. Kein Druck.", sub: "Keine Belohnung fürs Wenigeressen. Nie.", brand: false },
       { layout: "abschluss", look: "neon", accent: "magenta", title: "Noch Fragen? Ab in die *Kommentare*.", sub: "", cta: "Folgen für den Start" },
@@ -479,9 +483,9 @@ const PRESETS = {
   vergleich: {
     name: "Ehrlich verglichen", format: "post",
     slides: [
-      { layout: "titel", look: "tiktok", accent: "red", title: "Warum ich nicht einfach eine andere App nehme:", sub: "", brand: false },
-      { layout: "vergleich", look: "neon", accent: "green", title: "Ehrlich *verglichen*", leftT: "Typische Apps", leftLines: "Werbung\n40 Funktionen auf einmal\nAlles abtippen", rightT: "Dunories", rightLines: "Keine Werbung\nNur, was du einschaltest\nFoto rein, fertig" },
-      { layout: "titel", look: "notiz", accent: "yellow", font: "hand", title: "Und ich bau sie selbst – Feedback landet direkt bei mir.", sub: "" },
+      { layout: "titel", look: "neon", accent: "red", title: "Warum ich nicht einfach eine andere App nehme:", sub: "", brand: false },
+      { layout: "vergleich", look: "hell", accent: "green", title: "Ehrlich *verglichen*", leftT: "Typische Apps", leftLines: "Werbung\n40 Funktionen auf einmal\nAlles abtippen", rightT: "Dunories", rightLines: "Keine Werbung\nNur, was du einschaltest\nFoto rein, fertig" },
+      { layout: "titel", look: "neon", accent: "yellow", title: "Und ich bau sie selbst – Feedback landet direkt bei mir.", sub: "" },
       { layout: "abschluss", look: "knall", accent: "cyan", title: "Willst du testen?", sub: "Bald im Play Store", cta: "Kommentier 🧪" },
     ],
   },
@@ -490,7 +494,7 @@ const PRESETS = {
     slides: [
       { layout: "titel", look: "hell", accent: "yellow", big: "3", title: "Fehler, die beim *Kalorienzählen* fast alle machen.", sub: "Nr. 2 hat mich auch erwischt." },
       { layout: "text", look: "neon", accent: "red", title: "1. Getränke *vergessen*", lines: "☕ Latte macchiato: ~150 kcal\n🥤 Saft 0,3 l: ~140 kcal\n🍺 Bier 0,5 l: ~210 kcal" },
-      { layout: "text", look: "notiz", accent: "orange", title: "2. Öl nicht mitzählen", lines: "🥄 1 EL Öl ≈ 90 kcal\n🍳 Beim Braten meist 1–2 EL\n💡 Einmal abwiegen reicht" },
+      { layout: "text", look: "hell", accent: "orange", title: "2. Öl nicht mitzählen", lines: "🥄 1 EL Öl ≈ 90 kcal\n🍳 Beim Braten meist 1–2 EL\n💡 Einmal abwiegen reicht" },
       { layout: "text", look: "neon", accent: "violet", title: "3. Nur *Kalorien*, kein Protein", lines: "💪 Protein macht satt\n🎯 Viele zielen auf ca. 1,6 g pro kg\n📊 Dunories zeigt beides" },
       { layout: "abschluss", look: "hell", accent: "cyan", title: "Mehr Tipps? *Folg* mir.", sub: "Ich bau gerade meine eigene Kalorien-App.", cta: "Folgen 🔔" },
     ],
@@ -674,7 +678,7 @@ function renderEditor() {
     ${field("Name der Slideshow", `<input id="eName" value="${esc(p.name)}">`)}
     <div class="row">
       <div>${field("Art der Folie", `<select id="eLayout">${opts(LAYOUTS, s.layout)}</select>`)}</div>
-      <div>${field("Look", `<select id="eLook">${opts(LOOKS, look)}</select>`)}</div>
+      <div>${field("Look", `<select id="eLook">${opts(LEGACY_LOOKS[look] ? { ...LOOKS, [look]: LEGACY_LOOKS[look] } : LOOKS, look)}</select>`)}</div>
     </div>
     ${PHOTO_LOOKS.includes(look) ? field(look === "foto" ? "Hintergrund-Foto (z. B. du mit Handy)" : "Hintergrund-Foto (optional)", `<div class="row"><input type="file" id="eBg" accept="image/*">${s.bg ? `<button id="eBgDel">weg</button>` : ""}</div>`) : ""}
     ${PHOTO_LOOKS.includes(look) && s.bg ? range("eBgY", "Foto verschieben (oben ↔ unten)", s.bgY ?? 50, 0, 100, 1, "%") + range("eBgZoom", "Foto vergrößern", s.bgZoom || 100, 100, 250, 5, "%") : ""}
@@ -691,7 +695,7 @@ function renderEditor() {
     <details class="more" ${s.font || s.align || s.valign || s.size || s.sticker ? "open" : ""}>
       <summary>Gestaltung: Schrift, Größe, Position, Aufkleber</summary>
       <div class="row">
-        <div>${field("Schrift", `<select id="eFont">${opts(FONTS, s.font || "auto")}</select>`)}</div>
+        <div>${field("Schrift", `<select id="eFont">${opts(LEGACY_FONTS[s.font] ? { ...FONTS, [s.font]: LEGACY_FONTS[s.font] } : FONTS, s.font || "auto")}</select>`)}</div>
         <div>${field("Ausrichtung", `<select id="eAlign">${opts({ left: "links", center: "mittig" }, s.align || "left")}</select>`)}</div>
       </div>
       ${hasBlock ? field("Text-Position", `<select id="eValign">${opts(VALIGN, s.valign || "auto")}</select>`) : ""}
@@ -1028,9 +1032,9 @@ document.getElementById("countToggle").onchange = (e) => { project().showCount =
 const pick = (arr, not) => { const c = arr.filter((x) => x !== not); return c[Math.floor(Math.random() * c.length)]; };
 function shuffleSlide(s, prev) {
   const looks = Object.keys(LOOKS).filter((l) => l !== "foto" || img(s.bg));
-  s.look = s.look === "foto" && img(s.bg) ? pick(["foto", "tiktok"], prev?.look) : pick(looks, prev?.look);
+  s.look = s.look === "foto" && img(s.bg) ? "foto" : pick(looks.filter((l) => l !== "foto"), prev?.look);
   s.accent = pick(Object.keys(ACCENTS), prev?.accent);
-  s.font = pick(["auto", "auto", "auto", "bricolage", "system", "serif", "hand", "impact"], prev?.font);
+  s.font = pick(["auto", "auto", "auto", "bricolage", "system", "serif", "impact"], prev?.font);
 }
 // Gemischt wird ohne Zurücklegen: erst kommt jeder Look einmal dran, dann wieder von vorn (Foto bleibt bei Folien mit Foto).
 const shuffled = (arr) => arr.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
@@ -1042,14 +1046,14 @@ document.getElementById("mixLooks").onclick = () => {
     if (!looks.length) looks = shuffled(Object.keys(LOOKS).filter((l) => l !== "foto"));
     if (!accents.length) accents = shuffled(Object.keys(ACCENTS));
     if (s.look === "foto" && img(s.bg)) {
-      s.look = prev?.look === "foto" ? "tiktok" : "foto";
+      s.look = "foto";
     } else {
       const k = looks.findIndex((l) => l !== prev?.look);
       s.look = looks.splice(Math.max(0, k), 1)[0];
     }
     const a = accents.findIndex((c) => c !== prev?.accent);
     s.accent = accents.splice(Math.max(0, a), 1)[0];
-    s.font = pick(["auto", "auto", "auto", "bricolage", "system", "serif", "hand", "impact"], prev?.font);
+    s.font = pick(["auto", "auto", "auto", "bricolage", "system", "serif", "impact"], prev?.font);
   });
   save(); renderAll();
 };
