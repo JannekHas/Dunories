@@ -767,7 +767,14 @@ function renderEditor() {
       <button id="eUp">↑</button><button id="eDown">↓</button><button id="eDup">Kopie</button><button id="eDice" title="Look, Farbe und Schrift dieser Folie zufällig neu">Würfeln</button><button id="eDel" class="danger">Löschen</button>
     </div>`;
   const upd = (fn) => { fn(s); save(); renderAll(); };
-  const showAuto = () => { const a = document.getElementById("eAltAuto"); if (a) a.textContent = "Automatisch: " + autoAlt(s); };
+  const showAuto = () => {
+    const a = document.getElementById("eAltAuto"); if (!a) return;
+    const own = plain(s.alt);
+    a.textContent = own
+      ? `${own.length}/${ALT_MAX} Zeichen${own.length > ALT_MAX ? " – zu lang, bitte kürzen" : ""}`
+      : `Automatisch (${autoAlt(s).length}/${ALT_MAX}): ` + autoAlt(s);
+    a.style.color = own.length > ALT_MAX ? "var(--red)" : "";
+  };
   const live = (id, key) => { const n = document.getElementById(id); if (n) n.oninput = () => { s[key] = n.value; save(); refreshPreview(true); showAuto(); renderPostText(); }; };
   const liveNum = (id, key, unit) => { const n = document.getElementById(id); if (n) n.oninput = () => { s[key] = +n.value; document.getElementById(id + "V").textContent = n.value + unit; save(); refreshPreview(true); }; };
   const pickSel = (id, key, def) => { const n = document.getElementById(id); if (n) n.onchange = () => upd((x) => { if (n.value === def) delete x[key]; else x[key] = n.value; }); };
@@ -864,7 +871,8 @@ function autoAlt(s) {
   if (s.layout === "screenshot" && s.inset) art += ", daneben ein kleines Foto";
   const see = plain(s.see);
   // Punkte als Aufzählung: „…: zu voll, zu teuer, zu viel Druck.“ (Striche/Emojis am Anfang weg)
-  const lines = String(s.lines || "").split("\n").map((l) => plain(l).replace(/^[\s–\-•·\p{Extended_Pictographic}️]+/u, "")).filter(Boolean);
+  // Punkte nur bei „Text mit Punkten“ – sonst landeten Reste einer früheren Folienart im Alternativtext (26.11.)
+  const lines = s.layout !== "text" ? [] : String(s.lines || "").split("\n").map((l) => plain(l).replace(/^[\s–\-•·\p{Extended_Pictographic}️]+/u, "")).filter(Boolean);
   const texts = [s.big, s.title].map(plain).filter(Boolean).map(dot);
   if (lines.length) {
     const list = lines.reduce((a, l) => (!a ? l : a + (/[:.!?]$/.test(a) ? " " : ", ") + l), "");
@@ -877,7 +885,17 @@ function autoAlt(s) {
   }
   if (s.layout === "abschluss" && s.cta) texts.push(`Darunter ein Knopf: ${plain(s.cta)}`);
   if (plain(s.sticker)) texts.push(dot(`Aufkleber: ${plain(s.sticker)}`));
-  return `${art}${see ? ": " + dot(see) : "."}${texts.length ? " Text: " + texts.join(" ") : ""}`;
+  return fitAlt(`${art}${see ? ": " + dot(see) : "."}${texts.length ? " Text: " + texts.join(" ") : ""}`);
+}
+/** Alternativtexte dürfen höchstens 300 Zeichen haben (TikTok/Instagram, Nutzer 26.11.). */
+const ALT_MAX = 300;
+/** Zu lang → erst Deko-Angaben weglassen, dann an einem Wortende kürzen. */
+function fitAlt(t) {
+  if (t.length <= ALT_MAX) return t;
+  t = t.replace(" mit dem Dunories-Logo", "").replace(" und großen bunten Ringen", "").replace(", daneben ein kleines Foto", "");
+  if (t.length <= ALT_MAX) return t;
+  const cut = t.slice(0, ALT_MAX - 1);
+  return cut.slice(0, cut.lastIndexOf(" ")).replace(/[,;:–-]+$/, "") + "…";
 }
 const altOf = (s) => plain(s.alt) || autoAlt(s);
 
