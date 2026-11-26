@@ -67,7 +67,7 @@
     background: radial-gradient(900px 700px at 0% 0%, rgba(124,58,237,.38), transparent 70%),
                 radial-gradient(900px 800px at 100% 100%, rgba(14,116,144,.38), transparent 70%),
                 radial-gradient(700px 600px at 85% 15%, var(--glow), transparent 70%); }
-  .slide > *:not(.bg):not(.deco):not(.safe):not(.sticker) { position: relative; z-index: 1; }
+  .slide > *:not(.bg):not(.deco):not(.safe):not(.sticker):not(.inset) { position: relative; z-index: 1; }
   .slide .top { display: flex; align-items: center; gap: 18px; font-weight: 700; font-size: 38px; min-height: 72px; }
   .slide .top img { width: 72px; height: 72px; border-radius: 18px; }
   .slide .top .count { margin-left: auto; font-size: 30px; color: #A3A3B8; font-weight: 600; }
@@ -234,6 +234,27 @@
   .slide.l-knall .vs .good { background: #0A0A0A; color: var(--accent); }
   .slide.l-knall .vs .good .ch, .slide.l-knall .vs .good .it span { color: var(--accent); }
 
+  /* ---------- Nachgebauter App-Vorschlag im Handy (eigene Mahlzeit statt fester Screenshot) ---------- */
+  .slide .mock { background: linear-gradient(160deg, #1D1B27 0%, #172733 60%, #14141B 100%); color: #F2F2F7; font-family: "Bricolage", sans-serif;
+    padding: 30px 22px 26px; text-align: left; }
+  .slide .mock .mt { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 22px; }
+  .slide .mock .ml { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+  .slide .mock .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .slide .mock .chip { font-size: 17px; font-weight: 600; padding: 9px 16px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,.14); color: #A3A3B8; }
+  .slide .mock .chip.on { background: #22D3EE; color: #0A0A0A; border-color: transparent; }
+  .slide .mock .it { margin-top: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06);
+    padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
+  .slide .mock .it .tx { flex: 1; min-width: 0; }
+  .slide .mock .it b { display: block; font-size: 20px; font-weight: 700; }
+  .slide .mock .it .meta { font-size: 17px; margin-top: 2px; }
+  .slide .mock .it .src { font-size: 13px; color: #A3A3B8; margin-top: 4px; }
+  .slide .mock .it .ic { color: #F2F2F7; font-size: 20px; opacity: .9; }
+  .slide .mock .add { margin-top: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,.16); padding: 13px; text-align: center; font-size: 16px; color: #C9C9D6; }
+  .slide .mock .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; gap: 10px; }
+  .slide .mock .sum { font-size: 17px; color: #C9C9D6; }
+  .slide .mock .sum b { color: #F2F2F7; }
+  .slide .mock .go { background: #22D3EE; color: #0A0A0A; font-weight: 700; font-size: 17px; padding: 11px 20px; border-radius: 999px; }
+
   /* ---------- Aufkleber (schräg, wie draufgeklebt) ---------- */
   .slide .sticker { position: absolute; z-index: 3; background: var(--accent); color: #0A0A0A; font-weight: 800; font-size: 40px;
     padding: 14px 30px; border-radius: 18px; box-shadow: 0 14px 36px rgba(0,0,0,.35); font-family: "Bricolage", sans-serif; white-space: nowrap; }
@@ -384,6 +405,24 @@ const STICKER_POS = { or: "oben rechts", ol: "oben links", ur: "unten rechts", u
 /** Grundgröße der Überschrift je Art (Textgröße-Regler skaliert davon). */
 const H2_SIZE = { titel: 124, text: 96, screenshot: 84, kommentar: 92, vergleich: 84, abschluss: 132 };
 const PHOTO_LOOKS = ["foto", "tiktok"];
+const MEALS = ["Frühstück", "Mittagessen", "Abendessen", "Snacks"];
+/** Zeilen „Name; Menge; kcal; Herkunft (optional)“ → Lebensmittel für den nachgebauten Vorschlag. */
+function mockItems(text) {
+  return String(text || "").split("\n").map((l) => l.split(";").map((x) => x.trim())).filter((x) => x[0])
+    .map(([name, amount = "", kcal = "", src = ""]) => ({ name, amount, kcal: Number(String(kcal).replace(",", ".")) || 0, src: src || "KI-Schätzung aus Foto" }));
+}
+const kcalText = (n) => Math.round(n).toLocaleString("de-DE");
+/** Vorschlag-Bildschirm der App, nachgebaut (Mahlzeit, Lebensmittel, Gesamt) – für eigene Gerichte statt Spaghetti. */
+function mockHtml(s) {
+  const items = mockItems(s.mockItems);
+  const meal = MEALS.includes(s.mockMeal) ? s.mockMeal : "Mittagessen";
+  const total = items.reduce((a, i) => a + i.kcal, 0);
+  return `<div class="mock"><div class="mt">Vorschlag prüfen</div><div class="ml">Mahlzeit</div>
+    <div class="chips">${MEALS.map((m) => `<span class="chip${m === meal ? " on" : ""}">${m}</span>`).join("")}</div>
+    ${items.map((i) => `<div class="it"><div class="tx"><b>${esc(i.name)}</b><div class="meta">${esc(i.amount)}${i.amount ? " · " : ""}${kcalText(i.kcal)} kcal</div><div class="src">${esc(i.src)}</div></div><span class="ic">🗑</span><span class="ic">⌄</span></div>`).join("")}
+    <div class="add">+&nbsp; Komponente hinzufügen</div>
+    <div class="foot"><span class="sum">Gesamt: <b>${kcalText(total)} kcal</b></span><span class="go">Eintragen (${items.length})</span></div></div>`;
+}
 
 // ---------------- Vorlagen ----------------
 const PRESETS = {
@@ -423,7 +462,7 @@ const PRESETS = {
     slides: [
       { layout: "titel", look: "neon", accent: "yellow", big: "3 Sek.", title: "So schnell tracke ich mein *Essen*.", sub: "Ohne Abtippen. Ohne Waage." },
       { layout: "titel", look: "foto", accent: "cyan", brand: false, bg: "asset:spaghetti", title: "Schritt 1: *Foto* machen.", sub: "" },
-      { layout: "screenshot", look: "hell", accent: "green", title: "Schritt 2: Die KI erkennt die *Zutaten*.", sub: "Du prüfst nur noch.", image: "asset:vorschlag", inset: "asset:spaghetti" },
+      { layout: "screenshot", look: "hell", accent: "green", title: "Schritt 2: Die KI erkennt die *Zutaten*.", sub: "Du prüfst nur noch.", mock: true, mockMeal: "Mittagessen", mockItems: "Spaghetti Bolognese; 450 g; 791; KI-Schätzung aus Foto · Gericht aus 3 Zutaten\nWasser; 200 ml; 0", inset: "asset:spaghetti" },
       { layout: "text", look: "neon", accent: "violet", title: "Und wenn's mal danebenliegt?", lines: "✏️ Alles bleibt ein Vorschlag\n🗣️ Sag einfach, was es ist\n📦 Barcode & Etikett sind exakt" },
       { layout: "abschluss", look: "hell", accent: "magenta", title: "Willst du's *testen*?", sub: "Bald im Play Store", cta: "Kommentier 🧪" },
     ],
@@ -595,7 +634,7 @@ function slideEl(s, i, n, format, proj = project()) {
       ${sub("sub outro")}</div>${look === "neon" ? bars : ""}`;
   } else if (s.layout === "screenshot") {
     body = `${h2(s.title)}${sub()}
-      <div class="phone${img(s.inset) ? " right" : ""}">${img(s.image) ? `<img src="${img(s.image)}">` : `<div class="empty ph-hint">Screenshot im Editor rechts wählen</div>`}</div>
+      <div class="phone${img(s.inset) ? " right" : ""}">${s.mock ? mockHtml(s) : img(s.image) ? `<img src="${img(s.image)}">` : `<div class="empty ph-hint">Screenshot im Editor rechts wählen</div>`}</div>
       ${img(s.inset) ? `<div class="inset"><img src="${img(s.inset)}"></div>` : ""}`;
   } else if (s.layout === "kommentar") {
     const user = String(s.user || "").replace(/^@/, "").trim() || "jemand";
@@ -691,7 +730,11 @@ function renderEditor() {
       <div>${field("Rechte Spalte", `<input id="eRightT" value="${esc(s.rightT)}" placeholder="Dunories">`)}${field("Punkte rechts (✓)", `<textarea id="eRightLines" style="min-height:100px">${esc(s.rightLines)}</textarea>`)}</div></div>` : ""}
     ${s.layout === "abschluss" ? field("Aufruf (Knopf)", `<input id="eCta" value="${esc(s.cta)}">`) : ""}
     ${field("Akzentfarbe", `<div class="swatches">${Object.entries(ACCENTS).map(([k, c]) => `<button class="swatch ${k === s.accent ? "sel" : ""}" data-acc="${k}" style="background:${c}" title="${k}"></button>`).join("")}</div>`)}
-    ${s.layout === "screenshot" ? field("Screenshot", `<input type="file" id="eImg" accept="image/*">`) + field("Kleines Bild unten links (optional, z. B. Essensfoto)", `<div class="row"><input type="file" id="eInset" accept="image/*"><button id="eInsetDel">weg</button></div>`) : ""}
+    ${s.layout === "screenshot" ? field("Im Handy zeigen", `<select id="eMock">${opts({ shot: "Eigener Screenshot", mock: "App-Vorschlag (selbst eingetragen)" }, s.mock ? "mock" : "shot")}</select>`) : ""}
+    ${s.layout === "screenshot" && s.mock ? field("Mahlzeit", `<select id="eMockMeal">${opts(Object.fromEntries(MEALS.map((m) => [m, m])), MEALS.includes(s.mockMeal) ? s.mockMeal : "Mittagessen")}</select>`)
+      + field("Lebensmittel (eine Zeile je Komponente: Name; Menge; kcal; Herkunft optional)", `<textarea id="eMockItems" style="min-height:100px" placeholder="Hähnchen-Curry mit Reis; 420 g; 610; KI-Schätzung aus Foto · Gericht aus 3 Zutaten&#10;Cola Zero; 330 ml; 1">${esc(s.mockItems)}</textarea>`) : ""}
+    ${s.layout === "screenshot" && !s.mock ? field("Screenshot", `<input type="file" id="eImg" accept="image/*">`) : ""}
+    ${s.layout === "screenshot" ? field("Kleines Bild unten links (optional, z. B. dein Essensfoto)", `<div class="row"><input type="file" id="eInset" accept="image/*"><button id="eInsetDel">weg</button></div>`) : ""}
     <details class="more" ${s.font || s.align || s.valign || s.size || s.sticker ? "open" : ""}>
       <summary>Gestaltung: Schrift, Größe, Position, Aufkleber</summary>
       <div class="row">
@@ -725,6 +768,14 @@ function renderEditor() {
   document.getElementById("eLook").onchange = (e) => upd((x) => (x.look = e.target.value));
   ["eTitle:title", "eSub:sub", "eLines:lines", "eCta:cta", "eBig:big", "eUser:user", "eComment:comment", "eLeftT:leftT", "eLeftLines:leftLines", "eRightT:rightT", "eRightLines:rightLines", "eSticker:sticker"]
     .forEach((x) => live(...x.split(":")));
+  const mockSel = document.getElementById("eMock");
+  if (mockSel) mockSel.onchange = () => upd((x) => {
+    x.mock = mockSel.value === "mock";
+    if (x.mock && !x.mockItems) { x.mockItems = "Spaghetti Bolognese; 450 g; 791; KI-Schätzung aus Foto · Gericht aus 3 Zutaten\nWasser; 200 ml; 0"; x.mockMeal = "Mittagessen"; }
+  });
+  const mealSel = document.getElementById("eMockMeal");
+  if (mealSel) mealSel.onchange = () => upd((x) => (x.mockMeal = mealSel.value));
+  live("eMockItems", "mockItems");
   liveNum("eSize", "size", "%"); liveNum("eBgY", "bgY", "%"); liveNum("eBgZoom", "bgZoom", "%");
   pickSel("eFont", "font", "auto"); pickSel("eAlign", "align", "left"); pickSel("eValign", "valign", "auto"); pickSel("eStickerPos", "stickerPos", "or");
   ed.querySelectorAll(".swatch").forEach((b) => (b.onclick = () => upd((x) => (x.accent = b.dataset.acc))));
@@ -795,6 +846,10 @@ function autoAlt(s) {
   if (s.layout === "vergleich") art += ", Vergleich in zwei Spalten";
   if (s.layout !== "screenshot" && (s.layout === "abschluss" ? look !== "foto" && look !== "tiktok" : pr.showLogo !== false && s.brand !== false && look !== "notiz")) art += " mit dem Dunories-Logo";
   if (s.layout === "titel" && look === "neon" && !s.big) art += " und großen bunten Ringen";
+  if (s.layout === "screenshot" && s.mock) {
+    const items = mockItems(s.mockItems);
+    art += `: Vorschlag fürs ${MEALS.includes(s.mockMeal) ? s.mockMeal : "Mittagessen"} – ${items.map((i) => `${i.name} (${i.amount ? i.amount + ", " : ""}${kcalText(i.kcal)} kcal)`).join(", ")}`;
+  }
   if (s.layout === "screenshot" && s.inset) art += ", daneben ein kleines Foto";
   const see = plain(s.see);
   // Punkte als Aufzählung: „…: zu voll, zu teuer, zu viel Druck.“ (Striche/Emojis am Anfang weg)
