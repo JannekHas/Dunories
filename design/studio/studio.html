@@ -7,7 +7,7 @@
 <!-- Erzeugt mit `node design/studio/build.mjs` → design/werbung/Dunories-Studio.html (lokal, nicht im Repo).
      Looks: Neon, Foto, TikTok-Text, Notiz, Hell, Zeitung, Knallfarbe · Arten: Titel, Text, Screenshot, Kommentar-Antwort, Vergleich, Abschluss.
      Je Folie: Schrift, Ausrichtung, Text-Position, Textgröße, Aufkleber, Foto verschieben/vergrößern.
-     Vorlagen dürfen `post` (Texte zum Posten) mitbringen. -->
+     Vorlagen dürfen `post` (Texte zum Posten) mitbringen. Gespeichert wird in IndexedDB (+ localStorage, wenn es passt). -->
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js" integrity="sha384-UbfRVKN3/elS1r7JcK2FhmPP+KlJ4CvYwbyYD7tH+uTkbT9bNJr9eJeQ0FoFbAgz" crossorigin="anonymous"></script>
 <style>
   @font-face { font-family: "Bricolage"; src: url(data:font/ttf;base64,__FONT__) format("truetype"); font-weight: 200 800; }
@@ -591,9 +591,18 @@ function load() {
 }
 let state = load();
 let sel = 0;
+/**
+ * Speichern: immer in IndexedDB (groß genug für viele Fotos), zusätzlich – wenn es passt – im kleinen localStorage
+ * (Handy-/Nutzer-Test 26.11.: mit eigenen Fotos war localStorage (~5 MB) voll und nichts wurde mehr gespeichert).
+ */
+let idbSaveFailed = false;
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); }
-  catch (e) { alert("Speicher voll – große Bilder entfernen oder „JSON speichern“ nutzen."); }
+  state.savedAt = Date.now();
+  idb("readwrite", (st) => st.put(state, "state")).then(() => { idbSaveFailed = false; }).catch((e) => {
+    if (!idbSaveFailed) alert("Speichern fehlgeschlagen – bitte „JSON speichern“ nutzen. " + e);
+    idbSaveFailed = true;
+  });
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { try { localStorage.removeItem(KEY); } catch (_) {} }
 }
 const project = () => state.projects[state.current];
 
@@ -942,14 +951,20 @@ function idb(mode, fn) {
     r.onerror = () => rej(r.error);
   });
 }
+/** Gemerkter Zielordner (beim Start aus IndexedDB geladen). */
+let exportDir = null;
+/**
+ * Zielordner holen. Wichtig: Ordnerauswahl und Erlaubnis gehen nur direkt im Klick – deshalb kein Hinweis-Fenster
+ * davor und kein Warten auf IndexedDB (sonst landete es still als ZIP in den Downloads).
+ */
 async function exportRoot(choose) {
-  let dir = choose ? null : await idb("readonly", (s) => s.get("dir")).catch(() => null);
-  if (dir && (await dir.requestPermission({ mode: "readwrite" })) !== "granted") dir = null;
-  if (!dir) {
-    alert("Wähle einmal den Ordner, in den die Beiträge sollen (z. B. design/werbung/Beiträge). Jeder Beitrag bekommt darin einen eigenen Unterordner.");
-    dir = await window.showDirectoryPicker({ id: "dunories-posts", mode: "readwrite" });
-    await idb("readwrite", (s) => s.put(dir, "dir")).catch(() => {});
+  if (!choose && exportDir) {
+    const perm = await exportDir.requestPermission({ mode: "readwrite" });
+    if (perm === "granted") return exportDir;
   }
+  const dir = await window.showDirectoryPicker({ id: "dunories-posts", mode: "readwrite" });
+  exportDir = dir;
+  idb("readwrite", (s) => s.put(dir, "dir")).catch(() => {});
   return dir;
 }
 
@@ -988,7 +1003,12 @@ async function exportPost(chooseFolder) {
     let dir = null;
     if (window.showDirectoryPicker) {
       try { dir = await exportRoot(chooseFolder); }
-      catch (e) { if (e.name === "AbortError") return; dir = null; }
+      catch (e) {
+        if (e.name === "AbortError") return;
+        // Ordnerauswahl ging nicht (z. B. Erlaubnis-Abfrage hat den Klick verbraucht) → nicht still als ZIP, sondern nochmal.
+        alert("Der Ordner konnte gerade nicht geöffnet werden. Bitte einfach nochmal auf „Beitrag exportieren“ klicken.");
+        return;
+      }
     }
     const files = [];
     for (let i = 0; i < p.slides.length; i++) files.push({ name: `Bild-${String(i + 1).padStart(2, "0")}.png`, data: await dataToBytes(await slidePng(i)) });
@@ -1245,6 +1265,13 @@ if (hash.has("render")) {
   document.getElementById("renderTarget").appendChild(slideEl(p.slides[i], i, p.slides.length, p.format, p));
 } else {
   renderAll(); renderHooks(); renderPosts();
+  idb("readonly", (s) => s.get("dir")).then((d) => { if (d) exportDir = d; }).catch(() => {});
+  // Neuerer Stand im großen Speicher (IndexedDB) → den nehmen.
+  idb("readonly", (s) => s.get("state")).then((saved) => {
+    if (saved && saved.projects && (saved.savedAt || 0) > (state.savedAt || 0)) {
+      state = saved; renderAll(); renderHooks(); renderPosts();
+    } else if (!saved) save();
+  }).catch(() => {});
 }
 </script>
 </body>
