@@ -837,7 +837,9 @@ function readImage(f, cb) {
 }
 
 // ---------------- Texte zum Posten ----------------
-const DEFAULT_TAGS = "#kalorienzählen #kalorienapp #abnehmen #ernährung #fitness #protein #kaloriendefizit #indiedev #buildinpublic #appentwicklung";
+// Die wichtigsten zuerst: TikTok erlaubt nur 5 Hashtags (Nutzer 26.11.) und bekommt automatisch die ersten 5.
+const DEFAULT_TAGS = "#kalorienzählen #abnehmen #kalorienapp #kaloriendefizit #protein #ernährung #fitness #indiedev #buildinpublic #appentwicklung";
+const TIKTOK_MAX_TAGS = 5;
 const DEFAULT_CALL = "Folg mir, dann verpasst du den Start nicht – oder schreib mir einfach eine Nachricht.";
 const plain = (s) => String(s ?? "").replace(/\*/g, "").replace(/\s*\n\s*/g, " ").trim();
 const dot = (s) => (/[.!?…:👇]$/u.test(s) ? s : s + ".");
@@ -887,6 +889,12 @@ function postOf(p) {
     tags: o.tags ?? DEFAULT_TAGS, ttTitle: o.ttTitle ?? "",
   };
 }
+/** Für TikTok: höchstens 5 Hashtags (die ersten). */
+function captionTikTok(p) {
+  const x = postOf(p);
+  const tags = String(x.tags).split(/\s+/).filter((t) => t.startsWith("#")).slice(0, TIKTOK_MAX_TAGS).join(" ");
+  return [x.hook, x.text, x.call, x.question, tags].map((t) => String(t).trim()).filter(Boolean).join("\n\n");
+}
 function caption(p) {
   const x = postOf(p);
   return [x.hook, x.text, x.call, x.question, x.tags].map((t) => String(t).trim()).filter(Boolean).join("\n\n");
@@ -909,7 +917,7 @@ function renderPostText() {
       ${inp("text", "2. Worum geht's – 2–3 Sätze mit Suchbegriffen (Kalorien zählen, abnehmen, Protein …)", "", true)}
       ${inp("call", "3. Aufruf (folgen/kommentieren)", DEFAULT_CALL, true)}
       ${inp("question", "4. Frage an die Zuschauer", "z. B. Was nervt dich an Kalorien-Apps am meisten? 👇")}
-      ${inp("tags", "5. Hashtags (6–10)", DEFAULT_TAGS)}
+      ${inp("tags", "5. Hashtags – die wichtigsten zuerst (Instagram alle, TikTok nur die ersten 5)", DEFAULT_TAGS)}
       ${inp("ttTitle", "TikTok-Titel (kurz, mit „Dunories“ – leer = Hook)", "z. B. Mich hat jede Kalorien-App genervt – also baue ich Dunories")}
       ${/dunories/i.test(t) ? "" : `<p class="hint" style="color:var(--orange)">⚠ Im TikTok-Titel fehlt „Dunories“.</p>`}
     </div><div>
@@ -1052,7 +1060,7 @@ function postingPage(p, folder, images) {
     ["tt1", `Bilder als <b>Fotomodus</b> hochladen: ${images.join(", ")}`],
     ["tt2", `<b>Sound:</b> Trend-Sound, Lautstärke ca. 20–40 %, nicht immer derselbe`],
     ["tt3", `<b>Titel</b> einfügen ↓`, copy("Titel", ttTitle(p))],
-    ["tt4", `<b>Beschreibung</b> einfügen ↓`, copy("Beschreibung", cap)],
+    ["tt4", `<b>Beschreibung</b> einfügen ↓`, copy("Beschreibung (max. 5 Hashtags)", captionTikTok(p))],
     ["tt5", `<b>Kommentare erlauben:</b> an · <b>Sichtbarkeit:</b> alle`],
     ["tt6", `<b>Wiederverwendung (Duett/Stitch):</b> an`],
     ["tt7", `<b>Inhaltsoffenlegung: AN → „Deine Marke“</b> (NICHT „Markenpartnerschaft“)`],
