@@ -623,7 +623,7 @@ internal fun Exception.toCaptureError(): CaptureError = when (this) {
         GeminiError.INVALID_RESPONSE -> CaptureError.INVALID_RESPONSE
         GeminiError.NO_FOOD -> CaptureError.NO_FOOD
     }
-    is ImageDecoder.DecodeException -> CaptureError.IMAGE
+    is ImageDecoder.DecodeException, is de.kalorienapp.capture.ImageReadException -> CaptureError.IMAGE
     is IOException -> CaptureError.NETWORK
     else -> CaptureError.UNKNOWN
 }
