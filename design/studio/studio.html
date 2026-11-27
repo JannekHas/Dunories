@@ -494,6 +494,70 @@ const PRESETS = {
       { layout: "screenshot", look: "neon", accent: "magenta", title: "Meine App zeigt dir Kalorien *und* Protein.", sub: "Bald im Play Store – folg für den Start.", image: "asset:heute" },
     ],
   },
+  f1foto: {
+    name: "Funktion 1: Foto statt Abtippen", format: "post",
+    post: {
+      hook: "Kalorien zählen nervt, weil du alles abtippen musst?",
+      text: "In Dunories machst du einfach ein Foto von deinem Teller. Die KI erkennt, was drauf ist, und schätzt Menge und Nährwerte – du prüfst nur noch kurz und speicherst.",
+      call: "Ich baue gerade meine eigene Kalorien-App Dunories – folg mir, wenn du beim Start dabei sein willst.",
+      question: "Wie trackst du gerade – App, Zettel oder gar nicht? 👇",
+      ttTitle: "Kalorien zählen per Foto statt Abtippen – Dunories",
+    },
+    slides: [
+      { layout: "titel", look: "neon", accent: "yellow", brand: false, valign: "center", title: "Kalorien zählen nervt, weil du alles *abtippen* musst?", sub: "Es geht auch so 👇" },
+      { layout: "screenshot", look: "hell", accent: "green", title: "Foto rein. *Nährwerte* raus.", sub: "Die KI erkennt alles auf dem Teller.", mock: true, mockMeal: "Mittagessen", mockItems: "Spaghetti Bolognese; 450 g; 791; KI-Schätzung aus Foto · Gericht aus 3 Zutaten\nWasser; 200 ml; 0", inset: "asset:spaghetti" },
+      { layout: "text", look: "neon", accent: "violet", title: "Und wenn's mal *danebenliegt*?", lines: "✏️ Alles bleibt ein Vorschlag\n🗣️ Sag einfach, was es wirklich ist\n✅ Erst wenn du speicherst, zählt es" },
+      { layout: "abschluss", look: "knall", accent: "cyan", title: "Bald im *Play Store*.", sub: "Willst du beim Start dabei sein?", cta: "Folge gerne für weitere Infos 🔔" },
+    ],
+  },
+  f2etikett: {
+    name: "Funktion 2: Barcode & Etikett", format: "post",
+    post: {
+      hook: "Du tippst Nährwerte noch von der Packung ab?",
+      text: "Barcode scannen und die Werte sind sofort da. Kennt die Datenbank das Produkt nicht, fotografierst du einfach die Nährwerttabelle – die KI liest sie genau ab, statt zu schätzen.",
+      call: "Ich baue gerade meine eigene Kalorien-App Dunories – folg mir, wenn du beim Start dabei sein willst.",
+      question: "Welches Produkt findet deine App nie? 👇",
+      ttTitle: "Nie wieder Nährwerte abtippen – Dunories",
+    },
+    slides: [
+      { layout: "titel", look: "hell", accent: "orange", brand: false, valign: "center", title: "Du tippst Nährwerte noch von der *Packung* ab?", sub: "Lass das die App machen 👇" },
+      { layout: "screenshot", look: "neon", accent: "cyan", title: "Barcode scannen – *fertig*.", sub: "Die Werte kommen direkt aus der Datenbank.", image: "" },
+      { layout: "screenshot", look: "hell", accent: "green", title: "Unbekannt? *Etikett* fotografieren.", sub: "Die KI liest die Tabelle genau ab – keine Schätzung.", image: "" },
+      { layout: "abschluss", look: "neon", accent: "magenta", title: "Bald im *Play Store*.", sub: "Willst du beim Start dabei sein?", cta: "Folge gerne für weitere Infos 🔔" },
+    ],
+  },
+  f3sprache: {
+    name: "Funktion 3: Einfach sagen", format: "post",
+    post: {
+      hook: "Keine Lust, jede Zutat einzeln zu suchen?",
+      text: "In Dunories sagst oder schreibst du einfach, was du gegessen hast – zum Beispiel „2 Brötchen mit Käse und ein Kaffee“. Die KI macht daraus die einzelnen Einträge, du prüfst nur noch.",
+      call: "Ich baue gerade meine eigene Kalorien-App Dunories – folg mir, wenn du beim Start dabei sein willst.",
+      question: "Was hast du heute gefrühstückt? 👇",
+      ttTitle: "Essen einfach einsprechen statt suchen – Dunories",
+    },
+    slides: [
+      { layout: "titel", look: "neon", accent: "green", brand: false, valign: "center", title: "Keine Lust, jede Zutat *einzeln* zu suchen?", sub: "Sag's einfach 👇" },
+      { layout: "titel", look: "knall", accent: "yellow", brand: false, valign: "center", big: "🗣️", title: "„2 Brötchen mit Käse und ein *Kaffee*“", sub: "Mehr musst du nicht sagen." },
+      { layout: "screenshot", look: "hell", accent: "cyan", title: "Die KI macht die *Einträge*.", sub: "Du prüfst nur noch und speicherst.", mock: true, mockMeal: "Frühstück", mockItems: "Brötchen; 120 g; 320; KI-Schätzung aus Beschreibung\nGouda; 40 g; 145; KI-Schätzung aus Beschreibung\nKaffee mit Milch; 250 ml; 35; KI-Schätzung aus Beschreibung" },
+      { layout: "abschluss", look: "neon", accent: "magenta", title: "Bald im *Play Store*.", sub: "Willst du beim Start dabei sein?", cta: "Folge gerne für weitere Infos 🔔" },
+    ],
+  },
+  f4kalender: {
+    name: "Funktion 4: Kalender & Woche", format: "post",
+    post: {
+      hook: "Ein schlechter Tag – und du willst gleich alles hinschmeißen?",
+      text: "Ein Tag über dem Ziel ruiniert gar nichts. Der Kalender in Dunories zeigt dir jeden Tag auf einen Blick, und die Statistik zeigt, wie du über die ganze Woche liegst. Genau das zählt beim Abnehmen.",
+      call: "Ich baue gerade meine eigene Kalorien-App Dunories – folg mir, wenn du beim Start dabei sein willst.",
+      question: "Welcher Wochentag ist bei dir am schwierigsten? 👇",
+      ttTitle: "Ein schlechter Tag ruiniert nichts – Dunories",
+    },
+    slides: [
+      { layout: "titel", look: "neon", accent: "red", brand: false, valign: "center", title: "Ein schlechter Tag – und du willst gleich alles *hinschmeißen*?", sub: "Schau lieber auf die Woche 👇" },
+      { layout: "screenshot", look: "hell", accent: "green", title: "Jeder Tag auf *einen Blick*.", sub: "✓ im Ziel · + knapp drüber · ^ drüber", image: "" },
+      { layout: "text", look: "neon", accent: "cyan", title: "Was wirklich *zählt*:", lines: "📅 Nicht der eine Tag\n📊 Sondern dein Schnitt über die Woche\n💪 Ein Ausrutscher ist ganz normal", sub: "Morgen geht's einfach weiter." },
+      { layout: "abschluss", look: "knall", accent: "magenta", title: "Bald im *Play Store*.", sub: "Willst du beim Start dabei sein?", cta: "Folge gerne für weitere Infos 🔔" },
+    ],
+  },
   versteckt: {
     name: "Versteckte Kalorien (Beitrag 2)", format: "post", showCount: true,
     post: {
